@@ -8,7 +8,6 @@ java_binary(
     ":scoreboard-lib",
     ":domjudge-proto",
     "@jewelcli//jar",
-    "@okio//jar",
   ],
 )
 
@@ -17,11 +16,12 @@ java_library(
   srcs = glob(["src/me/hex539/scoreboard/*.java"]),
   deps = [
     ":domjudge-proto",
-    "@google_protobuf//:protobuf_java",
     ":annotations-proto",
     ":annotations-proto_compile_imports",
     "//third_party/gson:lib",
+    "@google_protobuf//:protobuf_java",
     "@okhttp//jar",
+    "@okio//jar",
     "@gson//jar",
   ],
 )
