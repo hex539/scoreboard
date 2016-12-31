@@ -8,6 +8,12 @@ git_repository(
 load("@org_pubref_rules_protobuf//java:rules.bzl", "java_proto_repositories")
 java_proto_repositories()
 
+git_repository(
+  name = "google_protobuf",
+  remote = "https://github.com/google/protobuf",
+  tag = "v3.1.0",
+)
+
 maven_jar(
   name = "jewelcli",
   artifact = "com.lexicalscope.jewelcli:jewelcli:0.8.3",

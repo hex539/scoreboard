@@ -1,11 +1,78 @@
 syntax = "proto3";
 
 package proto.domjudge;
-
-option java_multiple_files = true;
 option java_package = "me.hex539.proto.domjudge";
-option optimize_for = LITE_RUNTIME;
+option java_outer_classname = "DomjudgeProto";
 
-message ThisIsNotWrittenYet {
-  repeated sint64 hello_world = 1;
+import "annotations.proto";
+
+message Affiliation {
+  uint64 affilid = 1;
+  string shortname = 2;
+  string name = 3;
+  string country = 4;
+}
+
+message Category {
+  uint64 categoryid = 1;
+  string name = 2;
+  string color = 3;
+  uint64 sortorder = 4;
+}
+
+message Clarification {
+  uint64 clarid = 1;
+  sint64 submittime = 2;
+  uint64 probid = 3;
+  string body = 4;
+}
+
+message Contest {
+  uint64 id = 1;
+  string shortname = 2;
+  string name = 3;
+  sint64 start = 4; // timestamp
+  sint64 freeze = 5; // timestamp
+  sint64 end = 6; // timestamp
+  uint64 length = 7; // timediff
+  sint64 unfreeze = 8; // timestamp
+  uint64 penalty = 9;
+}
+
+message Language {
+  string id = 1;
+  repeated string extension_names = 2 [(serialized_name) = "extensions"];
+  bool allow_judge = 3;
+  double time_factor = 4;
+}
+
+message ScoreboardRow {
+  uint64 rank = 1;
+  uint64 team = 2;
+  ScoreboardScore score = 3;
+  repeated ScoreboardProblem problems = 4;
+}
+
+message ScoreboardScore {
+  uint64 num_solved = 1;
+  uint64 total_time = 2;
+}
+
+message ScoreboardProblem {
+  string label = 1;
+  uint64 num_judged = 2;
+  uint64 num_pending = 3;
+  bool solved = 4;
+  sint64 time = 5;
+}
+
+message Team {
+  sint64 id = 1;
+  string name = 2;
+  string members = 3;
+  string nationality = 4;
+  string category = 5;
+  string group_name = 6 [(serialized_name) = "group"];
+  sint64 affil_id = 7 [(serialized_name) = "affilId"];
+  string affiliation = 8;
 }

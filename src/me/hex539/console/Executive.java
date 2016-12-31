@@ -1,23 +1,16 @@
 package me.hex539.console;
 
-import com.google.gson.Gson;
-
 import com.lexicalscope.jewel.cli.ArgumentValidationException;
 import com.lexicalscope.jewel.cli.CommandLineInterface;
 import com.lexicalscope.jewel.cli.Option;
 import com.lexicalscope.jewel.cli.Unparsed;
 
-import me.hex539.scoreboard.ScoreboardModel;
-import me.hex539.scoreboard.TeamModel;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okhttp3.Request;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import me.hex539.proto.domjudge.DomjudgeProto;
+import me.hex539.scoreboard.DomjudgeRest;
 
 import static com.lexicalscope.jewel.cli.CliFactory.parseArguments;
 
@@ -42,38 +35,25 @@ public class Executive {
     Invocation invocation = parseArguments(Invocation.class, args);
     System.err.println("Fetching from: " + invocation.getUrl());
 
-    OkHttpClient client = new OkHttpClient();
-    Request request;
+    final DomjudgeRest api = new DomjudgeRest(invocation.getUrl());
+    final DomjudgeProto.Team[] teams = api.getTeams();
+    final DomjudgeProto.ScoreboardRow[] scoreboard = api.getScoreboard(/* contestId */ 5);
 
-    final TeamModel[] teams;
-    final ScoreboardModel.Row[] scoreboard;
-    final Gson gson = new Gson();
-
-    request = new Request.Builder()
-        .url(invocation.getUrl() + "/teams")
-        .build();
-    try (ResponseBody body = client.newCall(request).execute().body()) {
-      teams = gson.fromJson(body.string(), TeamModel[].class);
+    Map<Long, DomjudgeProto.Team> teamMap = new HashMap<>();
+    for (DomjudgeProto.Team team : teams) {
+      teamMap.put(team.getId(), team);
     }
 
-    request = new Request.Builder()
-        .url(invocation.getUrl() + "/scoreboard?cid=5")
-        .build();
-    try (ResponseBody body = client.newCall(request).execute().body()) {
-      scoreboard = gson.fromJson(body.string(), ScoreboardModel.Row[].class);
-    }
-
-    Map<Long, TeamModel> teamMap = new HashMap<>();
-    for (TeamModel team : teams) {
-      teamMap.put(team.id, team);
-    }
-
-    for (ScoreboardModel.Row row : scoreboard) {
-      TeamModel team = teamMap.get(row.team);
-      System.out.format("%-30s\t| %2d | %5d%n",
-          team.name,
-          row.score.num_solved,
-          row.score.total_time);
+    for (DomjudgeProto.ScoreboardRow row : scoreboard) {
+      DomjudgeProto.Team team = teamMap.get(row.getTeam());
+      System.out.format("%-30s\t| %2d | %5d",
+          team.getName(),
+          row.getScore().getNumSolved(),
+          row.getScore().getTotalTime());
+      for (DomjudgeProto.ScoreboardProblem problem : row.getProblemsList()) {
+        System.out.format(" | %c", (problem.getSolved() ? '+' : ' '));
+      }
+      System.out.println();
     }
   }
 }

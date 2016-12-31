@@ -8,9 +8,7 @@ java_binary(
     ":scoreboard-lib",
     ":domjudge-proto",
     "@jewelcli//jar",
-    "@okhttp//jar",
     "@okio//jar",
-    "@gson//jar",
   ],
 )
 
@@ -19,6 +17,11 @@ java_library(
   srcs = glob(["src/me/hex539/scoreboard/*.java"]),
   deps = [
     ":domjudge-proto",
+    "@google_protobuf//:protobuf_java",
+    ":annotations-proto",
+    ":annotations-proto_compile_imports",
+    "//third_party/gson:lib",
+    "@okhttp//jar",
     "@gson//jar",
   ],
 )
@@ -26,4 +29,20 @@ java_library(
 java_proto_library(
   name = "domjudge-proto",
   protos = ["src/me/hex539/proto/domjudge.proto"],
+  proto_deps = [":annotations-proto"],
+  imports = [
+    "external/google_protobuf/src",
+    "src/me/hex539/proto"
+  ],
+)
+
+java_proto_library(
+  name = "annotations-proto",
+  protos = ["src/me/hex539/proto/annotations.proto"],
+  imports = [
+    "external/google_protobuf/src"
+  ],
+  inputs = [
+    "@google_protobuf//:well_known_protos"
+  ],
 )
