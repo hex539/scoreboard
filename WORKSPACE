@@ -28,4 +28,7 @@ maven_jar(
   artifact = "com.google.code.gson:gson:2.6.2",
 )
 
-
+maven_jar(
+  name = "guava",
+  artifact = "com.google.guava:guava:21.0-rc1",
+)
