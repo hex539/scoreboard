@@ -1,7 +1,9 @@
 package me.hex539.console;
 
 import com.lexicalscope.jewel.cli.ArgumentValidationException;
+import com.lexicalscope.jewel.cli.Cli;
 import com.lexicalscope.jewel.cli.CommandLineInterface;
+import com.lexicalscope.jewel.cli.InvalidOptionSpecificationException;
 import com.lexicalscope.jewel.cli.Option;
 import com.lexicalscope.jewel.cli.Unparsed;
 
@@ -12,12 +14,12 @@ import java.util.Map;
 import me.hex539.proto.domjudge.DomjudgeProto;
 import me.hex539.scoreboard.DomjudgeRest;
 
-import static com.lexicalscope.jewel.cli.CliFactory.parseArguments;
+import static com.lexicalscope.jewel.cli.CliFactory.createCli;
 
 @CommandLineInterface interface Invocation {
   @Option(
     shortName = "h",
-    longName = "--help",
+    longName = "help",
     description = "Display this help and exit")
       boolean isHelp();
   @Option(
@@ -32,12 +34,12 @@ import static com.lexicalscope.jewel.cli.CliFactory.parseArguments;
 
 public class Executive {
   public static void main(String[] args) throws Exception {
-    Invocation invocation = parseArguments(Invocation.class, args);
+    final Invocation invocation = parseCommandLine(args);
     System.err.println("Fetching from: " + invocation.getUrl());
 
-    final DomjudgeRest api = new DomjudgeRest(invocation.getUrl());
-    final DomjudgeProto.Team[] teams = api.getTeams();
-    final DomjudgeProto.ScoreboardRow[] scoreboard = api.getScoreboard(/* contestId */ 5);
+    DomjudgeRest api = new DomjudgeRest(invocation.getUrl());
+    DomjudgeProto.Team[] teams = api.getTeams();
+    DomjudgeProto.ScoreboardRow[] scoreboard = api.getScoreboard(/* contestId */ 5);
 
     Map<Long, DomjudgeProto.Team> teamMap = new HashMap<>();
     for (DomjudgeProto.Team team : teams) {
@@ -54,6 +56,22 @@ public class Executive {
         System.out.format(" | %c", (problem.getSolved() ? '+' : ' '));
       }
       System.out.println();
+    }
+  }
+
+  private static Invocation parseCommandLine(String[] args) {
+    try {
+      final Cli<Invocation> cli = createCli(Invocation.class);
+      try {
+        return cli.parseArguments(args);
+      } catch (ArgumentValidationException e) {
+        System.err.println(e.getMessage());
+        System.err.println(cli.getHelpMessage());
+        System.exit(1);
+        return null;
+      }
+    } catch (InvalidOptionSpecificationException e) {
+      throw new Error(e);
     }
   }
 }
