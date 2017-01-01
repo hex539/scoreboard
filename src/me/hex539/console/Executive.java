@@ -1,12 +1,7 @@
 package me.hex539.console;
 
-import com.lexicalscope.jewel.cli.ArgumentValidationException;
-import com.lexicalscope.jewel.cli.Cli;
-import com.lexicalscope.jewel.cli.CommandLineInterface;
-import com.lexicalscope.jewel.cli.InvalidOptionSpecificationException;
-import com.lexicalscope.jewel.cli.Option;
-import com.lexicalscope.jewel.cli.Unparsed;
-
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,27 +9,29 @@ import java.util.Map;
 import me.hex539.proto.domjudge.DomjudgeProto;
 import me.hex539.scoreboard.DomjudgeRest;
 
-import static com.lexicalscope.jewel.cli.CliFactory.createCli;
-
-@CommandLineInterface interface Invocation {
-  @Option(
-    shortName = "h",
-    longName = "help",
-    description = "Display this help and exit")
-      boolean isHelp();
-  @Option(
-    shortName = "u",
-    longName = "url",
-    description = "Scoreboard URL")
-      String getUrl();
-  @Unparsed(
-    name = "ACTION")
-      List<String> getActions();
-}
-
 public class Executive {
   public static void main(String[] args) throws Exception {
-    final Invocation invocation = parseCommandLine(args);
+    Invocation invocation = Invocation.parseFrom(args);
+    Map<String, Method> actionMap = Command.Annotations.all(Executive.class);
+
+    List<String> actions = invocation.getActions();
+    if (actions == null) {
+      actions = Arrays.asList(new String[]{"scoreboard"});
+    }
+
+    for (String action : actions) {
+      Method method = actionMap.get(action);
+      if (method == null) {
+        System.err.println("Unknown action: " + action);
+        System.exit(1);
+        return;
+      }
+      method.invoke(null, invocation);
+    }
+  }
+
+  @Command(name = "scoreboard")
+  private static void showScoreboard(Invocation invocation) throws Exception {
     System.err.println("Fetching from: " + invocation.getUrl());
 
     DomjudgeRest api = new DomjudgeRest(invocation.getUrl());
@@ -56,22 +53,6 @@ public class Executive {
         System.out.format(" | %c", (problem.getSolved() ? '+' : ' '));
       }
       System.out.println();
-    }
-  }
-
-  private static Invocation parseCommandLine(String[] args) {
-    try {
-      final Cli<Invocation> cli = createCli(Invocation.class);
-      try {
-        return cli.parseArguments(args);
-      } catch (ArgumentValidationException e) {
-        System.err.println(e.getMessage());
-        System.err.println(cli.getHelpMessage());
-        System.exit(1);
-        return null;
-      }
-    } catch (InvalidOptionSpecificationException e) {
-      throw new Error(e);
     }
   }
 }
