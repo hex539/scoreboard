@@ -12,19 +12,19 @@ import java.util.List;
 
 public @CommandLineInterface interface Invocation {
   @Option(
-    shortName = "h",
-    longName = "help",
-    helpRequest = true,
-    description = "Display this help and exit")
-      boolean isHelp();
+      shortName = "h",
+      longName = "help",
+      helpRequest = true,
+      description = "Display this help and exit")
+    boolean isHelp();
   @Option(
-    shortName = "u",
-    longName = "url",
-    description = "Scoreboard URL")
-      String getUrl();
+      shortName = "u",
+      longName = "url",
+      description = "Scoreboard URL")
+    String getUrl();
   @Unparsed(
-    name = "ACTION")
-      List<String> getActions();
+      name = "ACTION")
+    List<String> getActions();
 
   public static Invocation parseFrom(String[] args) {
     try {
