@@ -22,14 +22,14 @@ message Category {
 
 message Clarification {
   uint64 clarid = 1;
-  sint64 submittime = 2;
+  sint64 submit_time = 2 [(serialized_name) = "submittime"];
   uint64 probid = 3;
   string body = 4;
 }
 
 message Contest {
   uint64 id = 1;
-  string shortname = 2;
+  string short_name = 2 [(serialized_name) = "shortname"];
   string name = 3;
   sint64 start = 4; // timestamp
   sint64 freeze = 5; // timestamp
@@ -41,9 +41,17 @@ message Contest {
 
 message Language {
   string id = 1;
-  repeated string extension_names = 2 [(serialized_name) = "extensions"];
+  repeated string file_extensions = 2 [(serialized_name) = "extensions"];
   bool allow_judge = 3;
   double time_factor = 4;
+}
+
+message Problem {
+  uint64 id = 1;
+  string label = 2;
+  string short_name = 3 [(serialized_name) = "shortname"];
+  string name = 4;
+  string color = 5;
 }
 
 message ScoreboardRow {

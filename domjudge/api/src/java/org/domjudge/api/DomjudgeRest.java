@@ -6,6 +6,8 @@ import com.google.gson.protobuf.ProtoTypeAdapter;
 import com.google.protobuf.AbstractMessage;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import org.domjudge.proto.Annotations;
 import org.domjudge.proto.DomjudgeProto;
@@ -16,6 +18,7 @@ import okhttp3.ResponseBody;
 import okhttp3.Request;
 
 import static com.google.common.base.CaseFormat.LOWER_UNDERSCORE;
+import static org.domjudge.proto.DomjudgeProto.*;
 
 public class DomjudgeRest {
   private final String url;
@@ -26,12 +29,30 @@ public class DomjudgeRest {
     this.client = new OkHttpClient();
   }
 
-  public DomjudgeProto.Team[] getTeams() throws Exception {
-    return getFrom("/teams", DomjudgeProto.Team[].class);
+  public Contest getContest() throws Exception {
+    return getFrom("/contest", Contest.class);
   }
 
-  public DomjudgeProto.ScoreboardRow[] getScoreboard(int contestId) throws Exception {
-    return getFrom("/scoreboard?cid=" + contestId, DomjudgeProto.ScoreboardRow[].class);
+  public Problem[] getProblems(Contest contest) throws Exception {
+    // We need to sort the problems by label because DOMjudge gives them out in a not-very-useful
+    // order, despite showing them in sorted order on the scoreboard.
+    Problem[] problems = getFrom("/problems?cid=" + contest.getId(), Problem[].class);
+    Arrays.sort(problems, (Problem a, Problem b) -> {
+        int res = 0;
+        return (res = a.getLabel().compareTo(b.getLabel())) != 0
+            || (res = a.getShortName().compareTo(b.getShortName())) != 0
+            || (res = a.getName().compareTo(b.getName())) != 0
+            || (res = Long.compare(a.getId(), b.getId())) != 0
+            ? res : 0;});
+    return problems;
+  }
+
+  public Team[] getTeams() throws Exception {
+    return getFrom("/teams", Team[].class);
+  }
+
+  public ScoreboardRow[] getScoreboard(Contest contest) throws Exception {
+    return getFrom("/scoreboard?cid=" + contest.getId(), ScoreboardRow[].class);
   }
 
   protected <T> T getFrom(String endpoint, Class<T> c) throws IOException {
