@@ -1,12 +1,14 @@
-package me.hex539.scoreboard;
+package org.domjudge.api;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.protobuf.ProtoTypeAdapter;
 import com.google.protobuf.AbstractMessage;
 
-import me.hex539.proto.domjudge.Annotations;
-import me.hex539.proto.domjudge.DomjudgeProto;
+import java.io.IOException;
+
+import org.domjudge.proto.Annotations;
+import org.domjudge.proto.DomjudgeProto;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
@@ -25,20 +27,19 @@ public class DomjudgeRest {
   }
 
   public DomjudgeProto.Team[] getTeams() throws Exception {
-    Request request = new Request.Builder()
-        .url(url + "/teams")
-        .build();
-    try (ResponseBody body = client.newCall(request).execute().body()) {
-      return getGson().fromJson(body.string(), DomjudgeProto.Team[].class);
-    }
+    return getFrom("/teams", DomjudgeProto.Team[].class);
   }
 
   public DomjudgeProto.ScoreboardRow[] getScoreboard(int contestId) throws Exception {
+    return getFrom("/scoreboard?cid=" + contestId, DomjudgeProto.ScoreboardRow[].class);
+  }
+
+  protected <T> T getFrom(String endpoint, Class<T> c) throws IOException {
     Request request = new Request.Builder()
-        .url(url + "/scoreboard?cid=" + contestId)
+        .url(url + endpoint)
         .build();
     try (ResponseBody body = client.newCall(request).execute().body()) {
-      return getGson().fromJson(body.string(), DomjudgeProto.ScoreboardRow[].class);
+      return getGson().fromJson(body.string(), c);
     }
   }
 

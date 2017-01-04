@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package proto.domjudge;
-option java_package = "me.hex539.proto.domjudge";
+option java_package = "org.domjudge.proto";
 
 import "google/protobuf/descriptor.proto";
 

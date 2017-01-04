@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import me.hex539.proto.domjudge.DomjudgeProto;
-import me.hex539.scoreboard.DomjudgeRest;
+import org.domjudge.api.DomjudgeRest;
+import org.domjudge.proto.DomjudgeProto;
 
 public class Executive {
   public static void main(String[] args) throws Exception {

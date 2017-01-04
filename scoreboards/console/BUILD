@@ -1,12 +1,14 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 java_binary(
   name = "console",
-  srcs = glob(["src/java/me/hex539/console/*.java"]),
   main_class = "me.hex539.console.Executive",
+  srcs = glob([
+    "src/java/me/hex539/console/*.java",
+  ]),
   deps = [
-    "//:scoreboard-lib",
-    "//:domjudge-proto",
+    "//domjudge/api:domjudge-api",
+    "//domjudge/proto:domjudge-proto",
     "@jewelcli//jar",
   ],
 )

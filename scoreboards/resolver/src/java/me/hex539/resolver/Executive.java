@@ -26,8 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import me.hex539.proto.domjudge.DomjudgeProto;
-import me.hex539.scoreboard.DomjudgeRest;
+import org.domjudge.api.DomjudgeRest;
+import org.domjudge.proto.DomjudgeProto;
 
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
