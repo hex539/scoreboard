@@ -38,3 +38,8 @@ maven_jar(
   name = "guava",
   artifact = "com.google.guava:guava:21.0-rc1",
 )
+
+maven_jar(
+  name = "jfoenix",
+  artifact = "com.jfoenix:jfoenix:1.0.0",
+)

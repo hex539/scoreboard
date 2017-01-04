@@ -11,6 +11,17 @@ java_binary(
   ],
 )
 
+java_binary(
+  name = "resolver",
+  srcs = glob(["src/me/hex539/resolver/*.java"]),
+  main_class = "me.hex539.resolver.Executive",
+  deps = [
+    ":scoreboard-lib",
+    ":domjudge-proto",
+    "@jfoenix//jar",
+  ],
+)
+
 java_library(
   name = "scoreboard-lib",
   srcs = glob(["src/me/hex539/scoreboard/*.java"]),
