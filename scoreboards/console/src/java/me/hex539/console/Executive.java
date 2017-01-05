@@ -35,8 +35,9 @@ public class Executive {
     System.err.println("Fetching from: " + invocation.getUrl());
 
     DomjudgeRest api = new DomjudgeRest(invocation.getUrl());
+    DomjudgeProto.Contest contest = api.getContest();
     DomjudgeProto.Team[] teams = api.getTeams();
-    DomjudgeProto.ScoreboardRow[] scoreboard = api.getScoreboard(/* contestId */ 5);
+    DomjudgeProto.ScoreboardRow[] scoreboard = api.getScoreboard(contest);
 
     Map<Long, DomjudgeProto.Team> teamMap = new HashMap<>();
     for (DomjudgeProto.Team team : teams) {
