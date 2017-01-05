@@ -22,11 +22,8 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.domjudge.api.DomjudgeRest;
 import org.domjudge.api.ScoreboardModel;
@@ -37,8 +34,6 @@ import javafx.scene.control.TableView;
 import javafx.collections.ObservableList;
 import javafx.collections.FXCollections;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-
-import java.util.function.Function;
 
 public class Executive extends Application {
   public static void main(String[] args) {
@@ -56,99 +51,6 @@ public class Executive extends Application {
     return new ScoreboardModel.Impl(contest, problems, teams, rows);
   }
 
-  /**
-   * TODO: Move this into tests for the scoreboard lib. Possibly expose a convenience
-   *       library too, with a syntax along the lines of:
-   *       <code>
-   *       ScoreboardMocks.FakeModel.newBuilder()
-   *            .setProblems(     "A",    "B",     "C",     "D")
-   *            .addRow("Team 1", SOLVED, SOLVED,  PENDING, FAILED)
-   *            .addRow("Team 2", SOLVED, PENDING, PENDING, FAILED)
-   *            .addRow("Team 3", FAILED, null,    null,    PENDING)
-   *            .build()
-   *       </code>
-   */
-  private ScoreboardModel getMockModel() {
-    return new ScoreboardModel() {
-      @Override
-      public DomjudgeProto.Contest getContest() {
-        return DomjudgeProto.Contest.newBuilder()
-            .setId(44)
-            .setShortName("Trial")
-            .setName("Challenge")
-            .build();
-      }
-
-      @Override
-      public Collection<DomjudgeProto.Team> getTeams() {
-        /**
-         * Some tricky cases: Unicode 9.0, 6.0, and 1.1 respectively.
-         */
-        return Arrays.asList(new DomjudgeProto.Team[] {
-            DomjudgeProto.Team.newBuilder().setId(1).setName("Bath Ducks 🦆").build(),
-            DomjudgeProto.Team.newBuilder().setId(2).setName("Bath Crocs 🐊").build(),
-            DomjudgeProto.Team.newBuilder().setId(3).setName("Bath Shower ☂").build()
-        });
-      }
-
-      @Override
-      public Collection<DomjudgeProto.Problem> getProblems() {
-        return Arrays.asList(new DomjudgeProto.Problem[] {
-          DomjudgeProto.Problem.newBuilder()
-              .setLabel("X")
-              .setName("Example problem")
-              .setShortName("Example")
-              .build()
-        });
-      }
-
-      @Override
-      public Collection<DomjudgeProto.ScoreboardRow> getRows() {
-        return Arrays.asList(new DomjudgeProto.ScoreboardRow[] {
-          DomjudgeProto.ScoreboardRow.newBuilder()
-              .setTeam(1)
-              .setRank(1)
-              .setScore(DomjudgeProto.ScoreboardScore.newBuilder()
-                  .setNumSolved(1)
-                  .setTotalTime(23)
-                  .build())
-              .addProblems(DomjudgeProto.ScoreboardProblem.newBuilder()
-                    .setLabel("X")
-                    .setSolved(true)
-                    .setNumJudged(1)
-                    .build())
-              .build(),
-          DomjudgeProto.ScoreboardRow.newBuilder()
-              .setTeam(2)
-              .setRank(2)
-              .setScore(DomjudgeProto.ScoreboardScore.newBuilder()
-                  .setNumSolved(1)
-                  .setTotalTime(500)
-                  .build())
-              .addProblems(DomjudgeProto.ScoreboardProblem.newBuilder()
-                    .setLabel("X")
-                    .setSolved(true)
-                    .setNumJudged(1)
-                    .build())
-              .build(),
-          DomjudgeProto.ScoreboardRow.newBuilder()
-              .setTeam(3)
-              .setRank(3)
-              .setScore(DomjudgeProto.ScoreboardScore.newBuilder()
-                  .setNumSolved(0)
-                  .setTotalTime(0)
-                  .build())
-              .addProblems(DomjudgeProto.ScoreboardProblem.newBuilder()
-                    .setLabel("X")
-                    .setSolved(true)
-                    .setNumJudged(1)
-                    .build())
-              .build()
-        });
-      }
-    };
-  }
-
   @Override
   public void start(Stage stage) throws Exception {
     Map<String, String> args = getParameters().getNamed();
@@ -159,7 +61,7 @@ public class Executive extends Application {
     VBox page = new VBox(/* spacing */ 8);
     root.getChildren().add(page);
 
-    ScoreboardModel model = (url != null ? getModel(url) : getMockModel());
+    ScoreboardModel model = (url != null ? getModel(url) : new MockModel());
 
     TableView table = new TableView<DomjudgeProto.ScoreboardRow>();
     table.setStyle("-fx-font-size: 20");
@@ -211,12 +113,5 @@ public class Executive extends Application {
     res.setText(text);
     res.setSortable(false);
     return res;
-  }
-}
-
-interface ScoreboardView {
-  public interface Model {
-    DomjudgeProto.Team getTeam(long id);
-    DomjudgeProto.ScoreboardRow[] getRows();
   }
 }
