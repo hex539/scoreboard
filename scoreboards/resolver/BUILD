@@ -6,6 +6,9 @@ java_binary(
   srcs = glob([
     "src/java/**/*.java",
   ]),
+  resources = glob([
+    "src/resources/**/*.css",
+  ]),
   deps = [
     "//domjudge/api:domjudge-api",
     "//domjudge/proto:domjudge-proto",

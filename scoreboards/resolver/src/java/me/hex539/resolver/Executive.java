@@ -12,17 +12,21 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TableCell;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Paint;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.domjudge.api.DomjudgeRest;
@@ -64,7 +68,6 @@ public class Executive extends Application {
     ScoreboardModel model = (url != null ? getModel(url) : new MockModel());
 
     TableView table = new TableView<DomjudgeProto.ScoreboardRow>();
-    table.setStyle("-fx-font-size: 20");
 
     ObservableList<DomjudgeProto.ScoreboardRow> rows = FXCollections.observableList(
         new ArrayList<>(model.getRows())
@@ -78,40 +81,73 @@ public class Executive extends Application {
     );
     for (final DomjudgeProto.Problem problem : model.getProblems()) {
       table.getColumns().add(
-        getColumn(
-            Object.class,
+        getProblemColumn(
             problem.getShortName(),
-            (row -> {
-              DomjudgeProto.Team team = model.getTeam(row.getTeam());
-              DomjudgeProto.ScoreboardProblem attempts = model.getAttempts(team, problem);
-              return attempts.getSolved() ? "+"
-                  : attempts.getNumJudged() > 0 ? "-"
-                  : "";})));
+            row -> model.getAttempts(model.getTeam(row.getTeam()), problem)));
     }
 
     VBox.setVgrow(table, Priority.ALWAYS);
     page.getChildren().add(table);
 
+    final Scene scene = new Scene(root);
+    scene.getStylesheets().add("/resources/javafx/style.css");
+
     stage.setTitle(model.getContest().getName());
-    stage.setScene(new Scene(root));
+    stage.setMaximized(true);
+    stage.setScene(scene);
     stage.show();
   }
 
-  /** JavaFX is an aberration of nature. The depressing thing is there are not many
-   *  superior UX toolkits in this language, where 'superior' involves having
-   *  proper unicode support and some degree of cross-platform-ness.
-   */
   private static <T> TableColumn<DomjudgeProto.ScoreboardRow, T> getColumn(
       final Class<T> t,
-      final String text,
+      final String title,
       final Function<DomjudgeProto.ScoreboardRow, T> f) {
     final TableColumn<DomjudgeProto.ScoreboardRow, T> res =
         new TableColumn<DomjudgeProto.ScoreboardRow, T>() {{
             setCellValueFactory(features ->
               new ReadOnlyObjectWrapper(f.apply(features.getValue())));
         }};
-    res.setText(text);
+    res.setText(title);
     res.setSortable(false);
+    return res;
+  }
+
+  private static TableColumn<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> getProblemColumn(
+      final String title,
+      final Function<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> f) {
+    TableColumn<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> res =
+        getColumn(DomjudgeProto.ScoreboardProblem.class, title, f);
+    res.setCellFactory(p -> {
+        return new TableCell<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem>() {
+          @Override
+          public void updateItem(DomjudgeProto.ScoreboardProblem item, boolean empty) {
+            super.updateItem(item, empty);
+
+            if (empty || item == null) {
+              setText(null);
+              return;
+            }
+
+            String text = "";
+            long failures = item.getNumJudged();
+            if (item.getSolved()) {
+              failures--;
+              text = "+";
+            } else if (failures > 0) {
+              text = "-";
+            }
+            setText(text + (failures > 0 ? Long.toString(failures) : ""));
+
+            Set<String> add = new HashSet<>();
+            Set<String> del = new HashSet<>();
+            (item.getSolved() == true ? add : del).add("problem-solved");
+            (item.getSolved() == false && failures > 0 ? add : del).add("problem-failed");
+            (!add.isEmpty() ? add : del).add("problem");
+            getStyleClass().removeAll(del);
+            getStyleClass().addAll(add);
+          }
+        };
+      });
     return res;
   }
 }
