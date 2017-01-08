@@ -1,43 +1,35 @@
 package me.hex539.resolver;
 
-import com.jfoenix.controls.JFXButton;
-import com.jfoenix.controls.JFXListView;
-import com.jfoenix.controls.JFXToolbar;
-
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TableCell;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Paint;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
+
+import me.hex539.resolver.cells.ProblemCell;
 
 import org.domjudge.api.DomjudgeRest;
 import org.domjudge.api.ScoreboardModel;
 import org.domjudge.proto.DomjudgeProto;
 
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.collections.ObservableList;
-import javafx.collections.FXCollections;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 
 public class Executive extends Application {
   public static void main(String[] args) {
@@ -117,37 +109,7 @@ public class Executive extends Application {
       final Function<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> f) {
     TableColumn<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> res =
         getColumn(DomjudgeProto.ScoreboardProblem.class, title, f);
-    res.setCellFactory(p -> {
-        return new TableCell<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem>() {
-          @Override
-          public void updateItem(DomjudgeProto.ScoreboardProblem item, boolean empty) {
-            super.updateItem(item, empty);
-
-            if (empty || item == null) {
-              setText(null);
-              return;
-            }
-
-            String text = "";
-            long failures = item.getNumJudged();
-            if (item.getSolved()) {
-              failures--;
-              text = "+";
-            } else if (failures > 0) {
-              text = "-";
-            }
-            setText(text + (failures > 0 ? Long.toString(failures) : ""));
-
-            Set<String> add = new HashSet<>();
-            Set<String> del = new HashSet<>();
-            (item.getSolved() == true ? add : del).add("problem-solved");
-            (item.getSolved() == false && failures > 0 ? add : del).add("problem-failed");
-            (!add.isEmpty() ? add : del).add("problem");
-            getStyleClass().removeAll(del);
-            getStyleClass().addAll(add);
-          }
-        };
-      });
+    res.setCellFactory(p -> new ProblemCell());
     return res;
   }
 }
