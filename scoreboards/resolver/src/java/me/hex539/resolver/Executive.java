@@ -18,6 +18,7 @@ import javafx.stage.Stage;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import me.hex539.resolver.cells.ProblemCell;
 
@@ -31,8 +32,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
-// TODO: remove the dependency on a testing library, it makes for a good example at the moment
-//       but it's better to add support for file URIs and bundle an example file instead.
+// TODO: remove the dependency on a testing library; grow up and use a file URI instead.
 import me.hex539.testing.utils.MockScoreboardModel;
 
 public class Executive extends Application {
@@ -40,49 +40,31 @@ public class Executive extends Application {
     launch(args);
   }
 
-  private ScoreboardModel getModel(String url) throws Exception {
-    System.err.println("Fetching from: " + url);
-
-    DomjudgeRest api = new DomjudgeRest(url);
-    final DomjudgeProto.Contest contest = api.getContest();
-    final DomjudgeProto.Problem[] problems = api.getProblems(contest);
-    final DomjudgeProto.Team[] teams = api.getTeams();
-    final DomjudgeProto.ScoreboardRow[] rows = api.getScoreboard(contest);
-    return new ScoreboardModel.Impl(contest, problems, teams, rows);
-  }
+  private ScoreboardModel model;
 
   @Override
   public void start(Stage stage) throws Exception {
     Map<String, String> args = getParameters().getNamed();
-    final String url = args.get("url");
+    String url = args.get("url");
+    model = (url != null ? getModel(url) : MockScoreboardModel.example());
 
     StackPane root = new StackPane();
 
-    VBox page = new VBox(/* spacing */ 8);
+    VBox page = new VBox();
     root.getChildren().add(page);
 
-    ScoreboardModel model = (url != null ? getModel(url) : MockScoreboardModel.example());
-
     TableView table = new TableView<DomjudgeProto.ScoreboardRow>();
-
-    ObservableList<DomjudgeProto.ScoreboardRow> rows = FXCollections.observableList(
-        new ArrayList<>(model.getRows())
-    );
-    table.setItems(rows);
-
     table.getColumns().setAll(
         getColumn(String.class, "Team", (r -> model.getTeam(r.getTeam()).getName())),
         getColumn(Object.class, "Solved", (r -> r.getScore().getNumSolved())),
         getColumn(Object.class, "Time", (r -> r.getScore().getTotalTime()))
     );
-    for (final DomjudgeProto.Problem problem : model.getProblems()) {
-      table.getColumns().add(
-        getProblemColumn(
-            problem.getShortName(),
-            row -> model.getAttempts(model.getTeam(row.getTeam()), problem)));
-    }
+    table.getColumns().addAll(model.getProblems().stream()
+        .map(p -> getProblemColumn(p.getShortName(), model, p))
+        .collect(Collectors.toList()));
+    table.setItems(FXCollections.observableList(new ArrayList<>(model.getRows())));
 
-    VBox.setVgrow(table, Priority.ALWAYS);
+    page.setVgrow(table, Priority.ALWAYS);
     page.getChildren().add(table);
 
     final Scene scene = new Scene(root);
@@ -92,6 +74,17 @@ public class Executive extends Application {
     stage.setMaximized(true);
     stage.setScene(scene);
     stage.show();
+  }
+
+  private static ScoreboardModel getModel(String url) throws Exception {
+    System.err.println("Fetching from: " + url);
+
+    DomjudgeRest api = new DomjudgeRest(url);
+    final DomjudgeProto.Contest contest = api.getContest();
+    final DomjudgeProto.Problem[] problems = api.getProblems(contest);
+    final DomjudgeProto.Team[] teams = api.getTeams();
+    final DomjudgeProto.ScoreboardRow[] rows = api.getScoreboard(contest);
+    return new ScoreboardModel.Impl(contest, problems, teams, rows);
   }
 
   private static <T> TableColumn<DomjudgeProto.ScoreboardRow, T> getColumn(
@@ -108,11 +101,15 @@ public class Executive extends Application {
     return res;
   }
 
-  private static TableColumn<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> getProblemColumn(
-      final String title,
-      final Function<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> f) {
-    TableColumn<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> res =
-        getColumn(DomjudgeProto.ScoreboardProblem.class, title, f);
+  private static TableColumn<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem>
+      getProblemColumn(
+          final String title,
+          final ScoreboardModel model,
+          final DomjudgeProto.Problem problem) {
+    TableColumn<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> res = getColumn(
+        DomjudgeProto.ScoreboardProblem.class,
+        title,
+        row -> model.getAttempts(model.getTeam(row.getTeam()), problem));
     res.setCellFactory(p -> new ProblemCell());
     return res;
   }
