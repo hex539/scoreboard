@@ -1,4 +1,4 @@
-package me.hex539.resolver;
+package me.hex539.testing.utils;
 
 import static org.domjudge.proto.DomjudgeProto.Contest;
 import static org.domjudge.proto.DomjudgeProto.Problem;
@@ -18,10 +18,7 @@ import java.util.stream.IntStream;
 
 import org.domjudge.api.ScoreboardModel;
 
-/**
- * TODO: Move this into tests for the scoreboard lib.
- */
-public final class MockModel {
+public final class MockScoreboardModel {
   public static ScoreboardModel example() {
     return new Builder()
         .setProblems("Apricot", "Bamboo", "Coconut", "Durian")

@@ -31,6 +31,10 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
+// TODO: remove the dependency on a testing library, it makes for a good example at the moment
+//       but it's better to add support for file URIs and bundle an example file instead.
+import me.hex539.testing.utils.MockScoreboardModel;
+
 public class Executive extends Application {
   public static void main(String[] args) {
     launch(args);
@@ -57,7 +61,7 @@ public class Executive extends Application {
     VBox page = new VBox(/* spacing */ 8);
     root.getChildren().add(page);
 
-    ScoreboardModel model = (url != null ? getModel(url) : MockModel.example());
+    ScoreboardModel model = (url != null ? getModel(url) : MockScoreboardModel.example());
 
     TableView table = new TableView<DomjudgeProto.ScoreboardRow>();
 

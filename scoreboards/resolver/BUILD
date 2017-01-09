@@ -10,8 +10,9 @@ java_binary(
     "src/resources/**/*.css",
   ]),
   deps = [
-    "//domjudge/api:domjudge-api",
-    "//domjudge/proto:domjudge-proto",
+    "//domjudge:api",
+    "//domjudge:proto",
+    "//testing:utils",
     "@jfoenix//jar",
   ],
 )
