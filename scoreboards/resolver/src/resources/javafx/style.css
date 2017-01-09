@@ -5,9 +5,10 @@
 .table-view {
    -fx-background-color: transparent;
    -fx-font-size: 16;
+   -fx-background-insets: 0 0 0 0;
 }
 
-.table-view .column-header-background {
+.table-view .column-header-background, .table-view .filler {
   -fx-background-color: #383838;
 }
 
@@ -57,9 +58,7 @@
 }
 
 .table-row-cell:selected {
-    -fx-background-color: #005797;
-    -fx-background-insets: 0;
-    -fx-background-radius: 1;
+  -fx-background-color: #7F7F7F;
 }
 
 .table-view > .virtual-flow > .scroll-bar:vertical,
