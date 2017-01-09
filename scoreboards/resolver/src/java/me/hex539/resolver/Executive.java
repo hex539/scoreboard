@@ -57,7 +57,7 @@ public class Executive extends Application {
     VBox page = new VBox(/* spacing */ 8);
     root.getChildren().add(page);
 
-    ScoreboardModel model = (url != null ? getModel(url) : new MockModel());
+    ScoreboardModel model = (url != null ? getModel(url) : MockModel.example());
 
     TableView table = new TableView<DomjudgeProto.ScoreboardRow>();
 

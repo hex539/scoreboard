@@ -1,99 +1,126 @@
 package me.hex539.resolver;
 
+import static org.domjudge.proto.DomjudgeProto.Contest;
+import static org.domjudge.proto.DomjudgeProto.Problem;
+import static org.domjudge.proto.DomjudgeProto.ScoreboardRow;
+import static org.domjudge.proto.DomjudgeProto.ScoreboardScore;
+import static org.domjudge.proto.DomjudgeProto.ScoreboardProblem;
+import static org.domjudge.proto.DomjudgeProto.Team;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.domjudge.api.ScoreboardModel;
-import org.domjudge.proto.DomjudgeProto;
 
 /**
- * TODO: Move this into tests for the scoreboard lib. Possibly expose a convenience
- *       library too, with a syntax along the lines of:
- *       <code>
- *       ScoreboardMocks.FakeModel.newBuilder()
- *            .setProblems(     "A",    "B",     "C",     "D")
- *            .addRow("Team 1", SOLVED, SOLVED,  PENDING, FAILED)
- *            .addRow("Team 2", SOLVED, PENDING, PENDING, FAILED)
- *            .addRow("Team 3", FAILED, null,    null,    PENDING)
- *            .build()
- *       </code>
+ * TODO: Move this into tests for the scoreboard lib.
  */
-public final class MockModel implements ScoreboardModel{
-    @Override
-    public DomjudgeProto.Contest getContest() {
-      return DomjudgeProto.Contest.newBuilder()
-          .setId(44)
-          .setShortName("Trial")
-          .setName("Challenge")
+public final class MockModel {
+  public static ScoreboardModel example() {
+    return new Builder()
+        .setProblems("Apricot", "Bamboo", "Coconut", "Durian")
+        .addRow("Bath Ducks 🦆",  "+", "+",  "+",  "+")
+        .addRow("Bath Crocs 🐊", "+", " ",  "+4", "+")
+        .addRow("Bath Shower ☂", " ", "-1", "+2", "+")
+        .build();
+  }
+
+  public static class Builder {
+    private final List<Problem> problems = new ArrayList<>();
+    private final List<ScoreboardRow> rows = new ArrayList<>();
+    private final List<Team> teams = new ArrayList<>();
+
+    public ScoreboardModel build() {
+      return new ScoreboardModel() {
+        @Override
+        public Contest getContest() {
+          return Contest.newBuilder().setId(77).build();
+        }
+
+        @Override
+        public Collection<Team> getTeams() {
+          return teams;
+        }
+
+        @Override
+        public Collection<Problem> getProblems() {
+          return problems;
+        }
+
+        @Override
+        public Collection<ScoreboardRow> getRows() {
+          return rows;
+        }
+      };
+    }
+
+    public Builder setProblems(final String... names) {
+      problems.addAll(IntStream.range(0, names.length)
+          .mapToObj(i -> Problem.newBuilder()
+              .setId(1 + (0x1234 ^ i))
+              .setName(names[i])
+              .setLabel(names[i])
+              .setShortName(names[i].substring(0, 1))
+              .build())
+          .collect(Collectors.toList()));
+      return this;
+    }
+
+    public Builder addRow() {
+      return addRow("Test");
+    }
+
+    public Builder addRow(final String teamName) {
+      final Random rand = new Random();
+      final String[] attempts = IntStream.range(0, problems.size())
+          .mapToObj(i ->
+              String.valueOf(" +-?".charAt(rand.nextInt(4)))
+              + String.valueOf("0123".charAt(rand.nextInt(4))))
+          .map(s -> (s.endsWith("0") ? s.startsWith("+")
+              ? s.substring(0, 1)
+              : s.substring(0, 1) + "1" : s))
+          .map(s -> (s.startsWith(" ") ? " " : s))
+          .map(s -> (s.equals("-") ? "-1" : s))
+          .toArray(length -> new String[length]);
+      return addRow(teamName, attempts);
+    }
+
+    public Builder addRow(final String teamName, final String... attempts) {
+      final Team team = Team.newBuilder()
+          .setId(1 + (0xAAAA ^ teams.size()))
+          .setName(teamName)
           .build();
-    }
+      teams.add(team);
 
-    @Override
-    public Collection<DomjudgeProto.Team> getTeams() {
-      /**
-       * Some tricky cases: Unicode 9.0, 6.0, and 1.1 respectively.
-       */
-      return Arrays.asList(new DomjudgeProto.Team[] {
-          DomjudgeProto.Team.newBuilder().setId(1).setName("Bath Ducks 🦆").build(),
-          DomjudgeProto.Team.newBuilder().setId(2).setName("Bath Crocs 🐊").build(),
-          DomjudgeProto.Team.newBuilder().setId(3).setName("Bath Shower ☂").build()
-      });
-    }
+      final List<ScoreboardProblem> cols = IntStream.range(0, attempts.length)
+          .mapToObj(i -> ScoreboardProblem.newBuilder()
+              .setLabel(problems.get(i).getLabel())
+              .setSolved(attempts[i].startsWith("+"))
+              .setTime(100)
+              .setNumJudged(
+                  (attempts[i].startsWith("+") || attempts[i].startsWith("?") ? 1 : 0)
+                  + (attempts[i].length() > 1 ? Integer.parseInt(attempts[i].substring(1)) : 0))
+              .setNumPending(attempts[i].startsWith("?") ? 1 : 0)
+              .build())
+          .collect(Collectors.toList());
 
-    @Override
-    public Collection<DomjudgeProto.Problem> getProblems() {
-      return Arrays.asList(new DomjudgeProto.Problem[] {
-        DomjudgeProto.Problem.newBuilder()
-            .setLabel("X")
-            .setName("Example problem")
-            .setShortName("Example")
-            .build()
-      });
-    }
+      rows.add(ScoreboardRow.newBuilder()
+          .setTeam(team.getId())
+          .setRank(rows.size())
+          .setScore(ScoreboardScore.newBuilder()
+              .setNumSolved(cols.stream().filter(ScoreboardProblem::getSolved).count())
+              .setTotalTime(cols.stream().mapToLong(c -> c.getSolved() ? c.getTime() : 0).sum())
+              .build())
+          .addAllProblems(cols)
+          .build());
 
-    @Override
-    public Collection<DomjudgeProto.ScoreboardRow> getRows() {
-      return Arrays.asList(new DomjudgeProto.ScoreboardRow[] {
-        DomjudgeProto.ScoreboardRow.newBuilder()
-            .setTeam(1)
-            .setRank(1)
-            .setScore(DomjudgeProto.ScoreboardScore.newBuilder()
-                .setNumSolved(1)
-                .setTotalTime(23)
-                .build())
-            .addProblems(DomjudgeProto.ScoreboardProblem.newBuilder()
-                  .setLabel("X")
-                  .setSolved(true)
-                  .setNumJudged(1)
-                  .build())
-            .build(),
-        DomjudgeProto.ScoreboardRow.newBuilder()
-            .setTeam(2)
-            .setRank(2)
-            .setScore(DomjudgeProto.ScoreboardScore.newBuilder()
-                .setNumSolved(1)
-                .setTotalTime(500)
-                .build())
-            .addProblems(DomjudgeProto.ScoreboardProblem.newBuilder()
-                  .setLabel("X")
-                  .setSolved(true)
-                  .setNumJudged(1)
-                  .build())
-            .build(),
-        DomjudgeProto.ScoreboardRow.newBuilder()
-            .setTeam(3)
-            .setRank(3)
-            .setScore(DomjudgeProto.ScoreboardScore.newBuilder()
-                .setNumSolved(0)
-                .setTotalTime(0)
-                .build())
-            .addProblems(DomjudgeProto.ScoreboardProblem.newBuilder()
-                  .setLabel("X")
-                  .setSolved(true)
-                  .setNumJudged(1)
-                  .build())
-            .build()});
+      return this;
+    }
   }
 }
