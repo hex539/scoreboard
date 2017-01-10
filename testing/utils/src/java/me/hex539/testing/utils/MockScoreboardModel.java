@@ -23,8 +23,8 @@ public final class MockScoreboardModel {
     return new Builder()
         .setProblems("Apricot", "Bamboo", "Coconut", "Durian")
         .addRow("Bath Ducks 🦆",  "+", "+",  "+",  "+")
-        .addRow("Bath Crocs 🐊", "+", " ",  "+4", "+")
-        .addRow("Bath Shower ☂", " ", "-1", "+2", "+")
+        .addRow("Bath Crocs 🐊", "+", " ",  "+4", "?")
+        .addRow("Bath Shower ☂", " ", "-1", "+2", "?1")
         .build();
   }
 

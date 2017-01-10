@@ -57,6 +57,16 @@
       rgba(0, 0, 0, 0.04));
 }
 
+.table-cell.problem-pending {
+  -fx-background-color:
+    #3838FF,
+    linear-gradient(
+      rgba(255, 255, 255, 0.3)  0%,
+      rgba(255, 255, 255, 0)   50%,
+      rgba(0, 0, 0, 0.12)      51%,
+      rgba(0, 0, 0, 0.04));
+}
+
 .table-row-cell:selected {
   -fx-background-color: #7F7F7F;
 }

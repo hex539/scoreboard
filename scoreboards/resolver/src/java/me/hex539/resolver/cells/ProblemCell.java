@@ -45,6 +45,7 @@ public class ProblemCell extends TableCell<ScoreboardRow, ScoreboardProblem> {
     }
 
     State state = State.EMPTY;
+    boolean appendFailures = true;
 
     long failures = item.getNumJudged();
     if (item.getSolved()) {
@@ -52,12 +53,14 @@ public class ProblemCell extends TableCell<ScoreboardRow, ScoreboardProblem> {
       state = State.SOLVED;
     } else if (item.getNumPending() > 0) {
       state = State.PENDING;
+      appendFailures = false;
+      failures--;
     } else if (failures > 0) {
       state = State.FAILED;
     }
 
     String text = symbols.get(state);
-    if (failures > 0) {
+    if (appendFailures && failures > 0) {
       text += Long.toString(failures);
     }
     setText(text);
