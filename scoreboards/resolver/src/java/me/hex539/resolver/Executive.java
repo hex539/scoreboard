@@ -1,24 +1,14 @@
 package me.hex539.resolver;
 
+import java.util.Map;
+
 import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.geometry.Insets;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TableCell;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import me.hex539.resolver.cells.ProblemCell;
 
@@ -26,49 +16,30 @@ import org.domjudge.api.DomjudgeRest;
 import org.domjudge.api.ScoreboardModel;
 import org.domjudge.proto.DomjudgeProto;
 
-import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-
 // TODO: remove the dependency on a testing library; grow up and use a file URI instead.
 import me.hex539.testing.utils.MockScoreboardModel;
 
 public class Executive extends Application {
-  public static void main(String[] args) {
-    launch(args);
-  }
-
   private ScoreboardModel model;
+  private ScoreboardView view;
 
   @Override
   public void start(Stage stage) throws Exception {
     Map<String, String> args = getParameters().getNamed();
     String url = args.get("url");
+
     model = (url != null ? getModel(url) : MockScoreboardModel.example());
 
-    StackPane root = new StackPane();
-
-    VBox page = new VBox();
-    root.getChildren().add(page);
-
-    TableView table = new TableView<DomjudgeProto.ScoreboardRow>();
-    table.getColumns().setAll(
-        getColumn(String.class, "Team", (r -> model.getTeam(r.getTeam()).getName())),
-        getColumn(Object.class, "Solved", (r -> r.getScore().getNumSolved())),
-        getColumn(Object.class, "Time", (r -> r.getScore().getTotalTime()))
-    );
-    table.getColumns().addAll(model.getProblems().stream()
-        .map(p -> getProblemColumn(p.getShortName(), model, p))
-        .collect(Collectors.toList()));
-    table.setItems(FXCollections.observableList(new ArrayList<>(model.getRows())));
-
-    page.setVgrow(table, Priority.ALWAYS);
-    page.getChildren().add(table);
-
+    final Parent root = FXMLLoader.load(
+        getClass().getResource("/resources/javafx/scoreboard.fxml"));
     final Scene scene = new Scene(root);
     scene.getStylesheets().add("/resources/javafx/style.css");
+
+    view = (ScoreboardView) root.lookup("#scoreboard");
+    view.setModel(model);
+
+    final VBox page = (VBox) root.lookup("#page");
+    page.setVgrow(view, Priority.ALWAYS);
 
     stage.setTitle(model.getContest().getName());
     stage.setMaximized(true);
@@ -87,30 +58,7 @@ public class Executive extends Application {
     return new ScoreboardModel.Impl(contest, problems, teams, rows);
   }
 
-  private static <T> TableColumn<DomjudgeProto.ScoreboardRow, T> getColumn(
-      final Class<T> t,
-      final String title,
-      final Function<DomjudgeProto.ScoreboardRow, T> f) {
-    final TableColumn<DomjudgeProto.ScoreboardRow, T> res =
-        new TableColumn<DomjudgeProto.ScoreboardRow, T>() {{
-            setCellValueFactory(features ->
-              new ReadOnlyObjectWrapper(f.apply(features.getValue())));
-        }};
-    res.setText(title);
-    res.setSortable(false);
-    return res;
-  }
-
-  private static TableColumn<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem>
-      getProblemColumn(
-          final String title,
-          final ScoreboardModel model,
-          final DomjudgeProto.Problem problem) {
-    TableColumn<DomjudgeProto.ScoreboardRow, DomjudgeProto.ScoreboardProblem> res = getColumn(
-        DomjudgeProto.ScoreboardProblem.class,
-        title,
-        row -> model.getAttempts(model.getTeam(row.getTeam()), problem));
-    res.setCellFactory(p -> new ProblemCell());
-    return res;
+  public static void main(String[] args) {
+    launch(args);
   }
 }
