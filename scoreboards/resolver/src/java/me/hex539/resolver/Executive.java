@@ -14,6 +14,7 @@ import me.hex539.resolver.cells.ProblemCell;
 
 import org.domjudge.api.DomjudgeRest;
 import org.domjudge.api.ScoreboardModel;
+import org.domjudge.api.ScoreboardModelImpl;
 import org.domjudge.proto.DomjudgeProto;
 
 // TODO: remove the dependency on a testing library; grow up and use a file URI instead.
@@ -51,11 +52,7 @@ public class Executive extends Application {
     System.err.println("Fetching from: " + url);
 
     DomjudgeRest api = new DomjudgeRest(url);
-    final DomjudgeProto.Contest contest = api.getContest();
-    final DomjudgeProto.Problem[] problems = api.getProblems(contest);
-    final DomjudgeProto.Team[] teams = api.getTeams();
-    final DomjudgeProto.ScoreboardRow[] rows = api.getScoreboard(contest);
-    return new ScoreboardModel.Impl(contest, problems, teams, rows);
+    return ScoreboardModelImpl.create(api);
   }
 
   public static void main(String[] args) {

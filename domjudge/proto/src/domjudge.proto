@@ -39,6 +39,21 @@ message Contest {
   uint64 penalty = 9;
 }
 
+message Submission {
+  uint64 id = 1;
+  uint64 team = 2;
+  uint64 problem = 3;
+  string language = 4;
+  double time = 5; // timestamp
+}
+
+message Judging {
+  uint64 id = 1;
+  uint64 submission_id = 2;
+  string outcome = 3; // TODO enum?
+  double time = 4; // timestamp
+}
+
 message Language {
   string id = 1;
   repeated string file_extensions = 2 [(serialized_name) = "extensions"];
