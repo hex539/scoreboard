@@ -99,7 +99,7 @@ public final class MockScoreboardModel {
           .mapToObj(i -> ScoreboardProblem.newBuilder()
               .setLabel(problems.get(i).getLabel())
               .setSolved(attempts[i].startsWith("+"))
-              .setTime(100)
+              .setTime(attempts[i].startsWith("+") ? 321 : 0)
               .setNumJudged(
                   (attempts[i].startsWith("+") || attempts[i].startsWith("?") ? 1 : 0)
                   + (attempts[i].length() > 1 ? Integer.parseInt(attempts[i].substring(1)) : 0))
@@ -109,7 +109,7 @@ public final class MockScoreboardModel {
 
       rows.add(ScoreboardRow.newBuilder()
           .setTeam(team.getId())
-          .setRank(rows.size())
+          .setRank(rows.size() + 1)
           .setScore(ScoreboardScore.newBuilder()
               .setNumSolved(cols.stream().filter(ScoreboardProblem::getSolved).count())
               .setTotalTime(cols.stream().mapToLong(c -> c.getSolved() ? c.getTime() : 0).sum())
