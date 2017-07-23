@@ -11,9 +11,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-
 import com.google.auto.value.AutoValue;
-
 import org.domjudge.api.DomjudgeRest;
 import org.domjudge.proto.DomjudgeProto;
 
@@ -106,6 +104,22 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
                 .addAllProblems(changed)
                 .build()
             : x)
+        .collect(toList()));
+  }
+
+  @Override
+  public void onTeamRankChanged(Team team, int oldRank, int newRank) {
+    setRows(getRows().stream().map(
+        x -> {
+          if (x.getRank() < Math.min(oldRank, newRank)
+              || x.getRank() > Math.max(oldRank, newRank)) {
+            return x;
+          }
+          if (x.getRank() == oldRank) {
+            return x.toBuilder().setRank(newRank).build();
+          }
+          return x.toBuilder().setRank(x.getRank() + (x.getRank() < oldRank ? 1: -1)).build();
+        })
         .collect(toList()));
   }
 }
