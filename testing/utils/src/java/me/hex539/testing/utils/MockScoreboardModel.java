@@ -111,7 +111,7 @@ public final class MockScoreboardModel {
           .setTeam(team.getId())
           .setRank(rows.size() + 1)
           .setScore(ScoreboardScore.newBuilder()
-              .setNumSolved(cols.stream().filter(ScoreboardProblem::getSolved).count())
+              .setNumSolved(cols.stream().filter(s -> s.getSolved()).count())
               .setTotalTime(cols.stream().mapToLong(c -> c.getSolved() ? c.getTime() : 0).sum())
               .build())
           .addAllProblems(cols)

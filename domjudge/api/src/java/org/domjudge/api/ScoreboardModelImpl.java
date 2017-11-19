@@ -36,7 +36,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     return new AutoValue_ScoreboardModelImpl(
             contest,
             Arrays.asList(problems),
-            Arrays.stream(teams).collect(toMap(Team::getId, Function.identity())))
+            Arrays.stream(teams).collect(toMap(t -> t.getId(), Function.identity())))
         .setRows(Arrays.asList(rows));
   }
 
@@ -51,7 +51,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
 
   public static ScoreboardModelImpl create(ScoreboardModel copy) {
     Map<Long, Team> teamsMap =
-        copy.getTeams().stream().collect(toMap(Team::getId, Function.identity()));
+        copy.getTeams().stream().collect(toMap(t -> t.getId(), Function.identity()));
     ScoreboardModelImpl result = new AutoValue_ScoreboardModelImpl(
             copy.getContest(), copy.getProblems(), teamsMap)
         .setRows(copy.getRows());

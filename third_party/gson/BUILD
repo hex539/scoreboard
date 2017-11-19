@@ -12,5 +12,3 @@ java_library(
     "@guava//jar",
   ],
 )
-
-

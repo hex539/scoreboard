@@ -1,5 +1,12 @@
 workspace(name = "scoreboard")
 
+android_sdk_repository(
+  name = "androidsdk",
+  path = "/usr/local/android-sdk",
+  api_level = 26,
+  build_tools_version = "26.0.3",
+)
+
 git_repository(
   name = "org_pubref_rules_protobuf",
   remote = "https://github.com/pubref/rules_protobuf",

@@ -19,7 +19,10 @@ import org.domjudge.api.DomjudgeRest;
 import org.domjudge.api.ScoreboardModel;
 import org.domjudge.proto.DomjudgeProto;
 
-public class ScoreboardView extends TableView<DomjudgeProto.ScoreboardRow> {
+public class ScoreboardView extends TableView<DomjudgeProto.ScoreboardRow>
+    implements ScoreboardModel.Observer {
+
+  @Override
   public void setModel(ScoreboardModel model) {
     getColumns().setAll(
         getColumn(String.class, "Team", (r -> model.getTeam(r.getTeam()).getName())),
@@ -30,6 +33,11 @@ public class ScoreboardView extends TableView<DomjudgeProto.ScoreboardRow> {
         .map(p -> getProblemColumn(p.getShortName(), model, p))
         .collect(Collectors.toList()));
     setItems(FXCollections.observableList(new ArrayList<>(model.getRows())));
+  }
+
+  @Override
+  public void onProblemAttempted(DomjudgeProto.Team team, DomjudgeProto.ScoreboardProblem attempt) {
+    refresh();
   }
 
   private static <T> TableColumn<DomjudgeProto.ScoreboardRow, T> getColumn(

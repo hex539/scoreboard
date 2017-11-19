@@ -1,0 +1,17 @@
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="me.hex539.scoreboard"
+    android:versionCode="1"
+    android:versionName="1.0">
+  <uses-sdk android:minSdkVersion="24"/>
+  <uses-permission android:name="android.permission.INTERNET" />
+  <application
+      android:allowBackup="false"
+      android:label="@string/scoreboard_app">
+    <activity
+        android:name="me.hex539.app.activity.LiveScoreboardActivity"
+        android:label="@string/live_scoreboard_activity"
+        android:exported="true">
+    </activity>
+  </application>
+</manifest>
