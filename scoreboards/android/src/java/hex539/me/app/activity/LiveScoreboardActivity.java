@@ -8,6 +8,7 @@ import android.os.HandlerThread;
 import android.os.Message;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.LongSparseArray;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -27,21 +28,6 @@ public class LiveScoreboardActivity extends Activity {
     public static String URI = "uri";
   }
 
-  private static class ContestHandler extends Handler {
-    public static final int MSG_CREATE = 1;
-
-    @Override
-    public void handleMessage(Message message) {
-      switch (message.what) {
-        case MSG_CREATE: {
-
-          break;
-        }
-        default:
-          throw new IllegalArgumentException("Bad message ID: " + message.what);
-      }
-    }
-  }
   private Handler mApiHandler;
   private HandlerThread mApiHandlerThread;
 
@@ -76,8 +62,10 @@ public class LiveScoreboardActivity extends Activity {
         ((TextView) findViewById(R.id.contest_name)).setText(mContest.getName());
       });
       mApiHandler.post(() -> {
+        final DomjudgeProto.ScoreboardRow[] rows;
         final DomjudgeProto.Team[] teams;
         try{
+          rows = mApi.getScoreboard(mContest);
           teams = mApi.getTeams();
         } catch (Exception e) {
           Log.e(TAG, "Failed to fetch teams list", e);
@@ -86,22 +74,10 @@ public class LiveScoreboardActivity extends Activity {
         }
         runOnUiThread(() -> {
           final RecyclerView scoreboardRows = (RecyclerView) findViewById(R.id.scoreboard_rows);
-          scoreboardRows.setAdapter(new Adapter(teams));
-          /*
-          for (DomjudgeProto.Team team : teams) {
-            final ScoreboardRowView row = new ScoreboardRowView(LiveScoreboardActivity.this);
-            row.setTeam(team);
-            scoreboardRows.addView(row);
-          }
-          */
+          scoreboardRows.setAdapter(new Adapter(rows, teams));
         });
       });
     });
-
-//    DomjudgeRest api = new DomjudgeRest(uri);
-//    DomjudgeProto.Contest contest = api.getContest();
-//    DomjudgeProto.ScoreboardRow[] scoreboard = api.getScoreboard(contest);
-
   }
 
   private static class ViewHolder extends RecyclerView.ViewHolder {
@@ -114,15 +90,20 @@ public class LiveScoreboardActivity extends Activity {
   }
 
   private static class Adapter extends RecyclerView.Adapter<ViewHolder> {
-    private final DomjudgeProto.Team[] mTeams;
+    private final DomjudgeProto.ScoreboardRow[] mRows;
+    private final LongSparseArray<DomjudgeProto.Team> mTeams
+        = new LongSparseArray<>();
 
-    public Adapter(DomjudgeProto.Team[] teams) {
-      mTeams = teams;
+    public Adapter(DomjudgeProto.ScoreboardRow[] rows, DomjudgeProto.Team[] teams) {
+      mRows = rows;
+      for (DomjudgeProto.Team team : teams) {
+        mTeams.put(team.getId(), team);
+      }
     }
 
     @Override
     public int getItemCount() {
-      return mTeams.length;
+      return mRows.length;
     }
 
     @Override
@@ -132,7 +113,7 @@ public class LiveScoreboardActivity extends Activity {
 
     @Override
     public void onBindViewHolder(ViewHolder viewHolder, int position) {
-      viewHolder.view.setTeam(mTeams[position]);
+      viewHolder.view.setTeam(mTeams.get(mRows[position].getTeam()));
     }
   }
 
