@@ -68,6 +68,14 @@ public class DomjudgeRest {
     return getFrom("/teams", Team[].class);
   }
 
+  public Submission[] getSubmissions(Contest contest) throws Exception {
+    return getFrom("/submissions?cid=" + contest.getId(), Submission[].class);
+  }
+
+  public Judging[] getJudgings(Contest contest) throws Exception {
+    return getFrom("/judgings?cid=" + contest.getId(), Judging[].class);
+  }
+
   public ScoreboardRow[] getScoreboard(Contest contest) throws Exception {
     return getFrom("/scoreboard?cid=" + contest.getId(), ScoreboardRow[].class);
   }

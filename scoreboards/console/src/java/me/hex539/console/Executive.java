@@ -1,6 +1,8 @@
 package me.hex539.console;
 
+import java.util.function.Function;
 import java.lang.reflect.Method;
+import java.util.stream.Collectors;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +33,7 @@ public class Executive {
   }
 
   private static DomjudgeRest getRestApi(Invocation invocation) {
+    System.err.println("Fetching from: " + invocation.getUrl());
     DomjudgeRest api = new DomjudgeRest(invocation.getUrl());
 
     if (invocation.getUsername() != null || invocation.getPassword() != null) {
@@ -49,17 +52,11 @@ public class Executive {
 
   @Command(name = "scoreboard")
   private static void showScoreboard(Invocation invocation) throws Exception {
-    System.err.println("Fetching from: " + invocation.getUrl());
-
     DomjudgeRest api = getRestApi(invocation);
     DomjudgeProto.Contest contest = api.getContest();
-    DomjudgeProto.Team[] teams = api.getTeams();
     DomjudgeProto.ScoreboardRow[] scoreboard = api.getScoreboard(contest);
-
-    Map<Long, DomjudgeProto.Team> teamMap = new HashMap<>();
-    for (DomjudgeProto.Team team : teams) {
-      teamMap.put(team.getId(), team);
-    }
+    Map<Long, DomjudgeProto.Team> teamMap =
+        groupBy(api.getTeams(), DomjudgeProto.Team::getId);
 
     for (DomjudgeProto.ScoreboardRow row : scoreboard) {
       DomjudgeProto.Team team = teamMap.get(row.getTeam());
@@ -72,5 +69,34 @@ public class Executive {
       }
       System.out.println();
     }
+  }
+
+  @Command(name = "verdicts")
+  private static void showJudgements(Invocation invocation) throws Exception {
+    DomjudgeRest api = getRestApi(invocation);
+    DomjudgeProto.Contest contest = api.getContest();
+    DomjudgeProto.Judging[] judgings = api.getJudgings(contest);
+
+    Map<Long, DomjudgeProto.Team> teamMap =
+        groupBy(api.getTeams(), DomjudgeProto.Team::getId);
+    Map<Long, DomjudgeProto.Submission> submissionMap =
+        groupBy(api.getSubmissions(contest), DomjudgeProto.Submission::getId);
+    Map<Long, DomjudgeProto.Problem> problemMap =
+        groupBy(api.getProblems(contest), DomjudgeProto.Problem::getId);
+
+    for (DomjudgeProto.Judging judging : judgings) {
+      final DomjudgeProto.Submission submission = submissionMap.get(judging.getSubmission());
+      final DomjudgeProto.Team team = teamMap.get(submission.getTeam());
+      final DomjudgeProto.Problem problem = problemMap.get(submission.getProblem());
+
+      System.out.format("%-30s | %-20s | %s%n",
+          team.getName(),
+          problem.getName(),
+          judging.getOutcome());
+    }
+  }
+
+  private static <K, V> Map<K, V> groupBy(V[] items, Function<V, K> mapper) {
+    return Arrays.stream(items).collect(Collectors.toMap(mapper, Function.identity()));
   }
 }
