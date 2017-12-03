@@ -12,6 +12,7 @@ import java.util.Comparator;
 import org.domjudge.proto.Annotations;
 import org.domjudge.proto.DomjudgeProto;
 
+import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
@@ -24,9 +25,25 @@ public class DomjudgeRest {
   private final String url;
   private final OkHttpClient client;
 
+  private static class Auth {
+    final String username;
+    final String password;
+
+    public Auth(String username, String password) {
+      this.username = username;
+      this.password = password;
+    }
+  }
+  private Auth auth;
+
   public DomjudgeRest(final String url) {
     this.url = url;
     this.client = new OkHttpClient();
+  }
+
+  public DomjudgeRest setCredentials(String username, String password) {
+    auth = new Auth(username, password);
+    return this;
   }
 
   public Contest getContest() throws Exception {
@@ -56,10 +73,14 @@ public class DomjudgeRest {
   }
 
   protected <T> T getFrom(String endpoint, Class<T> c) throws IOException {
-    Request request = new Request.Builder()
-        .url(url + endpoint)
-        .build();
-    try (ResponseBody body = client.newCall(request).execute().body()) {
+    Request.Builder request = new Request.Builder()
+        .url(url + endpoint);
+
+    if (auth != null) {
+      request.header("Authorization", Credentials.basic(auth.username, auth.password));
+    }
+
+    try (ResponseBody body = client.newCall(request.build()).execute().body()) {
       return getGson().fromJson(body.string(), c);
     }
   }

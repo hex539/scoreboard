@@ -30,11 +30,28 @@ public class Executive {
     }
   }
 
+  private static DomjudgeRest getRestApi(Invocation invocation) {
+    DomjudgeRest api = new DomjudgeRest(invocation.getUrl());
+
+    if (invocation.getUsername() != null || invocation.getPassword() != null) {
+      final String username = invocation.getUsername();
+      final String password = invocation.getPassword();
+      if (username == null || password == null) {
+        System.err.println("Need to provide both or neither of username:password");
+        System.exit(1);
+        return null;
+      }
+      api.setCredentials(username, password);
+    }
+
+    return api;
+  }
+
   @Command(name = "scoreboard")
   private static void showScoreboard(Invocation invocation) throws Exception {
     System.err.println("Fetching from: " + invocation.getUrl());
 
-    DomjudgeRest api = new DomjudgeRest(invocation.getUrl());
+    DomjudgeRest api = getRestApi(invocation);
     DomjudgeProto.Contest contest = api.getContest();
     DomjudgeProto.Team[] teams = api.getTeams();
     DomjudgeProto.ScoreboardRow[] scoreboard = api.getScoreboard(contest);

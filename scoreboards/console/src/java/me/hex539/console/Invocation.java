@@ -17,11 +17,27 @@ public @CommandLineInterface interface Invocation {
       helpRequest = true,
       description = "Display this help and exit")
     boolean isHelp();
+
   @Option(
       shortName = "u",
       longName = "url",
       description = "Scoreboard URL")
     String getUrl();
+
+  @Option(
+      defaultToNull = true,
+      shortName = "l",
+      longName = "username",
+      description = "API access username")
+  String getUsername();
+
+  @Option(
+      defaultToNull = true,
+      shortName = "p",
+      longName = "password",
+      description = "API access password")
+  String getPassword();
+
   @Unparsed(
       name = "ACTION")
     List<String> getActions();
