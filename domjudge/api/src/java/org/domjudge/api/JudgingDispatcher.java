@@ -31,7 +31,7 @@ public class JudgingDispatcher {
   }
 
   public void notifyJudging(final Judging j) {
-    final Submission submission = model.getSubmission(j.getSubmissionId());
+    final Submission submission = model.getSubmission(j.getSubmission());
     final Team team = model.getTeam(submission.getTeam());
     final Problem problem = model.getProblem(submission.getProblem());
     final ScoreboardProblem.Builder attemptsBuilder =

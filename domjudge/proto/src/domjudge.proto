@@ -49,7 +49,7 @@ message Submission {
 
 message Judging {
   uint64 id = 1;
-  uint64 submission_id = 2;
+  uint64 submission = 2;
   string outcome = 3; // TODO enum?
   double time = 4; // timestamp
 }
