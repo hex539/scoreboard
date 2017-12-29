@@ -54,7 +54,7 @@ public class ModelObserverTest {
     // Judge the problem.
     dispatcher.notifyJudging(
         Judging.newBuilder()
-            .setSubmissionId(4)
+            .setSubmission(4)
             .setOutcome("correct")
             .setTime(3.21)
             .build());
