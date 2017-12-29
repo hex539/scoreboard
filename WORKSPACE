@@ -18,7 +18,7 @@ java_proto_repositories()
 git_repository(
   name = "google_protobuf",
   remote = "https://github.com/google/protobuf",
-  tag = "v3.3.0",
+  tag = "v3.5.1",
 )
 
 maven_jar(
