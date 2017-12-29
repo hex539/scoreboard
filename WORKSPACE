@@ -68,25 +68,6 @@ maven_jar(
 
 new_http_archive(
     name = "auto_value",
-    url = "http://repo1.maven.org/maven2/com/google/auto/value/auto-value/1.4/auto-value-1.4.jar",
-    build_file_content = """
-java_import(
-    name = "jar",
-    jars = ["auto-value-1.4.jar"],
-)
-
-java_plugin(
-    name = "autovalue-plugin",
-    generates_api = 1,
-    processor_class = "com.google.auto.value.processor.AutoValueProcessor",
-    deps = [":jar"],
-)
-
-java_library(
-    name = "processor",
-    exported_plugins = [":autovalue-plugin"],
-    exports = [":jar"],
-    visibility = ["//visibility:public"],
-)
-""",
+    url = "http://repo1.maven.org/maven2/com/google/auto/value/auto-value/1.5.3/auto-value-1.5.3.jar",
+    build_file = "third_party/com/google/autovalue.BUILD",
 )
