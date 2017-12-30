@@ -24,17 +24,17 @@ public interface ScoreboardModel {
   public interface Observer {
     default void setModel(ScoreboardModel model) {}
     default void onProblemSubmitted(Team team, Submission submission) {}
-    default void onProblemAttempted(Team team, ScoreboardProblem problem) {}
+    default void onProblemAttempted(Team team, ScoreboardProblem problem, ScoreboardScore score) {}
     default void onTeamRankChanged(Team team, int oldRank, int newRank) {}
   }
 
   Contest getContest();
-  Collection<Problem> getProblems();
+  List<Problem> getProblems();
   Collection<Team> getTeams();
-  Collection<ScoreboardRow> getRows();
+  List<ScoreboardRow> getRows();
 
-  default Collection<Submission> getSubmissions() {
-    return Collections.emptySet();
+  default List<Submission> getSubmissions() {
+    return Collections.emptyList();
   }
 
   default Team getTeam(long id) throws NoSuchElementException {

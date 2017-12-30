@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.domjudge.api.DomjudgeRest;
+import org.domjudge.api.JudgingDispatcher;
+import org.domjudge.api.ScoreboardModel;
+import org.domjudge.api.ScoreboardModelImpl;
 import org.domjudge.proto.DomjudgeProto;
 
 public class Executive {
@@ -76,25 +79,37 @@ public class Executive {
   @Command(name = "verdicts")
   private static void showJudgements(Invocation invocation) throws Exception {
     DomjudgeRest api = getRestApi(invocation);
-    DomjudgeProto.Contest contest = api.getContest();
-    DomjudgeProto.Judging[] judgings = api.getJudgings(contest);
+    ScoreboardModelImpl model = ScoreboardModelImpl.create(api).withoutSubmissions();
+    JudgingDispatcher dispatcher = new JudgingDispatcher(model);
+    dispatcher.observers.add(model);
 
-    Map<Long, DomjudgeProto.Team> teamMap =
-        groupBy(api.getTeams(), DomjudgeProto.Team::getId);
-    Map<Long, DomjudgeProto.Submission> submissionMap =
-        groupBy(api.getSubmissions(contest), DomjudgeProto.Submission::getId);
-    Map<Long, DomjudgeProto.Problem> problemMap =
-        groupBy(api.getProblems(contest), DomjudgeProto.Problem::getId);
+    for (DomjudgeProto.Submission submission : api.getSubmissions(model.getContest())) {
+      dispatcher.notifySubmission(submission);
+    }
 
-    for (DomjudgeProto.Judging judging : judgings) {
-      final DomjudgeProto.Submission submission = submissionMap.get(judging.getSubmission());
-      final DomjudgeProto.Team team = teamMap.get(submission.getTeam());
-      final DomjudgeProto.Problem problem = problemMap.get(submission.getProblem());
+    for (DomjudgeProto.Judging judging : api.getJudgings(model.getContest())) {
+      dispatcher.notifyJudging(judging);
 
-      System.out.format("%-30s | %-20s | %s%n",
-          team.getName(),
-          problem.getName(),
-          judging.getOutcome());
+      final DomjudgeProto.Submission submission = model.getSubmission(judging.getSubmission());
+
+      StringBuilder sb = new StringBuilder();
+      for (DomjudgeProto.ScoreboardProblem sp :
+          model.getRow(model.getTeam(submission.getTeam())).getProblemsList()) {
+        if (sp.getSolved()) {
+          sb.append("+");
+        } else {
+          sb.append("-");
+        }
+      }
+
+      System.out.format("%-30s \t| %-20s | %-16s | %4d | %5d | rank=%3d | %s%n",
+          model.getTeam(submission.getTeam()).getName(),
+          model.getProblem(submission.getProblem()).getName(),
+          judging.getOutcome(),
+          model.getRow(model.getTeam(submission.getTeam())).getScore().getNumSolved(),
+          model.getRow(model.getTeam(submission.getTeam())).getScore().getTotalTime(),
+          model.getRow(model.getTeam(submission.getTeam())).getRank(),
+          sb.toString());
     }
   }
 

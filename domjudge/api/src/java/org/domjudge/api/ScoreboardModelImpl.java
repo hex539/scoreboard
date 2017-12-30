@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import com.google.auto.value.AutoValue;
 import org.domjudge.api.DomjudgeRest;
 import org.domjudge.proto.DomjudgeProto;
@@ -22,11 +21,40 @@ import static org.domjudge.proto.DomjudgeProto.*;
 @AutoValue
 public abstract class ScoreboardModelImpl implements ScoreboardModel, ScoreboardModel.Observer {
   @Override public abstract Contest getContest();
-  @Override public abstract Collection<Problem> getProblems();
+  @Override public abstract List<Problem> getProblems();
   abstract Map<Long, Team> getTeamsMap();
 
-  private Collection<ScoreboardRow> mRows;
-  private final Collection<Submission> mSubmissions = new ArrayList<>();
+  private List<ScoreboardRow> mRows;
+  private final List<Submission> mSubmissions = new ArrayList<>();
+
+  public static ScoreboardModelImpl create(
+      Contest contest,
+      Problem[] problems,
+      Team[] teams) {
+    teams = teams.clone();
+    Arrays.sort(teams, Comparators::compareTeams);
+    ScoreboardRow[] emptyRows = new ScoreboardRow[teams.length];
+    for (int i = 0; i < teams.length; i++) {
+      emptyRows[i] = ScoreboardRow.newBuilder()
+          .setRank(i+1)
+          .setTeam(teams[i].getId())
+          .setScore(ScoreboardScore.newBuilder()
+              .setNumSolved(0)
+              .setTotalTime(0)
+              .build())
+          .addAllProblems(Arrays.stream(problems)
+              .map(p -> ScoreboardProblem.newBuilder()
+                  .setLabel(p.getLabel())
+                  .setSolved(false)
+                  .setTime(0)
+                  .setNumJudged(0)
+                  .setNumPending(0)
+                  .build())
+              .collect(toList()))
+          .build();
+    }
+    return create(contest, problems, teams, emptyRows);
+  }
 
   public static ScoreboardModelImpl create(
       Contest contest,
@@ -36,7 +64,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     return new AutoValue_ScoreboardModelImpl(
             contest,
             Arrays.asList(problems),
-            Arrays.stream(teams).collect(toMap(Team::getId, Function.identity())))
+            Arrays.stream(teams).collect(toMap(Team::getId, x -> x)))
         .setRows(Arrays.asList(rows));
   }
 
@@ -51,7 +79,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
 
   public static ScoreboardModelImpl create(ScoreboardModel copy) {
     Map<Long, Team> teamsMap =
-        copy.getTeams().stream().collect(toMap(Team::getId, Function.identity()));
+        copy.getTeams().stream().collect(toMap(Team::getId, x -> x));
     ScoreboardModelImpl result = new AutoValue_ScoreboardModelImpl(
             copy.getContest(), copy.getProblems(), teamsMap)
         .setRows(copy.getRows());
@@ -59,18 +87,25 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     return result;
   }
 
-  ScoreboardModelImpl setRows(Collection<ScoreboardRow> rows) {
+  public ScoreboardModelImpl withoutSubmissions() {
+    return ScoreboardModelImpl.create(
+        getContest(),
+        getProblems().toArray(new Problem[0]),
+        getTeams().toArray(new Team[0]));
+  }
+
+  ScoreboardModelImpl setRows(List<ScoreboardRow> rows) {
     mRows = rows;
     return this;
   }
 
   @Override
-  public Collection<ScoreboardRow> getRows() {
+  public List<ScoreboardRow> getRows() {
     return mRows;
   }
 
   @Override
-  public Collection<Submission> getSubmissions() {
+  public List<Submission> getSubmissions() {
     return mSubmissions;
   }
 
@@ -90,7 +125,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   @Override
-  public void onProblemAttempted(Team team, ScoreboardProblem attempt) {
+  public void onProblemAttempted(Team team, ScoreboardProblem attempt, ScoreboardScore score) {
     final ScoreboardRow row = getRow(team);
     final List<ScoreboardProblem> changed = row.getProblemsList()
         .stream()
@@ -102,6 +137,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
             ? x.toBuilder()
                 .clearProblems()
                 .addAllProblems(changed)
+                .setScore(score)
                 .build()
             : x)
         .collect(toList()));
@@ -110,16 +146,12 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   @Override
   public void onTeamRankChanged(Team team, int oldRank, int newRank) {
     setRows(getRows().stream().map(
-        x -> {
-          if (x.getRank() < Math.min(oldRank, newRank)
-              || x.getRank() > Math.max(oldRank, newRank)) {
-            return x;
-          }
-          if (x.getRank() == oldRank) {
-            return x.toBuilder().setRank(newRank).build();
-          }
-          return x.toBuilder().setRank(x.getRank() + (x.getRank() < oldRank ? 1: -1)).build();
-        })
+        x -> (x.getRank() < Math.min(oldRank, newRank) || Math.max(oldRank, newRank) < x.getRank())
+            ? x
+            : x.toBuilder().setRank(x.getRank() == oldRank
+                ? newRank
+                : x.getRank() + (newRank < oldRank ? +1 : -1)).build())
+        .sorted((a, b) -> (Long.compare(a.getRank(), b.getRank())))
         .collect(toList()));
   }
 }

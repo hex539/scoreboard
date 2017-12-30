@@ -49,7 +49,8 @@ public class ModelObserverTest {
             .setNumJudged(0)
             .setNumPending(1)
             .setSolved(false)
-            .build()));
+            .build()),
+        any(ScoreboardScore.class));
 
     // Judge the problem.
     dispatcher.notifyJudging(
@@ -66,7 +67,8 @@ public class ModelObserverTest {
             .setNumPending(0)
             .setSolved(true)
             .setTime(2)
-            .build()));
+            .build()),
+        any(ScoreboardScore.class));
     assertThat(model.getSubmissions()).hasSize(1);
   }
 

@@ -46,12 +46,12 @@ public final class MockScoreboardModel {
         }
 
         @Override
-        public Collection<Problem> getProblems() {
+        public List<Problem> getProblems() {
           return problems;
         }
 
         @Override
-        public Collection<ScoreboardRow> getRows() {
+        public List<ScoreboardRow> getRows() {
           return rows;
         }
       };
