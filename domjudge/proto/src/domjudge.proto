@@ -54,6 +54,14 @@ message Judging {
   double time = 4; // timestamp
 }
 
+message JudgementType {
+  sint64 id = 1;
+  string label = 2;
+  string name = 3;
+  bool penalty = 4;
+  bool solved = 5;
+}
+
 message Language {
   string id = 1;
   repeated string file_extensions = 2 [(serialized_name) = "extensions"];
@@ -98,4 +106,19 @@ message Team {
   string group_name = 6 [(serialized_name) = "group"];
   sint64 affil_id = 7 [(serialized_name) = "affilId"];
   string affiliation = 8;
+}
+
+message EntireContest {
+  repeated Affiliation affiliations = 1;
+  repeated Category categories = 2;
+  repeated Clarification clarifications = 3;
+  // Config config = 4;
+  Contest contest = 5;
+  repeated Contest contests = 6;
+  repeated JudgementType judgement_types = 7;
+  repeated Judging judgings = 8;
+  repeated Problem problems = 9;
+  repeated ScoreboardRow scoreboard = 10;
+  repeated Submission submissions = 11;
+  repeated Team teams = 12;
 }

@@ -1,5 +1,7 @@
 package me.hex539.console;
 
+import com.google.protobuf.TextFormat;
+
 import java.util.function.Function;
 import java.lang.reflect.Method;
 import java.util.stream.Collectors;
@@ -94,6 +96,14 @@ public class Executive {
           problem.getName(),
           judging.getOutcome());
     }
+  }
+
+  @Command(name = "download")
+  private static void downloadContest(Invocation invocation) throws Exception {
+    DomjudgeRest api = getRestApi(invocation);
+    DomjudgeProto.EntireContest entireContest = api.getEntireContest(api.getContest());
+
+    TextFormat.print(entireContest, System.out);
   }
 
   private static <K, V> Map<K, V> groupBy(V[] items, Function<V, K> mapper) {
