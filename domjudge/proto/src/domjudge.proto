@@ -102,7 +102,7 @@ message Team {
   string name = 2;
   string members = 3;
   string nationality = 4;
-  string category = 5;
+  uint64 category = 5;
   string group_name = 6 [(serialized_name) = "group"];
   sint64 affil_id = 7 [(serialized_name) = "affilId"];
   string affiliation = 8;
