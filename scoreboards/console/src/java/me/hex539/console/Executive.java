@@ -2,13 +2,17 @@ package me.hex539.console;
 
 import com.google.protobuf.TextFormat;
 
-import java.util.function.Function;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.Method;
-import java.util.stream.Collectors;
 import java.util.Arrays;
+import java.util.function.Function;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.domjudge.api.DomjudgeRest;
 import org.domjudge.api.JudgingDispatcher;
@@ -37,6 +41,30 @@ public class Executive {
     }
   }
 
+  private static DomjudgeProto.EntireContest getEntireContest(Invocation invocation) {
+    if (invocation.getUrl() != null) {
+      try {
+        return getRestApi(invocation).getEntireContest();
+      } catch (Exception e) {
+        System.err.println("Failed to fetch contest: " + e.getMessage());
+        System.exit(1);
+      }
+    }
+    if (invocation.getFile() != null) {
+      try (Reader is = new InputStreamReader(new FileInputStream(invocation.getFile()))) {
+        DomjudgeProto.EntireContest.Builder ecb = DomjudgeProto.EntireContest.newBuilder();
+        TextFormat.merge(is, ecb);
+        return ecb.build();
+      } catch (IOException e) {
+        System.err.println("Failed to read file: " + e.getMessage());
+        System.exit(1);
+      }
+    }
+    System.err.println("Need to specify either --url or --file");
+    System.exit(1);
+    return null;
+  }
+
   private static DomjudgeRest getRestApi(Invocation invocation) {
     System.err.println("Fetching from: " + invocation.getUrl());
     DomjudgeRest api = new DomjudgeRest(invocation.getUrl());
@@ -57,11 +85,13 @@ public class Executive {
 
   @Command(name = "scoreboard")
   private static void showScoreboard(Invocation invocation) throws Exception {
-    DomjudgeRest api = getRestApi(invocation);
-    DomjudgeProto.Contest contest = api.getContest();
-    DomjudgeProto.ScoreboardRow[] scoreboard = api.getScoreboard(contest);
-    Map<Long, DomjudgeProto.Team> teamMap =
-        groupBy(api.getTeams(), DomjudgeProto.Team::getId);
+    DomjudgeProto.EntireContest entireContest = getEntireContest(invocation);
+    DomjudgeProto.Contest contest = entireContest.getContest();
+    DomjudgeProto.ScoreboardRow[] scoreboard = entireContest.getScoreboardList()
+        .toArray(new DomjudgeProto.ScoreboardRow[0]);
+    DomjudgeProto.Team[] teams = entireContest.getTeamsList().toArray(new DomjudgeProto.Team[0]);
+
+    Map<Long, DomjudgeProto.Team> teamMap = collectBy(teams, DomjudgeProto.Team::getId);
 
     for (DomjudgeProto.ScoreboardRow row : scoreboard) {
       DomjudgeProto.Team team = teamMap.get(row.getTeam());
@@ -78,50 +108,48 @@ public class Executive {
 
   @Command(name = "verdicts")
   private static void showJudgements(Invocation invocation) throws Exception {
-    DomjudgeRest api = getRestApi(invocation);
-    ScoreboardModelImpl model = ScoreboardModelImpl.create(api).withoutSubmissions();
+    DomjudgeProto.EntireContest entireContest = getEntireContest(invocation);
+
+    ScoreboardModelImpl model = ScoreboardModelImpl.create(entireContest).withoutSubmissions();
     JudgingDispatcher dispatcher = new JudgingDispatcher(model);
     dispatcher.observers.add(model);
 
-    for (DomjudgeProto.Submission submission : api.getSubmissions(model.getContest())) {
+    for (DomjudgeProto.Submission submission : entireContest.getSubmissionsList()) {
       dispatcher.notifySubmission(submission);
     }
 
-    for (DomjudgeProto.Judging judging : api.getJudgings(model.getContest())) {
+    for (DomjudgeProto.Judging judging : entireContest.getJudgingsList()) {
       dispatcher.notifyJudging(judging);
 
       final DomjudgeProto.Submission submission = model.getSubmission(judging.getSubmission());
-
-      StringBuilder sb = new StringBuilder();
-      for (DomjudgeProto.ScoreboardProblem sp :
-          model.getRow(model.getTeam(submission.getTeam())).getProblemsList()) {
-        if (sp.getSolved()) {
-          sb.append("+");
-        } else {
-          sb.append("-");
-        }
-      }
+      final DomjudgeProto.Team team = model.getTeam(submission.getTeam());
 
       System.out.format("%-30s \t| %-20s | %-16s | %4d | %5d | rank=%3d | %s%n",
-          model.getTeam(submission.getTeam()).getName(),
+          team.getName(),
           model.getProblem(submission.getProblem()).getName(),
           judging.getOutcome(),
-          model.getRow(model.getTeam(submission.getTeam())).getScore().getNumSolved(),
-          model.getRow(model.getTeam(submission.getTeam())).getScore().getTotalTime(),
-          model.getRow(model.getTeam(submission.getTeam())).getRank(),
-          sb.toString());
+          model.getRow(team).getScore().getNumSolved(),
+          model.getRow(team).getScore().getTotalTime(),
+          model.getRow(team).getRank(),
+          formatScoreboardRow(model.getRow(team).getProblemsList()));
     }
+  }
+
+  private static String formatScoreboardRow(List<DomjudgeProto.ScoreboardProblem> row) {
+    StringBuilder sb = new StringBuilder();
+    for (DomjudgeProto.ScoreboardProblem sp : row) {
+      sb.append(sp.getSolved() ? "+" : "-");
+    }
+    return sb.toString();
   }
 
   @Command(name = "download")
   private static void downloadContest(Invocation invocation) throws Exception {
     DomjudgeRest api = getRestApi(invocation);
-    DomjudgeProto.EntireContest entireContest = api.getEntireContest(api.getContest());
-
-    TextFormat.print(entireContest, System.out);
+    TextFormat.print(api.getEntireContest(api.getContest()), System.out);
   }
 
-  private static <K, V> Map<K, V> groupBy(V[] items, Function<V, K> mapper) {
+  private static <K, V> Map<K, V> collectBy(V[] items, Function<V, K> mapper) {
     return Arrays.stream(items).collect(Collectors.toMap(mapper, Function.identity()));
   }
 }

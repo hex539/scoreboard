@@ -120,6 +120,7 @@ public class DomjudgeRest {
         .addAllClarifications(Arrays.asList(getClarifications()))
         .setContest(contest)
         .addAllContests(Arrays.asList(getContests()))
+        .addAllJudgings(Arrays.asList(getJudgings(contest)))
         .addAllJudgementTypes(Arrays.asList(getJudgementTypes(contest)))
         .addAllProblems(Arrays.asList(getProblems(contest)))
         .addAllScoreboard(Arrays.asList(getScoreboard(contest)))

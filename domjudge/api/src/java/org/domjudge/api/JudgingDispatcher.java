@@ -71,6 +71,10 @@ public class JudgingDispatcher {
             .setNumPending(model.getAttempts(team, problem).getNumPending() - 1)
             .setNumJudged(model.getAttempts(team, problem).getNumJudged() + 1);
     switch (j.getOutcome()) {
+      case "": {
+        // Judging was already skipped or rejudged. Ignore it.
+        return;
+      }
       case "correct": {
         if (!model.getAttempts(team, problem).getSolved()) {
           attemptsBuilder.setSolved(true);

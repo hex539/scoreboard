@@ -77,6 +77,13 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
         api.getScoreboard(contest));
   }
 
+  public static ScoreboardModelImpl create(EntireContest entireContest) {
+    return create(
+        entireContest.getContest(),
+        entireContest.getProblemsList().toArray(new Problem[0]),
+        entireContest.getTeamsList().toArray(new Team[0]));
+  }
+
   public static ScoreboardModelImpl create(ScoreboardModel copy) {
     Map<Long, Team> teamsMap =
         copy.getTeams().stream().collect(toMap(Team::getId, x -> x));

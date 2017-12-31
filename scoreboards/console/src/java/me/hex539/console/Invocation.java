@@ -19,10 +19,18 @@ public @CommandLineInterface interface Invocation {
     boolean isHelp();
 
   @Option(
+      defaultToNull = true,
       shortName = "u",
       longName = "url",
       description = "Scoreboard URL")
     String getUrl();
+
+  @Option(
+      defaultToNull = true,
+      shortName = "f",
+      longName = "file",
+      description = "Path to saved scoreboard")
+    String getFile();
 
   @Option(
       defaultToNull = true,
