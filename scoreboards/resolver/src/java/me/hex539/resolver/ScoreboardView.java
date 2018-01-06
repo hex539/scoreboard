@@ -36,7 +36,10 @@ public class ScoreboardView extends TableView<DomjudgeProto.ScoreboardRow>
   }
 
   @Override
-  public void onProblemAttempted(DomjudgeProto.Team team, DomjudgeProto.ScoreboardProblem attempt) {
+  public void onProblemAttempted(
+      DomjudgeProto.Team team,
+      DomjudgeProto.ScoreboardProblem attempt,
+      DomjudgeProto.ScoreboardScore score) {
     refresh();
   }
 
