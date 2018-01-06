@@ -15,7 +15,7 @@ public @interface Command {
   public static abstract class Annotations {
     public static Map<String, Method> all(Class c) {
       return Arrays.stream(Executive.class.getDeclaredMethods())
-        .filter(f -> Modifier.isStatic(f.getModifiers()))
+        .filter(f -> !Modifier.isStatic(f.getModifiers()))
         .filter(f -> f.getAnnotation(Command.class) != null)
         .collect(Collectors.toMap(
           f -> f.getAnnotation(Command.class).name(),
