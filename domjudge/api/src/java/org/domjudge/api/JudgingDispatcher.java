@@ -51,8 +51,13 @@ public class JudgingDispatcher {
       return;
     }
 
-    final Team team = model.getTeam(submission.getTeam());
+    final JudgementType type = model.getJudgementTypes().get(j.getOutcome());
+    if (type == null && !"".equals(j.getOutcome())) {
+      logger.log("No such judgement type: " + j.getOutcome());
+      throw new Error("Unknown outcome: " + j.getOutcome());
+    }
 
+    final Team team = model.getTeam(submission.getTeam());
     if (team == null) {
       logger.log("No such team: " + submission.getTeam());
       return;
@@ -63,60 +68,47 @@ public class JudgingDispatcher {
     final Problem problem = model.getProblem(submission.getProblem());
 
     ScoreboardScore oldScore = model.getRow(team).getScore();
-    ScoreboardScore newScore = null;
+    ScoreboardScore newScore = oldScore;
 
-    final ScoreboardProblem.Builder attemptsBuilder =
-        model.getAttempts(team, problem)
-            .toBuilder()
-            .setNumPending(model.getAttempts(team, problem).getNumPending() - 1)
-            .setNumJudged(model.getAttempts(team, problem).getNumJudged() + 1);
-    switch (j.getOutcome()) {
-      case "": {
-        // Judging was already skipped or rejudged. Ignore it.
-        return;
-      }
-      case "correct": {
-        if (!model.getAttempts(team, problem).getSolved()) {
-          attemptsBuilder.setSolved(true);
-          attemptsBuilder.setTime((long) submission.getTime());
+    long numPending = model.getAttempts(team, problem).getNumPending() - 1;
+    long numJudged = model.getAttempts(team, problem).getNumJudged();
+    ScoreboardProblem.Builder attemptsBuilder = model.getAttempts(team, problem).toBuilder();
 
-          // TODO: broken. needs to implement penalty time properly using the values from
-          // the config instead of blindly assuming 20 for every failed attempt.
-          final long PENALTY_TIME = 20;
-          final long floorTime = Math.round(submission.getTime() - (0.5 - 1e-20));
-          final long penaltyTime = PENALTY_TIME * model.getAttempts(team, problem).getNumJudged()
-              + (floorTime - model.getContest().getStart()) / 60;
+    if ("".equals(j.getOutcome()) || model.getAttempts(team, problem).getSolved()) {
+      // Judging ignored or the team already solved this problem.
+    } else if (type.getSolved()) {
+      numJudged++;
+      attemptsBuilder.setSolved(true);
+      attemptsBuilder.setTime((long) submission.getTime());
 
-          newScore = ScoreboardScore.newBuilder()
-              .setNumSolved(oldScore.getNumSolved() + 1)
-              .setTotalTime(oldScore.getTotalTime() + penaltyTime)
-              .build();
-        }
-        break;
-      }
-      case "compiler-error": {
-        // TODO: record previous attempts in an auxiliary data structure or add a routine to filter
-        // past submissions on a given problem for a particular team, so we can skip the line below
-        // and still get the penalty time right.
-        attemptsBuilder.setNumJudged(model.getAttempts(team, problem).getNumJudged());
-        break;
-      }
-      case "wrong-answer":
-      case "no-output":
-      case "run-error":
-      case "timelimit": {
-        break;
-      }
-      default: {
-        throw new Error("Unknown outcome: " + j.getOutcome());
-      }
+      // TODO: broken. needs to implement penalty time properly using the values from
+      // the config instead of blindly assuming 20 for every failed attempt.
+      final long PENALTY_TIME = 20;
+      final long floorTime = Math.round(submission.getTime() - (0.5 - 1e-20));
+      final long penaltyTime = PENALTY_TIME * model.getAttempts(team, problem).getNumJudged()
+          + (floorTime - model.getContest().getStart()) / 60;
+
+      newScore = ScoreboardScore.newBuilder()
+          .setNumSolved(oldScore.getNumSolved() + 1)
+          .setTotalTime(oldScore.getTotalTime() + penaltyTime)
+          .build();
+    } else if (type.getPenalty()) {
+      numJudged++;
+    } else {
+      // Don't count this as a judged attempt at the problem.
+      //
+      // TODO: record previous attempts in an auxiliary data structure or add a routine to filter
+      // past submissions on a given problem for a particular team, so we can skip the line below
+      // and still get the penalty time right.
     }
 
-    final ScoreboardScore score = (newScore != null ? newScore : oldScore);
-    final ScoreboardProblem attempts = attemptsBuilder.build();
+    final ScoreboardProblem attempts = attemptsBuilder
+        .setNumPending(numPending)
+        .setNumJudged(numJudged)
+        .build();
 
     final int oldRank = (int) computeRank(team);
-    notifyProblemAttempted(team, attempts, score);
+    notifyProblemAttempted(team, attempts, newScore);
     final int newRank = (int) computeRank(team);
 
     notifyRankChanged(team, oldRank, newRank);
@@ -134,9 +126,9 @@ public class JudgingDispatcher {
   }
 
   private long computeRank(final Team team) {
+    final ScoreboardRow teamRow = model.getRow(team);
     return model.getRows().stream()
-        .filter(r ->
-            Comparators.compareRows(team, model.getRow(team), model.getTeam(r.getTeam()), r) > 0)
+        .filter(r -> Comparators.compareRows(team, teamRow, model.getTeam(r.getTeam()), r) > 0)
         .count() + 1;
   }
 }

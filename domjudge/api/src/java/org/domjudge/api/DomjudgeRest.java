@@ -1,5 +1,7 @@
 package org.domjudge.api;
 
+import static com.google.common.base.CaseFormat.LOWER_UNDERSCORE;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.protobuf.ProtoTypeAdapter;
@@ -9,21 +11,21 @@ import com.google.protobuf.AbstractMessage;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
-import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Optional;
+import java.util.Set;
 
+import org.domjudge.api.RequiresRole;
 import org.domjudge.proto.Annotations;
 import org.domjudge.proto.DomjudgeProto;
+import org.domjudge.proto.DomjudgeProto.*;
 
 import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.Request;
-
-import static com.google.common.base.CaseFormat.LOWER_UNDERSCORE;
-import static org.domjudge.proto.DomjudgeProto.*;
 
 public class DomjudgeRest {
   private final String url;
@@ -50,99 +52,143 @@ public class DomjudgeRest {
     return this;
   }
 
+  @RequiresRole(any = true)
   public Affiliation[] getAffiliations() throws Exception {
-    return getFrom("/affiliations", Affiliation[].class);
+    return getFrom("/affiliations", Affiliation[].class).get();
   }
 
+  @RequiresRole(any = true)
   public Category[] getCategories() throws Exception {
-    return getFrom("/categories", Category[].class);
+    return getFrom("/categories", Category[].class).get();
   }
 
+  @RequiresRole(any = true)
   public Clarification[] getClarifications() throws Exception {
-    return getFrom("/clarifications", Clarification[].class);
+    return getFrom("/clarifications", Clarification[].class).get();
   }
 
+  @RequiresRole(any = true)
   public Contest getContest() throws Exception {
-    return getFrom("/contest", Contest.class);
+    return getFrom("/contest", Contest.class).get();
   }
 
+  @RequiresRole(any = true)
   public Contest[] getContests() throws Exception {
     Type type = new TypeToken<Map<String, Contest>>(){}.getType();
-    return ((Map<String, Contest>) getFrom("/contests", type))
+    return ((Map<String, Contest>) getFrom("/contests", type).get())
         .values()
         .stream()
         .map(Contest.class::cast)
         .toArray(Contest[]::new);
   }
 
+  @RequiresRole(any = true)
   public JudgementType[] getJudgementTypes(Contest contest) throws Exception {
-    return getFrom("/judgement_types", JudgementType[].class);
+    return getFrom("/judgement_types", JudgementType[].class).get();
   }
 
+  @RequiresRole(anyOf = {
+      User.Role.team,
+      User.Role.judgehost,
+      User.Role.jury,
+      User.Role.admin,
+      User.Role.event_reader,
+      User.Role.full_event_reader})
   public Judging[] getJudgings(Contest contest) throws Exception {
+    return getJudgingsInternal(contest).get();
+  }
+
+  @RequiresRole(anyOf = {
+      User.Role.team,
+      User.Role.judgehost,
+      User.Role.jury,
+      User.Role.admin,
+      User.Role.event_reader,
+      User.Role.full_event_reader})
+  public Optional<Judging[]> getJudgingsInternal(Contest contest) throws Exception {
     return getFrom("/judgings?cid=" + contest.getId(), Judging[].class);
   }
 
+  @RequiresRole(any = true)
   public Problem[] getProblems(Contest contest) throws Exception {
     // We need to sort the problems by label because DOMjudge gives them out in a not-very-useful
     // order, despite showing them in sorted order on the scoreboard.
-    Problem[] problems = getFrom("/problems?cid=" + contest.getId(), Problem[].class);
-    Arrays.sort(problems, (Problem a, Problem b) -> {
+    Optional<Problem[]> problems = getFrom("/problems?cid=" + contest.getId(), Problem[].class);
+    Arrays.sort(problems.get(), (Problem a, Problem b) -> {
         int res = 0;
         return (res = a.getLabel().compareTo(b.getLabel())) != 0
             || (res = a.getShortName().compareTo(b.getShortName())) != 0
             || (res = a.getName().compareTo(b.getName())) != 0
             || (res = Long.compare(a.getId(), b.getId())) != 0
             ? res : 0;});
-    return problems;
+    return problems.get();
   }
 
+  @RequiresRole(any = true)
   public ScoreboardRow[] getScoreboard(Contest contest) throws Exception {
-    return getFrom("/scoreboard?cid=" + contest.getId(), ScoreboardRow[].class);
+    return getFrom("/scoreboard?cid=" + contest.getId(), ScoreboardRow[].class).get();
   }
 
+  @RequiresRole(any = true)
   public Submission[] getSubmissions(Contest contest) throws Exception {
-    return getFrom("/submissions?cid=" + contest.getId(), Submission[].class);
+    return getFrom("/submissions?cid=" + contest.getId(), Submission[].class).get();
   }
 
+  @RequiresRole(any = true)
   public Team[] getTeams() throws Exception {
-    return getFrom("/teams", Team[].class);
+    return getFrom("/teams", Team[].class).get();
   }
 
+  @RequiresRole(any = true)
+  public Optional<User> getUser() throws Exception {
+    return getFrom("/user", User.class).filter(u -> u.getId() != 0);
+  }
+
+  @RequiresRole(any = true)
   public EntireContest getEntireContest() throws Exception {
     return getEntireContest(getContest());
   }
 
   public EntireContest getEntireContest(Contest contest) throws Exception {
-    return EntireContest.newBuilder()
+    final Set<User.Role> roles =
+        getUser().map(User::getRolesList).map(HashSet::new).orElseGet(HashSet::new);
+
+    final EntireContest.Builder builder = EntireContest.newBuilder()
         .addAllAffiliations(Arrays.asList(getAffiliations()))
         .addAllCategories(Arrays.asList(getCategories()))
         .addAllClarifications(Arrays.asList(getClarifications()))
         .setContest(contest)
         .addAllContests(Arrays.asList(getContests()))
-        .addAllJudgings(Arrays.asList(getJudgings(contest)))
         .addAllJudgementTypes(Arrays.asList(getJudgementTypes(contest)))
         .addAllProblems(Arrays.asList(getProblems(contest)))
         .addAllScoreboard(Arrays.asList(getScoreboard(contest)))
         .addAllSubmissions(Arrays.asList(getSubmissions(contest)))
-        .addAllTeams(Arrays.asList(getTeams()))
-        .build();
+        .addAllTeams(Arrays.asList(getTeams()));
+
+    // Optional items that need credentials and may be denied.
+    getJudgingsInternal(contest).map(Arrays::asList).ifPresent(builder::addAllJudgings);
+
+    return builder.build();
   }
 
-  protected <T> T getFrom(String endpoint, Class<T> c) throws IOException {
-    return requestFrom(endpoint, response -> gson.get().fromJson(response.string(), c));
+  protected static boolean userHasAnyRole(Set<User.Role> user, User.Role... roles) {
+    return new HashSet<>(Arrays.asList(roles)).removeAll(user);
   }
 
-  protected <T> T getFrom(String endpoint, java.lang.reflect.Type c) throws IOException {
-    return requestFrom(endpoint, response -> gson.get().fromJson(response.string(), c));
+  protected <T> Optional<T> getFrom(String endpoint, Class<T> c) throws IOException {
+    return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)));
+  }
+
+  protected <T> Optional<T> getFrom(String endpoint, Type c) throws IOException {
+    return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)));
   }
 
   @FunctionalInterface
   private interface ResponseHandler<T, R> {
-    R apply(T t) throws IOException;
+    R apply(Optional<T> t) throws IOException;
   }
 
-  protected <T> T requestFrom(String endpoint, ResponseHandler<? super ResponseBody, T> handler)
+  protected <T> T requestFrom(String endpoint, ResponseHandler<? super String, T> handler)
         throws IOException {
     Request.Builder request = new Request.Builder()
         .url(url + endpoint);
@@ -151,8 +197,18 @@ public class DomjudgeRest {
       request.header("Authorization", Credentials.basic(auth.username, auth.password));
     }
 
-    try (ResponseBody body = client.newCall(request.build()).execute().body()) {
-      return handler.apply(body);
+    try (Response response = client.newCall(request.build()).execute()) {
+      switch  (response.code()) {
+        case 200:
+          // OK
+          return handler.apply(Optional.ofNullable(response.body().string()));
+        case 403: // Forbidden (need to authenticate, older api versions)
+        case 405: // Method not allowed (need to authenticate, newer api versions)
+          return handler.apply(Optional.empty());
+        default:
+          // Not handled. Probably an invalid request.
+          throw new IOException(response.code() + ": " + response.message());
+      }
     }
   }
 

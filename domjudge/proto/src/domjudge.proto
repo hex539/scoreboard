@@ -108,6 +108,28 @@ message Team {
   string affiliation = 8;
 }
 
+message User {
+  sint64 id = 1;
+  sint64 team_id = 2 [(serialized_name) = "teamid"];
+  string email = 3;
+  string ip = 4;
+  string last_ip = 5 [(serialized_name) = "lastip"];
+  string name = 6;
+  string username = 7;
+
+  enum Role {
+    user = 0;
+    team = 1;
+    balloon = 2;
+    judgehost = 3;
+    event_reader = 4;
+    full_event_reader = 5;
+    jury = 6;
+    admin = 7;
+  }
+  repeated Role roles = 8;
+}
+
 message EntireContest {
   repeated Affiliation affiliations = 1;
   repeated Category categories = 2;

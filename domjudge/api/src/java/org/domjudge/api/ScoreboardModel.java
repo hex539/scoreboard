@@ -1,23 +1,13 @@
 package org.domjudge.api;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
 
-import org.domjudge.api.DomjudgeRest;
-import org.domjudge.proto.DomjudgeProto;
-
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static org.domjudge.proto.DomjudgeProto.*;
+import org.domjudge.proto.DomjudgeProto.*;
 
 public interface ScoreboardModel {
 
@@ -32,6 +22,10 @@ public interface ScoreboardModel {
   List<Problem> getProblems();
   Collection<Team> getTeams();
   List<ScoreboardRow> getRows();
+
+  default Map<String, JudgementType> getJudgementTypes() {
+    return DefaultJudgementTypes.get();
+  }
 
   default List<Submission> getSubmissions() {
     return Collections.emptyList();
@@ -54,13 +48,10 @@ public interface ScoreboardModel {
   }
 
   default ScoreboardProblem getAttempts(Team team, Problem problem) throws NoSuchElementException {
-    final Optional<ScoreboardProblem> match =
-        getRow(team).getProblemsList().stream()
+    return getRow(team).getProblemsList().stream()
             .filter(x -> x.getLabel().equals(problem.getLabel()))
-            .findFirst();
-    if (!match.isPresent()) {
-      System.out.println("Cannot find " + problem.getLabel() + " for " + team);
-    }
-    return match.get();
+            .findFirst()
+            .orElseThrow(
+                () -> new NoSuchElementException("Cannot find problem " + problem.getLabel()));
   }
 }
