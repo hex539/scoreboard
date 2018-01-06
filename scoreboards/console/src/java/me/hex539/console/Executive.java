@@ -42,8 +42,8 @@ public class Executive {
       try {
         method.invoke(new Executive(contestFetcher), invocation);
       } catch (Exception e) {
-        System.err.println("Failed to run command: " + e.getMessage());
-        e.printStackTrace();
+        System.err.println("Failed to run command '" + action + "': " + e.getCause().getMessage());
+        e.getCause().printStackTrace();
         System.exit(1);
         return;
       }
