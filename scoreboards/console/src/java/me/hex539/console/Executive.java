@@ -47,6 +47,7 @@ public class Executive {
         return getRestApi(invocation).getEntireContest();
       } catch (Exception e) {
         System.err.println("Failed to fetch contest: " + e.getMessage());
+        e.printStackTrace();
         System.exit(1);
       }
     }
@@ -57,6 +58,7 @@ public class Executive {
         return ecb.build();
       } catch (IOException e) {
         System.err.println("Failed to read file: " + e.getMessage());
+        e.printStackTrace();
         System.exit(1);
       }
     }
