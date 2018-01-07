@@ -13,7 +13,6 @@ java_binary(
     "//domjudge:api",
     "//domjudge:proto",
     "//domjudge:scoreboard",
-    "//testing:utils",
     "@jfoenix//jar",
   ],
 )

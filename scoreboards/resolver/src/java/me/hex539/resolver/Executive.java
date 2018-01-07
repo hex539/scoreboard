@@ -1,5 +1,11 @@
 package me.hex539.resolver;
 
+import com.google.protobuf.TextFormat;
+
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.Map;
 
 import javafx.application.Application;
@@ -17,9 +23,6 @@ import org.domjudge.scoreboard.ScoreboardModel;
 import org.domjudge.scoreboard.ScoreboardModelImpl;
 import org.domjudge.proto.DomjudgeProto;
 
-// TODO: remove the dependency on a testing library; grow up and use a file URI instead.
-import me.hex539.testing.utils.MockScoreboardModel;
-
 public class Executive extends Application {
   private ScoreboardModel model;
   private ScoreboardView view;
@@ -28,8 +31,16 @@ public class Executive extends Application {
   public void start(Stage stage) throws Exception {
     Map<String, String> args = getParameters().getNamed();
     String url = args.get("url");
+    String file = args.get("file");
 
-    model = (url != null ? getModel(url) : MockScoreboardModel.example());
+    if (url != null) {
+      model = getModel(url);
+    } else if (file != null) {
+      model = getLocalModel(file);
+    } else {
+      System.err.println("Need to supply a contest with either of --url or --file");
+      System.exit(1);
+    }
 
     final Parent root = FXMLLoader.load(
         getClass().getResource("/resources/javafx/scoreboard.fxml"));
@@ -53,6 +64,16 @@ public class Executive extends Application {
 
     DomjudgeRest api = new DomjudgeRest(url);
     return ScoreboardModelImpl.create(api);
+  }
+
+  private static ScoreboardModel getLocalModel(String path) throws IOException {
+    System.err.println("Fetching from file: " + path);
+
+    try (Reader is = new InputStreamReader(new FileInputStream(path))) {
+      DomjudgeProto.EntireContest.Builder ecb = DomjudgeProto.EntireContest.newBuilder();
+      TextFormat.merge(is, ecb);
+      return ScoreboardModelImpl.create(ecb.build());
+    }
   }
 
   public static void main(String[] args) {
