@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import java.util.List;
 import me.hex539.testing.utils.MockScoreboardModel;
 import org.junit.Test;
+import org.domjudge.scoreboard.*;
 
 import static org.domjudge.proto.DomjudgeProto.*;
 import static org.mockito.Mockito.*;

@@ -12,6 +12,7 @@ java_binary(
   deps = [
     "//domjudge:api",
     "//domjudge:proto",
+    "//domjudge:scoreboard",
     "//testing:utils",
     "@jfoenix//jar",
   ],

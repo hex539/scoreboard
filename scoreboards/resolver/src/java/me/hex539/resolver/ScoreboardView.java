@@ -16,7 +16,7 @@ import javafx.scene.control.TableView;
 import me.hex539.resolver.cells.ProblemCell;
 
 import org.domjudge.api.DomjudgeRest;
-import org.domjudge.api.ScoreboardModel;
+import org.domjudge.scoreboard.ScoreboardModel;
 import org.domjudge.proto.DomjudgeProto;
 
 public class ScoreboardView extends TableView<DomjudgeProto.ScoreboardRow>

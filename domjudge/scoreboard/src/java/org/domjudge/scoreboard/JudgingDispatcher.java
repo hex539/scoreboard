@@ -1,9 +1,7 @@
-package org.domjudge.api;
+package org.domjudge.scoreboard;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import org.domjudge.api.JudgingDispatcher;
 
 import static org.domjudge.proto.DomjudgeProto.*;
 

@@ -1,4 +1,4 @@
-package org.domjudge.api;
+package org.domjudge.scoreboard;
 
 import static org.domjudge.proto.DomjudgeProto.*;
 

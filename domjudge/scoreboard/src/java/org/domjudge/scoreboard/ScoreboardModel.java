@@ -1,4 +1,4 @@
-package org.domjudge.api;
+package org.domjudge.scoreboard;
 
 import java.util.Collection;
 import java.util.Collections;

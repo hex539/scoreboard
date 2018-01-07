@@ -6,8 +6,8 @@ java_library(
     "utils/src/java/**/*.java",
   ]),
   deps = [
-    "//domjudge:api",
-    "//domjudge:proto",
+    "//domjudge/proto",
+    "//domjudge/scoreboard",
   ],
 )
 
@@ -20,8 +20,8 @@ java_test(
   ]),
   deps = [
     ":utils",
-    "//domjudge:api",
-    "//domjudge:proto",
+    "//domjudge/proto",
+    "//domjudge/scoreboard",
     "@mockito//jar",
     "@truth//jar",
   ],

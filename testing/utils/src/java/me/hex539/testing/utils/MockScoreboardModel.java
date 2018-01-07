@@ -16,7 +16,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.domjudge.api.ScoreboardModel;
+import org.domjudge.scoreboard.ScoreboardModel;
 
 public final class MockScoreboardModel {
   public static ScoreboardModel example() {

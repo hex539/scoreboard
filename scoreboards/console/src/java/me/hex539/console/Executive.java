@@ -10,8 +10,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.domjudge.api.JudgingDispatcher;
-import org.domjudge.api.ScoreboardModelImpl;
+import org.domjudge.scoreboard.JudgingDispatcher;
+import org.domjudge.scoreboard.ResolverController;
+import org.domjudge.scoreboard.ScoreboardModelImpl;
 import org.domjudge.proto.DomjudgeProto.*;
 
 public class Executive {
@@ -84,7 +85,7 @@ public class Executive {
       final ScoreboardRow row = model.getRow(team);
 
       System.out.format(
-          "%-" + MAX_TEAM_NAME_LENGTH + "s \t| %-20s | %-16s | %4d | %5d | rank=%3d | %s%n",
+          "%-" + MAX_TEAM_NAME_LENGTH + "s \t| %-20s | %-16s | %4d | %6d | rank=%3d | %s%n",
           team.getName(),
           model.getProblem(submission.getProblem()).getName(),
           judging.getOutcome(),
@@ -92,6 +93,27 @@ public class Executive {
           row.getScore().getTotalTime(),
           row.getRank(),
           PrettyPrinter.formatMiniScoreboardRow(model.getRow(team).getProblemsList()));
+    }
+  }
+
+  @Command(name = "resolver")
+  private void showResolver(Invocation invocation) throws Exception {
+    EntireContest entireContest = contestFetcher.get();
+    ScoreboardModelImpl model = ScoreboardModelImpl.create(entireContest).withoutSubmissions();
+
+    Map<Long, Team> teamMap = model.getTeams().stream()
+        .collect(Collectors.toMap(Team::getId, Function.identity()));
+
+    ResolverController controller = new ResolverController(entireContest, model);
+    while (!controller.finished()) {
+      controller.advance();
+
+      System.out.println(PrettyPrinter.formatScoreboardHeader(entireContest.getProblemsList()));
+      for (ScoreboardRow row : model.getRows()) {
+        System.out.println(PrettyPrinter.formatScoreboardRow(teamMap.get(row.getTeam()), row));
+      }
+
+      Thread.sleep(100 /* milliseconds */);
     }
   }
 
@@ -103,7 +125,7 @@ public class Executive {
   private static class PrettyPrinter {
     static String formatScoreboardHeader(List<Problem> problems) {
       StringBuilder sb = new StringBuilder(
-          String.format("%-" + MAX_TEAM_NAME_LENGTH + "s\t| ## |  time", "team"));
+          String.format("%-" + MAX_TEAM_NAME_LENGTH + "s\t| ## |  time ", "team"));
       problems.forEach(p -> sb.append(" | " + p.getLabel().charAt(0)));
       final String header = sb.toString();
       return header + "\n" + header.replaceAll("[^\\t]", "-");
@@ -111,7 +133,7 @@ public class Executive {
 
     static String formatScoreboardRow(Team team, ScoreboardRow row) {
       StringBuilder sb = new StringBuilder(
-          String.format("%-" + MAX_TEAM_NAME_LENGTH + "s\t| %2d | %5d",
+          String.format("%-" + MAX_TEAM_NAME_LENGTH + "s\t| %2d | %6d",
               team.getName(),
               row.getScore().getNumSolved(),
               row.getScore().getTotalTime()));
@@ -124,7 +146,7 @@ public class Executive {
     }
 
     static String formatAttempt(ScoreboardProblem p) {
-      return p.getSolved() ? "+" : p.getNumJudged() > 0 ? "-" : " ";
+      return p.getSolved() ? "+" : p.getNumPending() > 0 ? "?" : p.getNumJudged() > 0 ? "-" : " ";
     }
   }
 }

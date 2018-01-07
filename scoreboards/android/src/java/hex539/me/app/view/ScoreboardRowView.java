@@ -16,7 +16,7 @@ import android.widget.TextView;
 import me.hex539.app.R;
 import me.hex539.app.intent.IntentUtils;
 import org.domjudge.proto.DomjudgeProto;
-import org.domjudge.api.ScoreboardModel;
+import org.domjudge.scoreboard.ScoreboardModel;
 
 public class ScoreboardRowView extends LinearLayout implements ScoreboardModel.Observer{
 

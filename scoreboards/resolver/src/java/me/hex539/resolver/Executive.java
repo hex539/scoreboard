@@ -13,8 +13,8 @@ import javafx.stage.Stage;
 import me.hex539.resolver.cells.ProblemCell;
 
 import org.domjudge.api.DomjudgeRest;
-import org.domjudge.api.ScoreboardModel;
-import org.domjudge.api.ScoreboardModelImpl;
+import org.domjudge.scoreboard.ScoreboardModel;
+import org.domjudge.scoreboard.ScoreboardModelImpl;
 import org.domjudge.proto.DomjudgeProto;
 
 // TODO: remove the dependency on a testing library; grow up and use a file URI instead.

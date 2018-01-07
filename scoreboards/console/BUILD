@@ -7,8 +7,9 @@ java_binary(
     "src/java/me/hex539/console/*.java",
   ]),
   deps = [
-    "//domjudge:api",
-    "//domjudge:proto",
+    "//domjudge/api",
+    "//domjudge/proto",
+    "//domjudge/scoreboard",
     "@jewelcli//jar",
   ],
 )
