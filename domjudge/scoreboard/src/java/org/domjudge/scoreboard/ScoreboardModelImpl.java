@@ -22,6 +22,7 @@ import static org.domjudge.proto.DomjudgeProto.*;
 public abstract class ScoreboardModelImpl implements ScoreboardModel, ScoreboardModel.Observer {
   @Override public abstract Contest getContest();
   @Override public abstract List<Problem> getProblems();
+  @Override public abstract Collection<Category> getCategories();
   abstract Map<Long, Team> getTeamsMap();
 
   private List<ScoreboardRow> mRows;
@@ -30,9 +31,10 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   public static ScoreboardModelImpl create(
       Contest contest,
       Problem[] problems,
-      Team[] teams) {
+      Team[] teams,
+      Category[] categories) {
     teams = teams.clone();
-    Arrays.sort(teams, Comparators::compareTeams);
+    Arrays.sort(teams, new Comparators.TeamComparator(Arrays.asList(categories)));
     ScoreboardRow[] emptyRows = new ScoreboardRow[teams.length];
     for (int i = 0; i < teams.length; i++) {
       emptyRows[i] = ScoreboardRow.newBuilder()
@@ -53,17 +55,19 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
               .collect(toList()))
           .build();
     }
-    return create(contest, problems, teams, emptyRows);
+    return create(contest, problems, teams, categories, emptyRows);
   }
 
   public static ScoreboardModelImpl create(
       Contest contest,
       Problem[] problems,
       Team[] teams,
+      Category[] categories,
       ScoreboardRow[] rows) {
     return new AutoValue_ScoreboardModelImpl(
             contest,
             Arrays.asList(problems),
+            Arrays.asList(categories),
             Arrays.stream(teams).collect(toMap(Team::getId, x -> x)))
         .setRows(Arrays.asList(rows));
   }
@@ -74,6 +78,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
         contest,
         api.getProblems(contest),
         api.getTeams(),
+        api.getCategories(),
         api.getScoreboard(contest));
   }
 
@@ -81,14 +86,15 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     return create(
         entireContest.getContest(),
         entireContest.getProblemsList().toArray(new Problem[0]),
-        entireContest.getTeamsList().toArray(new Team[0]));
+        entireContest.getTeamsList().toArray(new Team[0]),
+        entireContest.getCategoriesList().toArray(new Category[0]));
   }
 
   public static ScoreboardModelImpl create(ScoreboardModel copy) {
     Map<Long, Team> teamsMap =
         copy.getTeams().stream().collect(toMap(Team::getId, x -> x));
     ScoreboardModelImpl result = new AutoValue_ScoreboardModelImpl(
-            copy.getContest(), copy.getProblems(), teamsMap)
+            copy.getContest(), copy.getProblems(), copy.getCategories(), teamsMap)
         .setRows(copy.getRows());
     result.mSubmissions.addAll(copy.getSubmissions());
     return result;
@@ -98,7 +104,8 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     return ScoreboardModelImpl.create(
         getContest(),
         getProblems().toArray(new Problem[0]),
-        getTeams().toArray(new Team[0]));
+        getTeams().toArray(new Team[0]),
+        getCategories().toArray(new Category[0]));
   }
 
   ScoreboardModelImpl setRows(List<ScoreboardRow> rows) {

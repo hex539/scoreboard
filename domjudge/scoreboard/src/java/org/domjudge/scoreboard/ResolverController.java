@@ -45,16 +45,17 @@ public class ResolverController {
 
   private final Logger logger = (DEBUG ? System.err::println : s -> {});
 
+  private final EntireContest contest;
+  private final ScoreboardModel model;
+
+  private final JudgingDispatcher dispatcher;
   /**
    * Alias of {@link JudgingDispatcher#observers}. {@link Observer} members will get extra
    * events not sent to generic observers.
    */
   public final Set<ScoreboardModel.Observer> observers;
 
-  private final EntireContest contest;
-  private final ScoreboardModel model;
-  private final JudgingDispatcher dispatcher;
-
+  private final Comparators.RowComparator rowComparator;
   private final Map<Long, Judging> judgings;
 
   private final Map<Long, SortedMap<Long, List<Submission>>> teamSubmissions = new HashMap<>();
@@ -75,12 +76,13 @@ public class ResolverController {
     this.contest = contest;
     this.model = model;
 
-    this.judgings = getOrInventJudgings();
-
     this.dispatcher = new JudgingDispatcher(model);
     this.observers = dispatcher.observers;
     observers.add(model);
 
+    this.rowComparator = new Comparators.RowComparator(model.getTeams(), model.getCategories());
+
+    this.judgings = getOrInventJudgings();
     createSubmissions();
   }
 
@@ -222,7 +224,7 @@ public class ResolverController {
    * since it's based on a pointer tree instead of an array-backed heap.
    */
   private class TeamKey implements Comparable<TeamKey> {
-    public final Team team;
+    private final Team team;
     private final ScoreboardRow row;
     public boolean invalidated = false;
 
@@ -237,7 +239,7 @@ public class ResolverController {
 
     @Override
     public int compareTo(TeamKey other) {
-      return -Comparators.compareRows(team, row, other.team, other.row);
+      return -rowComparator.compare(row, other.row);
     }
   }
 }

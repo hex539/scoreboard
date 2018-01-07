@@ -124,9 +124,10 @@ public class JudgingDispatcher {
   }
 
   private long computeRank(final Team team) {
-    final ScoreboardRow teamRow = model.getRow(team);
-    return model.getRows().stream()
-        .filter(r -> Comparators.compareRows(team, teamRow, model.getTeam(r.getTeam()), r) > 0)
-        .count() + 1;
+    final Comparators.RowComparator comparator =
+        new Comparators.RowComparator(model.getTeams(), model.getCategories());
+
+    final ScoreboardRow myRow = model.getRow(team);
+    return model.getRows().stream().filter(r -> comparator.compare(myRow, r) > 0).count() + 1;
   }
 }

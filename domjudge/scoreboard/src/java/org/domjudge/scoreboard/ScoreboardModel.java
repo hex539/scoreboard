@@ -21,6 +21,7 @@ public interface ScoreboardModel {
   Contest getContest();
   List<Problem> getProblems();
   Collection<Team> getTeams();
+  Collection<Category> getCategories();
   List<ScoreboardRow> getRows();
 
   default Map<String, JudgementType> getJudgementTypes() {
@@ -37,6 +38,10 @@ public interface ScoreboardModel {
 
   default Problem getProblem(long id) throws NoSuchElementException {
     return getProblems().stream().filter(x -> x.getId() == id).findFirst().get();
+  }
+
+  default Category getCategory(Team team) throws NoSuchElementException {
+    return getCategories().stream().filter(x -> x.getId() == team.getCategory()).findFirst().get();
   }
 
   default ScoreboardRow getRow(Team team) throws NoSuchElementException {

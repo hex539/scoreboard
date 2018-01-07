@@ -7,21 +7,21 @@ option java_outer_classname = "DomjudgeProto";
 import "annotations.proto";
 
 message Affiliation {
-  uint64 affilid = 1;
+  uint64 id = 1 [(serialized_name) = "affilid"];
   string shortname = 2;
   string name = 3;
   string country = 4;
 }
 
 message Category {
-  uint64 categoryid = 1;
+  uint64 id = 1 [(serialized_name) = "categoryid"];
   string name = 2;
   string color = 3;
-  uint64 sortorder = 4;
+  uint64 sort_order = 4 [(serialized_name) = "sortorder"];
 }
 
 message Clarification {
-  uint64 clarid = 1;
+  uint64 id = 1 [(serialized_name) = "clarid"];
   sint64 submit_time = 2 [(serialized_name) = "submittime"];
   uint64 probid = 3;
   string body = 4;

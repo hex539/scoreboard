@@ -1,5 +1,6 @@
 package me.hex539.testing.utils;
 
+import static org.domjudge.proto.DomjudgeProto.Category;
 import static org.domjudge.proto.DomjudgeProto.Contest;
 import static org.domjudge.proto.DomjudgeProto.Problem;
 import static org.domjudge.proto.DomjudgeProto.ScoreboardRow;
@@ -32,6 +33,7 @@ public final class MockScoreboardModel {
     private final List<Problem> problems = new ArrayList<>();
     private final List<ScoreboardRow> rows = new ArrayList<>();
     private final List<Team> teams = new ArrayList<>();
+    private final List<Category> categories = new ArrayList<>();
 
     public ScoreboardModel build() {
       return new ScoreboardModel() {
@@ -53,6 +55,11 @@ public final class MockScoreboardModel {
         @Override
         public List<ScoreboardRow> getRows() {
           return rows;
+        }
+
+        @Override
+        public Collection<Category> getCategories() {
+          return categories;
         }
       };
     }
@@ -89,9 +96,18 @@ public final class MockScoreboardModel {
     }
 
     public Builder addRow(final String teamName, final String... attempts) {
+      if (teams.size() == 0) {
+        categories.add(Category.newBuilder()
+            .setId(1 + (0x5555 ^ categories.size()))
+            .setName("Contestants")
+            .setColor("red")
+            .setSortOrder(1 + categories.size())
+            .build());
+      }
       final Team team = Team.newBuilder()
           .setId(1 + (0xAAAA ^ teams.size()))
           .setName(teamName)
+          .setCategory(categories.get(0).getId())
           .build();
       teams.add(team);
 

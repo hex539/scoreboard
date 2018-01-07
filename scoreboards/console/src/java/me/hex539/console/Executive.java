@@ -156,8 +156,8 @@ public class Executive {
       StringBuilder sb = new StringBuilder(
           String.format("%-" + MAX_TEAM_NAME_LENGTH + "s\t│ %2d │ %6d ",
               team.getName(),
-              row.getScore().getNumSolved(),
-              row.getScore().getTotalTime()));
+              Math.max(0, row.getScore().getNumSolved()),
+              Math.max(0, row.getScore().getTotalTime())));
       row.getProblemsList().forEach(p -> {
         boolean hl = (highlight != null && highlight.getLabel().equals(p.getLabel()));
         sb.append("│" + (hl ? '[' : ' ') + formatAttempt(p) + (hl ? ']' : ' '));
