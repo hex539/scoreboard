@@ -142,6 +142,7 @@ public class ResolverController {
 
   public void advance() {
     if (pendingActions.isEmpty()) {
+      removeInvalidatedKeys();
       judgeNextProblem(teamOrdering.poll().team);
     }
     pendingActions.poll().run();
@@ -198,12 +199,14 @@ public class ResolverController {
     logger.log("invalidateTeamOrdering " + team.getId());
     TeamKey key =
         teamSubmissions.containsKey(team.getId())
-            ? new TeamKey(team, model.getRow(team).getRank())
+            ? new TeamKey(team, model.getRow(team))
             : null;
     Optional.ofNullable(teamKeys.put(team.getId(), key)).ifPresent(TeamKey::invalidate);
-    if (key != null) {
-      teamOrdering.add(key);
-    }
+    Optional.ofNullable(key).ifPresent(teamOrdering::add);
+    removeInvalidatedKeys();
+  }
+
+  private void removeInvalidatedKeys() {
     while (teamOrdering.peek() != null && teamOrdering.peek().invalidated) {
       teamOrdering.poll();
     }
@@ -220,12 +223,12 @@ public class ResolverController {
    */
   private class TeamKey implements Comparable<TeamKey> {
     public final Team team;
-    private final long rank;
+    private final ScoreboardRow row;
     public boolean invalidated = false;
 
-    public TeamKey(final Team team, final long rank) {
+    public TeamKey(final Team team, final ScoreboardRow row) {
       this.team = team;
-      this.rank = rank;
+      this.row = row;
     }
 
     public void invalidate() {
@@ -234,10 +237,7 @@ public class ResolverController {
 
     @Override
     public int compareTo(TeamKey other) {
-      if (rank != other.rank) {
-        return Long.compare(other.rank, rank);
-      }
-      return Long.compare(team.getId(), other.team.getId());
+      return -Comparators.compareRows(team, row, other.team, other.row);
     }
   }
 }
