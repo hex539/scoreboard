@@ -1,9 +1,9 @@
 package(default_visibility = ["//visibility:public"])
 
 DEPS = [
-    "//domjudge/proto:proto",
-    "//domjudge/proto:annotations",
-    "//domjudge/proto:annotations_compile_imports",
+    "//clics/proto:proto",
+    "//clics/proto:annotations",
+    "//clics/proto:annotations_compile_imports",
     "//third_party/gson:lib",
     "@auto_value//:processor",
     "@com_google_protobuf//:protobuf_java",

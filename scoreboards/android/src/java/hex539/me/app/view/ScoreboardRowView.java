@@ -52,7 +52,7 @@ public class ScoreboardRowView extends LinearLayout implements ScoreboardModel.O
   }
 
   @Override
-  public void onProblemAttempted(Team team, ScoreboardProblem problem) {
+  public void onScoreChanged(Team team, ScoreboardProblem problem) {
   }
 */
 }

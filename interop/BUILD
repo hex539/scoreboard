@@ -1,9 +1,10 @@
 package(default_visibility = ["//visibility:public"])
 
 DEPS = [
-  "//domjudge/api",
-  "//domjudge/proto",
-  "@auto_value//:processor",
+    "//clics/proto",
+    "//domjudge/proto",
+    "@auto_value//:processor",
+    "@com_google_protobuf//:protobuf_java",
 ]
 
 android_library(
@@ -15,7 +16,7 @@ android_library(
 )
 
 java_library(
-  name = "scoreboard",
+  name = "interop",
   srcs = glob([
     "src/java/**"
   ]),

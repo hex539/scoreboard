@@ -8,8 +8,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.domjudge.proto.DomjudgeProto.ScoreboardRow;
-import static org.domjudge.proto.DomjudgeProto.ScoreboardProblem;
+import edu.clics.proto.ClicsProto.ScoreboardRow;
+import edu.clics.proto.ClicsProto.ScoreboardProblem;
 
 public class ProblemCell extends TableCell<ScoreboardRow, ScoreboardProblem> {
   private static enum State {

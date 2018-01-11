@@ -6,8 +6,8 @@ java_library(
     "utils/src/java/**/*.java",
   ]),
   deps = [
-    "//domjudge/proto",
-    "//domjudge/scoreboard",
+    "//clics/proto",
+    "//contest",
   ],
 )
 
@@ -17,11 +17,26 @@ java_test(
   test_class = "org.domjudge.api.ModelObserverTest",
   srcs = glob([
     "domjudge/src/java/org/domjudge/api/ModelObserverTest.java",
+    "domjudge/src/java/org/domjudge/api/SubmitInfo.java",
   ]),
   deps = [
     ":utils",
-    "//domjudge/proto",
-    "//domjudge/scoreboard",
+    "//clics/proto",
+    "//contest",
+    "@mockito//jar",
+    "@truth//jar",
+  ],
+)
+
+java_test(
+  name = "contest_data_structures",
+  size="small",
+  test_class = "me.hex539.contest.DataStructuresTest",
+  srcs = glob([
+    "contest/src/java/me/hex539/contest/DataStructuresTest.java",
+  ]),
+  deps = [
+    "//contest",
     "@mockito//jar",
     "@truth//jar",
   ],

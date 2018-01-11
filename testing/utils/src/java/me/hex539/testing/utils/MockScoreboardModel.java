@@ -1,29 +1,23 @@
 package me.hex539.testing.utils;
 
-import static org.domjudge.proto.DomjudgeProto.Category;
-import static org.domjudge.proto.DomjudgeProto.Contest;
-import static org.domjudge.proto.DomjudgeProto.Problem;
-import static org.domjudge.proto.DomjudgeProto.ScoreboardRow;
-import static org.domjudge.proto.DomjudgeProto.ScoreboardScore;
-import static org.domjudge.proto.DomjudgeProto.ScoreboardProblem;
-import static org.domjudge.proto.DomjudgeProto.Team;
-
+import com.google.protobuf.Duration;
+import edu.clics.proto.ClicsProto.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.domjudge.scoreboard.ScoreboardModel;
+import me.hex539.contest.ScoreboardModel;
 
 public final class MockScoreboardModel {
   public static ScoreboardModel example() {
     return new Builder()
         .setProblems("Apricot", "Bamboo", "Coconut", "Durian")
-        .addRow("Bath Ducks 🦆",  "+", "+",  "+",  "+")
+        .addRow("Bath Ducks 🦆", "+", "+",  "+",  "+")
         .addRow("Bath Crocs 🐊", "+", " ",  "+4", "?")
         .addRow("Bath Shower ☂", " ", "-1", "+2", "?1")
         .build();
@@ -33,13 +27,18 @@ public final class MockScoreboardModel {
     private final List<Problem> problems = new ArrayList<>();
     private final List<ScoreboardRow> rows = new ArrayList<>();
     private final List<Team> teams = new ArrayList<>();
-    private final List<Category> categories = new ArrayList<>();
+    private final List<Organization> organizations = new ArrayList<>();
+    private final List<Group> groups = new ArrayList<>();
+    private final List<Submission> submissions = new ArrayList<>();
+    private final List<Judgement> judgements = new ArrayList<>();
+
+    private static final int SUBMISSION_TIME = 100;
 
     public ScoreboardModel build() {
       return new ScoreboardModel() {
         @Override
         public Contest getContest() {
-          return Contest.newBuilder().setId(77).build();
+          return Contest.newBuilder().setFormalName("FakeContest").build();
         }
 
         @Override
@@ -58,8 +57,23 @@ public final class MockScoreboardModel {
         }
 
         @Override
-        public Collection<Category> getCategories() {
-          return categories;
+        public Collection<Organization> getOrganizations() {
+          return organizations;
+        }
+
+        @Override
+        public Collection<Group> getGroups() {
+          return groups;
+        }
+
+        @Override
+        public List<Submission> getSubmissions() {
+          return submissions;
+        }
+
+        @Override
+        public List<Judgement> getJudgements() {
+          return judgements;
         }
       };
     }
@@ -67,17 +81,13 @@ public final class MockScoreboardModel {
     public Builder setProblems(final String... names) {
       problems.addAll(IntStream.range(0, names.length)
           .mapToObj(i -> Problem.newBuilder()
-              .setId(1 + (0x1234 ^ i))
+              .setId(names[i])
+              .setOrdinal(i)
               .setName(names[i])
-              .setLabel(names[i])
-              .setShortName(names[i].substring(0, 1))
+              .setLabel(names[i].substring(0, 1))
               .build())
           .collect(Collectors.toList()));
       return this;
-    }
-
-    public Builder addRow() {
-      return addRow("Test");
     }
 
     public Builder addRow(final String teamName) {
@@ -97,25 +107,28 @@ public final class MockScoreboardModel {
 
     public Builder addRow(final String teamName, final String... attempts) {
       if (teams.size() == 0) {
-        categories.add(Category.newBuilder()
-            .setId(1 + (0x5555 ^ categories.size()))
-            .setName("Contestants")
-            .setColor("red")
-            .setSortOrder(1 + categories.size())
+        organizations.add(Organization.newBuilder()
+            .setId("org")
+            .setName("Fake Organization")
+            .build());
+        groups.add(Group.newBuilder()
+            .setId("teams")
+            .setName("Fake Group")
             .build());
       }
       final Team team = Team.newBuilder()
-          .setId(1 + (0xAAAA ^ teams.size()))
+          .setId(teamName)
           .setName(teamName)
-          .setCategory(categories.get(0).getId())
+          .setOrganizationId(organizations.get(0).getId())
+          .addGroupIds(groups.get(0).getId())
           .build();
       teams.add(team);
 
       final List<ScoreboardProblem> cols = IntStream.range(0, attempts.length)
           .mapToObj(i -> ScoreboardProblem.newBuilder()
-              .setLabel(problems.get(i).getLabel())
+              .setProblemId(problems.get(i).getId())
               .setSolved(attempts[i].startsWith("+"))
-              .setTime(attempts[i].startsWith("+") ? 321 : 0)
+              .setTime(attempts[i].startsWith("+") ? SUBMISSION_TIME : 0)
               .setNumJudged(
                   (attempts[i].startsWith("+") || attempts[i].startsWith("?") ? 1 : 0)
                   + (attempts[i].length() > 1 ? Integer.parseInt(attempts[i].substring(1)) : 0))
@@ -123,17 +136,48 @@ public final class MockScoreboardModel {
               .build())
           .collect(Collectors.toList());
 
+      cols.stream()
+          .forEach(col -> {
+              IntStream.range(0, (col.getSolved() ? 1 : 0) * -1 + col.getNumJudged())
+                  .forEach(i -> addSubmission(teamName, col.getProblemId(), "wrong-answer"));
+              IntStream.range(0, (col.getSolved() ? 1 : 0))
+                  .forEach(i -> addSubmission(teamName, col.getProblemId(), "correct"));
+          });
+
       rows.add(ScoreboardRow.newBuilder()
-          .setTeam(team.getId())
+          .setTeamId(team.getId())
           .setRank(rows.size() + 1)
           .setScore(ScoreboardScore.newBuilder()
-              .setNumSolved(cols.stream().filter(ScoreboardProblem::getSolved).count())
-              .setTotalTime(cols.stream().mapToLong(c -> c.getSolved() ? c.getTime() : 0).sum())
+              .setNumSolved((int) cols.stream().filter(ScoreboardProblem::getSolved).count())
+              .setTotalTime((int) cols.stream().mapToLong(c -> c.getSolved() ? c.getTime() : 0).sum())
               .build())
           .addAllProblems(cols)
           .build());
 
       return this;
+    }
+
+    private Submission addSubmission(final String teamName, final String problemId) {
+      Submission res = Submission.newBuilder()
+          .setId("ms" + Integer.toString(submissions.size() + 1))
+          .setTeamId(teamName)
+          .setProblemId(problemId)
+          .setContestTime(Duration.newBuilder().setSeconds(SUBMISSION_TIME * 60))
+          .setLanguageId("Parseltongue")
+          .build();
+      submissions.add(res);
+      return res;
+    }
+
+    private Judgement addSubmission(final String teamName, final String problemId, String verdict) {
+      Submission s = addSubmission(teamName, problemId);
+      Judgement j = Judgement.newBuilder()
+          .setId("mj" + Integer.toString(judgements.size() + 1))
+          .setSubmissionId(s.getId())
+          .setJudgementTypeId(verdict)
+          .build();
+      judgements.add(j);
+      return j;
     }
   }
 }

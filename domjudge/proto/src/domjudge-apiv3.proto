@@ -143,4 +143,5 @@ message EntireContest {
   repeated ScoreboardRow scoreboard = 10;
   repeated Submission submissions = 11;
   repeated Team teams = 12;
+  repeated Language languages = 13;
 }

@@ -7,7 +7,7 @@ java_library(
     "proto/src/**/*.java",
   ]),
   deps = [
-    "@google_protobuf//:protobuf_java",
+    "@com_google_protobuf//:protobuf_java",
     "@gson//jar",
     "@guava//jar",
   ],

@@ -19,9 +19,10 @@ import javafx.stage.Stage;
 import me.hex539.resolver.cells.ProblemCell;
 
 import org.domjudge.api.DomjudgeRest;
-import org.domjudge.scoreboard.ScoreboardModel;
-import org.domjudge.scoreboard.ScoreboardModelImpl;
-import org.domjudge.proto.DomjudgeProto;
+import me.hex539.contest.ScoreboardModel;
+import me.hex539.contest.ScoreboardModelImpl;
+import me.hex539.interop.ContestConverters;
+import edu.clics.proto.ClicsProto;
 
 public class Executive extends Application {
   private ScoreboardModel model;
@@ -63,16 +64,19 @@ public class Executive extends Application {
     System.err.println("Fetching from: " + url);
 
     DomjudgeRest api = new DomjudgeRest(url);
-    return ScoreboardModelImpl.create(api);
+    return ScoreboardModelImpl.newBuilder(
+        ContestConverters.toClics(api.getEntireContest())).build();
   }
 
   private static ScoreboardModel getLocalModel(String path) throws IOException {
     System.err.println("Fetching from file: " + path);
 
     try (Reader is = new InputStreamReader(new FileInputStream(path))) {
-      DomjudgeProto.EntireContest.Builder ecb = DomjudgeProto.EntireContest.newBuilder();
+      ClicsProto.ClicsContest.Builder ecb = ClicsProto.ClicsContest.newBuilder();
       TextFormat.merge(is, ecb);
-      return ScoreboardModelImpl.create(ecb.build());
+      return ScoreboardModelImpl.newBuilder(ecb.build())
+          .filterGroups(x -> "University of Bath".equals(x.getName()))
+          .build();
     }
   }
 

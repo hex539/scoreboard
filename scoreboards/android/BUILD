@@ -22,7 +22,7 @@ android_binary(
   ]),
   deps = [
     "//domjudge/api:android",
-    "//domjudge:proto",
+    "//domjudge/proto",
     "//domjudge/scoreboard:android",
     "@androidsdk//com.android.support:recyclerview-v7-25.3.1",
   ],

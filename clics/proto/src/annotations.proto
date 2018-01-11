@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package js;
+option java_package = "com.google.protobuf";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.FieldOptions {
+  // Indicates a field name that overrides the default for serialization
+  string serialized_name = 92066888;
+}
+
+extend google.protobuf.EnumValueOptions {
+  // Indicates a field value that overrides the default for serialization
+  string serialized_value = 92066888;
+}

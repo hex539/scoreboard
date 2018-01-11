@@ -11,10 +11,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.domjudge.scoreboard.JudgingDispatcher;
-import org.domjudge.scoreboard.ResolverController;
-import org.domjudge.scoreboard.ScoreboardModelImpl;
-import org.domjudge.proto.DomjudgeProto.*;
+import edu.clics.api.ClicsRest;
+import edu.clics.proto.ClicsProto.*;
+
+import me.hex539.contest.JudgementDispatcher;
+import me.hex539.contest.ResolverController;
+import me.hex539.contest.ScoreboardModel;
+import me.hex539.contest.ScoreboardModelImpl;
 
 public class Executive {
   private final ContestFetcher contestFetcher;
@@ -54,42 +57,55 @@ public class Executive {
 
   @Command(name = "scoreboard")
   private void showScoreboard(Invocation invocation) throws Exception {
-    EntireContest entireContest = contestFetcher.get();
+    ClicsContest entireContest = contestFetcher.get();
     List<ScoreboardRow> scoreboard = entireContest.getScoreboardList();
-    Team[] teams = entireContest.getTeamsList().toArray(new Team[0]);
-    Map<Long, Team> teamMap = Arrays.stream(teams)
-        .collect(Collectors.toMap(Team::getId, Function.identity()));
 
-    System.out.println(PrettyPrinter.formatScoreboardHeader(entireContest.getProblemsList()));
+    System.out.println(PrettyPrinter.formatScoreboardHeader(
+        entireContest.getProblemsMap().values().stream()
+            .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()))
+            .collect(Collectors.toList())));
     for (ScoreboardRow row : scoreboard) {
-      System.out.println(PrettyPrinter.formatScoreboardRow(teamMap.get(row.getTeam()), row));
+      System.out.println(PrettyPrinter.formatScoreboardRow(
+            entireContest.getTeamsOrThrow(row.getTeamId()), row));
     }
   }
 
   @Command(name = "verdicts")
   private void showJudgements(Invocation invocation) throws Exception {
-    EntireContest entireContest = contestFetcher.get();
+    ClicsContest entireContest = contestFetcher.get();
 
-    ScoreboardModelImpl model = ScoreboardModelImpl.create(entireContest).withoutSubmissions();
-    JudgingDispatcher dispatcher = new JudgingDispatcher(model);
+    ScoreboardModelImpl fullModel = ScoreboardModelImpl.newBuilder(entireContest)
+        .filterGroups(g -> invocation.getGroup() == null || invocation.getGroup().equals(g.getName()))
+        .filterTooLateSubmissions()
+        .build();
+    ScoreboardModelImpl model = fullModel.toBuilder()
+        .withEmptyScoreboard()
+        .filterSubmissions(x -> false)
+        .build();
+    JudgementDispatcher dispatcher = new JudgementDispatcher(model);
     dispatcher.observers.add(model);
 
-    for (Submission submission : entireContest.getSubmissionsList()) {
-      dispatcher.notifySubmission(submission);
-    }
+    for (Judgement judgement : fullModel.getJudgements()) {
+      try {
+        model.getSubmission(judgement.getSubmissionId());
+      } catch (Exception e) {
+        if (!dispatcher.notifySubmission(fullModel.getSubmission(judgement.getSubmissionId()))) {
+          continue;
+        }
+      }
+      if (!dispatcher.notifyJudgement(judgement)) {
+        continue;
+      }
 
-    for (Judging judging : entireContest.getJudgingsList()) {
-      dispatcher.notifyJudging(judging);
-
-      final Submission submission = model.getSubmission(judging.getSubmission());
-      final Team team = model.getTeam(submission.getTeam());
+      final Submission submission = model.getSubmission(judgement.getSubmissionId());
+      final Team team = model.getTeam(submission.getTeamId());
       final ScoreboardRow row = model.getRow(team);
 
       System.out.format(
           "%-" + MAX_TEAM_NAME_LENGTH + "s \t| %-20s | %-16s | %4d | %6d | rank=%3d | %s%n",
           team.getName(),
-          model.getProblem(submission.getProblem()).getName(),
-          judging.getOutcome(),
+          model.getProblem(submission.getProblemId()).getName(),
+          entireContest.getJudgementTypesOrThrow(judgement.getJudgementTypeId()).getName(),
           row.getScore().getNumSolved(),
           row.getScore().getTotalTime(),
           row.getRank(),
@@ -99,13 +115,16 @@ public class Executive {
 
   @Command(name = "resolver")
   private void showResolver(Invocation invocation) throws Exception {
-    EntireContest entireContest = contestFetcher.get();
-    ScoreboardModelImpl model = ScoreboardModelImpl.create(entireContest).withoutSubmissions();
+    ClicsContest entireContest = contestFetcher.get();
+    ScoreboardModelImpl reference = ScoreboardModelImpl.newBuilder(entireContest)
+        .filterGroups(g -> invocation.getGroup() == null || invocation.getGroup().equals(g.getName()))
+        .filterTooLateSubmissions()
+        .build();
+    ResolverController controller = new ResolverController(entireContest, reference);
 
-    Map<Long, Team> teamMap = model.getTeams().stream()
-        .collect(Collectors.toMap(Team::getId, Function.identity()));
-
-    ResolverController controller = new ResolverController(entireContest, model);
+    ScoreboardModelImpl model = reference.toBuilder().withEmptyScoreboard().build();
+    controller.observers.add(model);
+    controller.start();
 
     final AtomicReference<Team> focusedTeam = new AtomicReference<>();
     final AtomicReference<Problem> focusedProblem = new AtomicReference<>();
@@ -120,21 +139,27 @@ public class Executive {
     while (!controller.finished()) {
       controller.advance();
 
-      System.out.println(PrettyPrinter.formatScoreboardHeader(entireContest.getProblemsList()));
+      System.out.println(PrettyPrinter.formatScoreboardHeader(model.getProblems()));
       model.getRows().stream()
           .map(row -> PrettyPrinter.formatScoreboardRow(
-              teamMap.get(row.getTeam()),
+              model.getTeam(row.getTeamId()),
               row,
-              row.getTeam() == focusedTeam.get().getId() ? focusedProblem.get() : null))
+              focusedTeam.get() != null && row.getTeamId() == focusedTeam.get().getId() 
+                  ? focusedProblem.get()
+                  : null))
           .forEach(System.out::println);
 
-      Thread.sleep(200 /* milliseconds */);
+      Thread.sleep(200); // milliseconds
     }
   }
 
   @Command(name = "download")
   private void downloadContest(Invocation invocation) throws Exception {
-    TextFormat.print(contestFetcher.get(), System.out);
+    if (invocation.isTextFormat()) {
+      TextFormat.print(contestFetcher.get(), System.out);
+    } else {
+      contestFetcher.get().writeTo(System.out);
+    }
   }
 
   private static class PrettyPrinter {
@@ -158,12 +183,13 @@ public class Executive {
               team.getName(),
               Math.max(0, row.getScore().getNumSolved()),
               Math.max(0, row.getScore().getTotalTime())));
-      row.getProblemsList().forEach(p -> {
-        boolean hl = (highlight != null && highlight.getLabel().equals(p.getLabel()));
+      for (ScoreboardProblem p : row.getProblemsList()) {
+        boolean hl = (highlight != null && highlight.getId().equals(p.getProblemId()));
         sb.append("│" + (hl ? '[' : ' ') + formatAttempt(p) + (hl ? ']' : ' '));
-      });
+      }
       return sb.toString() + "│";
     }
+
     static String formatMiniScoreboardRow(List<ScoreboardProblem> row) {
       return row.stream().map(PrettyPrinter::formatAttempt).collect(Collectors.joining(""));
     }

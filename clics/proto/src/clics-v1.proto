@@ -1,0 +1,267 @@
+syntax = "proto3";
+
+// https://clics.ecs.baylor.edu/index.php/Contest_API#Contests
+
+package proto.clics;
+option java_package = "edu.clics.proto";
+option java_outer_classname = "ClicsProto";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "annotations.proto";
+
+// Endpoint: none. Used for storage.
+
+message ClicsContest {
+  Contest contest = 1;
+  ContestState state = 2;
+  repeated ScoreboardRow scoreboard = 3;
+  repeated EventFeedItem event_feed = 4 [(js.serialized_name) = "event-feed"];
+
+  map<string, JudgementType> judgement_types = 5 [(js.serialized_name) = "judgement-types"];
+  map<string, Language> languages = 6;
+  map<string, Problem> problems = 7;
+  map<string, Group> groups = 8;
+  map<string, Organization> organizations = 9;
+  map<string, Team> teams = 10;
+  map<string, TeamMember> team_members = 11 [(js.serialized_name) = "team-members"];
+  map<string, Submission> submissions = 12;
+  map<string, Judgement> judgements = 13;
+  map<string, Run> runs = 14;
+  map<string, Clarification> clarifications = 15;
+  map<string, Award> awards = 16;
+}
+
+// Endpoint: GET /contests => Contest[]
+// Endpoint: GET /contests/{} => Contest
+
+message Contest {
+  string id = 1;
+  string name = 2;
+  string formal_name = 3;
+
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Duration contest_duration = 5 [(js.serialized_name) = "duration"];
+  google.protobuf.Duration scoreboard_freeze_duration = 6;
+
+  sint64 penalty_time = 7;
+  repeated Media banners = 8 [(js.serialized_name) = "banner"];
+  repeated Media logos = 9 [(js.serialized_name) = "logo"];
+}
+
+// Endpoint: GET /contests/{}/judgement-types => JudgementType[]
+
+message JudgementType {
+  string id = 1;
+  string name = 2;
+  bool penalty = 3;
+  bool solved = 4;
+}
+
+// Endpoint: GET /contests/{}/languages => Language[]
+// Endpoint: GET /contests/{}/languages/{} => Language
+
+message Language {
+  string id = 1;
+  string name = 2;
+}
+
+// Endpoint: GET /contests/{}/problems => Problem[]
+// Endpoint: GET /contests/{}/problems/{} => Problem
+
+message Problem {
+  string id = 1;
+  string label = 2;
+  string name = 3;
+  sint32 ordinal = 4;
+  string rgb = 5;
+  string color = 6;
+  double time_limit = 7;
+  uint32 test_data_count = 8;
+}
+
+// Endpoint: GET /contests/{}/groups => Group[]
+// Endpoint: GET /contests/{}/groups/{} => Group
+
+message Group {
+  string id = 1;
+  string icpc_id = 2;
+  string name = 3;
+  string type = 4;
+  bool hidden = 5;
+}
+
+// Endpoint: GET /contests/{}/organizations => Organization[]
+// Endpoint: GET /contests/{}/organizations/{} => Organization
+
+message Organization {
+  string id = 1;
+  string icpc_id = 2;
+  string name = 3;
+  string formal_name = 4;
+  string country = 5;
+  string url = 6;
+  string social_media_tag = 7 [(js.serialized_name) = "twitter_hashtag"];
+  OrganizationLocation location = 8;
+  repeated Media logos = 9 [(js.serialized_name) = "logo"];
+}
+
+message OrganizationLocation {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+// Endpoint: GET /contests/{}/teams => Team[]
+// Endpoint: GET /contests/{}/teams/{} => Team
+
+message Team {
+  string id = 1;
+  string icpc_id = 2;
+  string name = 3;
+  string organization_id = 4;
+  repeated string group_ids = 5 [(js.serialized_name) = "group_ids"];
+  TeamLocation location = 6;
+  repeated Media photos = 7 [(js.serialized_name) = "photo"];
+  repeated Media videos = 8 [(js.serialized_name) = "video"];
+  repeated Media desktop_stream = 9 [(js.serialized_name) = "desktop"];
+  repeated Media webcam_stream = 10 [(js.serialized_name) = "webcam"];
+}
+
+message TeamLocation {
+  double x = 1; // metres
+  double y = 2; // metres
+  double rotation = 3; // degrees
+}
+
+// Endpoint: GET /contests/{}/team-members => TeamMember[]
+// Endpoint: GET /contests/{}/team-members/{} => TeamMember
+
+message TeamMember {
+  string id = 1;
+  string icpc_id = 2;
+  string team_id = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string sex = 6;
+  string role = 7;
+  repeated Media photos = 8 [(js.serialized_name) = "photo"];
+}
+
+// Endpoint: /contests/{}/state => ContestState
+
+message ContestState {
+  google.protobuf.Timestamp started = 1;
+  google.protobuf.Timestamp frozen = 2;
+  google.protobuf.Timestamp ended = 3;
+  google.protobuf.Timestamp thawed = 4;
+  google.protobuf.Timestamp finalized = 5;
+}
+
+// Endpoint: /contests/{}/submissions => Submission[]
+// Endpoint: /contests/{}/submissions/{} => Submission
+
+message Submission {
+  string id = 1;
+  string language_id = 2;
+  string problem_id = 3;
+  string team_id = 4;
+  google.protobuf.Timestamp time = 5;
+  google.protobuf.Duration contest_time = 6;
+  string entry_point = 7;
+  repeated Media files = 8;
+  repeated Media reactionVideo = 9 [(js.serialized_name) = "reaction"];
+}
+
+// Endpoint: /contests/{}/judgements => Judgement[]
+// Endpoint: /contests/{}/judgements/{} => Judgement
+
+message Judgement {
+  string id = 1;
+  string submission_id = 2;
+  string judgement_type_id = 3;
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Duration start_contest_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+  google.protobuf.Duration end_contest_time = 7;
+  double max_run_time = 8;
+}
+
+// Endpoint: /contests/{}/runs => Run[]
+// Endpoint: /contests/{}/runs/{} => Run
+
+message Run {
+  string id = 1;
+  string judgement_id = 2;
+  uint32 ordinal = 3;
+  string judgement_type_id = 4;
+  google.protobuf.Timestamp time = 5;
+  google.protobuf.Duration contest_time = 6;
+  double run_time = 7;
+}
+
+// Endpoint: /contests/{}/clarifications => Clarification[]
+// Endpoint: /contests/{}/clarifications/{} => Clarification
+
+message Clarification {
+  string id = 1;
+  string from_team_id = 2;
+  string to_team_id = 3;
+  string reply_to_id = 4;
+  string problem_id = 5;
+  string text = 6;
+  google.protobuf.Timestamp time = 7;
+  google.protobuf.Duration contest_time = 8;
+}
+
+// Endpoint: /contests/{}/awards/ => Award[]
+// Endpoint: /contests/{}/awards/{} => Award
+
+message Award {
+  string id = 1;
+  string citation = 2;
+  repeated string team_ids = 3;
+}
+
+// Endpoint: /contests/{}/scoreboard => ScoreboardRow[]
+
+message ScoreboardRow {
+  uint64 rank = 1;
+  string team_id = 2;
+  ScoreboardScore score = 3;
+  repeated ScoreboardProblem problems = 4;
+}
+
+message ScoreboardScore  {
+  uint32 num_solved = 1;
+  sint64 total_time = 2;
+}
+
+message ScoreboardProblem {
+  string problem_id = 1;
+  uint32 num_judged = 2;
+  uint32 num_pending = 3;
+  bool solved = 4;
+  sint64 time = 5;
+}
+
+// Endpoint: /contests/{}/event-feed => EventFeedItem[]
+
+// TODO: implement event feed. Needs extra parse rules because of bizarre stringly-typed format.
+
+message EventFeedItem {
+  string id = 1;
+  string type = 2;
+  string op = 3;
+  // PolymorphicMess data = 4;
+}
+
+// Basic types
+
+message Media {
+  string href = 1;
+  string mime = 2;
+  uint32 width = 3;
+  uint32 height = 4;
+}
+
+

@@ -19,32 +19,52 @@ public @CommandLineInterface interface Invocation {
     boolean isHelp();
 
   @Option(
-      defaultToNull = true,
       shortName = "u",
       longName = "url",
+      defaultToNull = true,
       description = "Scoreboard URL")
     String getUrl();
 
   @Option(
-      defaultToNull = true,
       shortName = "f",
       longName = "file",
+      defaultToNull = true,
       description = "Path to saved scoreboard")
     String getFile();
 
   @Option(
-      defaultToNull = true,
-      shortName = "l",
-      longName = "username",
-      description = "API access username")
-  String getUsername();
+      shortName = "a",
+      longName = "api",
+      defaultValue = "domjudge3",
+      description = "API version to use (domjudge3 or clics)")
+    String getApiTarget();
 
   @Option(
+      shortName = "g",
+      longName = "group",
       defaultToNull = true,
+      description = "Restrict to given group if showing a scoreboard")
+    String getGroup();
+
+  @Option(
+      shortName = "l",
+      longName = "username",
+      defaultToNull = true,
+      description = "API access username")
+    String getUsername();
+
+  @Option(
       shortName = "p",
       longName = "password",
+      defaultToNull = true,
       description = "API access password")
-  String getPassword();
+    String getPassword();
+
+  @Option(
+      shortName = "t",
+      longName = "textformat",
+      description = "Read and write saved contests in text format instead of binary")
+    boolean isTextFormat();
 
   @Unparsed(
       name = "ACTION")

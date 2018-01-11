@@ -3,11 +3,11 @@ package(default_visibility = ["//visibility:public"])
 
 java_proto_library(
   name = "proto",
-  protos = ["src/domjudge-apiv3.proto"],
+  protos = ["src/clics-v1.proto"],
   proto_deps = [":annotations"],
   imports = [
     "external/com_google_protobuf/src",
-    "domjudge/proto/src",
+    "clics/proto/src",
   ],
 )
 

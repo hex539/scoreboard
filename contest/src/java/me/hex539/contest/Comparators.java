@@ -1,41 +1,47 @@
-package org.domjudge.scoreboard;
+package me.hex539.contest;
 
+import edu.clics.proto.ClicsProto.*;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.domjudge.proto.DomjudgeProto.*;
 
 class Comparators {
   public static class TeamComparator implements Comparator<Team> {
-    private final Map<Long, Category> categoryMap;
+    private final Teams contest;
 
-    public TeamComparator(Collection<Category> categories) {
-      categoryMap = categories.stream()
-          .collect(Collectors.toMap(Category::getId, Function.identity()));
+    public TeamComparator(Teams contest) {
+      this.contest = contest;
     }
 
+    @Override
     public int compare(Team a, Team b) {
-      if (a.getId() == b.getId()) {
+      if (a.getId().equals(b.getId())) {
         return 0;
       }
-      if (a.getCategory() != b.getCategory()) {
-        return Long.compare(
-            categoryMap.get(a.getCategory()).getSortOrder(),
-            categoryMap.get(b.getCategory()).getSortOrder());
+
+      int res = 0;
+      if ((res = Boolean.compare(isVisible(a), isVisible(b))) != 0
+          || (res = a.getName().compareTo(b.getName())) != 0) {
+        return res;
       }
-      return a.getName().compareTo(b.getName());
+      return 0;
+    }
+
+    protected boolean isVisible(Team t) {
+      return t.getGroupIdsList().stream()
+          .map(contest::getGroup).filter(Group::getHidden).count() == 0;
     }
   }
 
   public static class RowComparator implements Comparator<ScoreboardRow> {
-    private final Map<Long, Team> teamMap;
+    private final Teams contest;
     private final TeamComparator teamComparator;
 
-    public RowComparator(Collection<Team> teams, Collection<Category> categories) {
-      this.teamMap = teams.stream().collect(Collectors.toMap(Team::getId, Function.identity()));
-      this.teamComparator = new TeamComparator(categories);
+    public RowComparator(Teams contest) {
+      this.contest = contest;
+      this.teamComparator = new TeamComparator(contest);
     }
 
     /**
@@ -62,15 +68,21 @@ class Comparators {
      * for teams who don't get medals, on account of each university having its own quota and
      * possibly even its own filtered scoreboard.
      **/
+    @Override
     public int compare(ScoreboardRow row1, ScoreboardRow row2) {
-      final Team team1 = teamMap.get(row1.getTeam());
-      final Team team2 = teamMap.get(row2.getTeam());
+      final Team team1 = contest.getTeam(row1.getTeamId());
+      final Team team2 = contest.getTeam(row2.getTeamId());
 
-      if (team1.getId() == team2.getId() || team1.getCategory() != team2.getCategory()) {
-        return teamComparator.compare(team1, team2);
+      if (team1.getId().equals(team2.getId())) {
+       return 0;
       }
 
       int res = 0;
+      if ((res = Boolean.compare(
+          teamComparator.isVisible(team1),
+          teamComparator.isVisible(team2))) != 0) {
+        return res;
+      }
       if ((res = Long.compare(
           -row1.getScore().getNumSolved(),
           -row2.getScore().getNumSolved())) != 0) {
