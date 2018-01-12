@@ -18,6 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,7 +69,7 @@ class RestClient<Self extends RestClient> {
   }
 
   public <T> T requestFrom(String endpoint, ResponseHandler<? super String, T> handler)
-        throws IOException {
+        throws CompletionException {
     Request.Builder request = new Request.Builder()
         .url(url + endpoint);
 
@@ -93,6 +97,8 @@ class RestClient<Self extends RestClient> {
           throw new IOException(
               "GET " + endpoint + ": " + response.code() + ", " + response.message());
       }
+    } catch (IOException e) {
+      throw new CompletionException(e);
     }
   }
 }
@@ -130,36 +136,54 @@ public class ClicsRest extends RestClient<ClicsRest> {
   }
 
   private ClicsContest.Builder buildPublicContest(Contest contest) throws IOException {
+    return buildPublicContest(contest, ForkJoinPool.commonPool());
+  }
+
+  private ClicsContest.Builder buildPublicContest(Contest contest, Executor executor)
+      throws IOException {
     final String path = getContestPath(contest);
-    return ClicsContest.newBuilder()
-        .setContest(contest)
+    final ClicsContest.Builder b = ClicsContest.newBuilder()
+        .setContest(contest);
 
-        // TODO: Not implement by DOMjudge (2018-01).
-//        .setState(
-//            getFrom(path + "/state", ContestState.class).get())
-        // TODO: Not implemented by DOMjudge (2018-01).
-//        .putAllAwards(
-//            getMapFrom(path + "/awards", Award[].class, Award::getId))
-
-        .addAllScoreboard(
-            getListFrom(path + "/scoreboard", ScoreboardRow[].class))
-        .putAllJudgementTypes(
-            getMapFrom(path + "/judgement-types", JudgementType[].class, JudgementType::getId))
-        .putAllLanguages(
-            getMapFrom(path + "/languages", Language[].class, Language::getId))
-        .putAllProblems(
-            getMapFrom(path + "/problems", Problem[].class, Problem::getId))
-        .putAllGroups(
-            getMapFrom(path + "/groups", Group[].class, Group::getId))
-        .putAllTeams(
-            getMapFrom(path + "/teams", Team[].class, Team::getId))
-        // TODO: Not implemented by DOMjudge (2018-01).
-//        .putAllTeamMembers(
-//            getMapFrom(path + "/team-members", TeamMember[].class, TeamMember::getId))
-        .putAllSubmissions(
-            getMapFrom(path + "/submissions", Submission[].class, Submission::getId))
-        .putAllJudgements(
-            getMapFrom(path + "/judgements", Judgement[].class, Judgement::getId));
+    return CompletableFuture.allOf(
+//        TODO: Not implement by DOMjudge (2018-01).
+//        CompletableFuture.runAsync(() -> b.setState(
+//            getFrom(path + "/state", ContestState.class).get()),
+//            executor),
+//        TODO: Not implemented by DOMjudge (2018-01).
+//        CompletableFuture.runAsync(() -> b.putAllAwards(
+//            getMapFrom(path + "/awards", Award[].class, Award::getId)),
+//            executor),
+        CompletableFuture.runAsync(() -> b.addAllScoreboard(
+            getListFrom(path + "/scoreboard", ScoreboardRow[].class)),
+            executor),
+        CompletableFuture.runAsync(() -> b.putAllJudgementTypes(
+            getMapFrom(path + "/judgement-types", JudgementType[].class, JudgementType::getId)),
+            executor),
+        CompletableFuture.runAsync(() -> b.putAllLanguages(
+            getMapFrom(path + "/languages", Language[].class, Language::getId)),
+            executor),
+        CompletableFuture.runAsync(() -> b.putAllProblems(
+            getMapFrom(path + "/problems", Problem[].class, Problem::getId)),
+            executor),
+        CompletableFuture.runAsync(() -> b.putAllGroups(
+            getMapFrom(path + "/groups", Group[].class, Group::getId)),
+            executor),
+        CompletableFuture.runAsync(() -> b.putAllTeams(
+            getMapFrom(path + "/teams", Team[].class, Team::getId)),
+            executor),
+//        TODO: Not implemented by DOMjudge (2018-01).
+//        CompletableFuture.runAsync(() -> b.putAllTeamMembers(
+//            getMapFrom(path + "/team-members", TeamMember[].class, TeamMember::getId)),
+//            executor),
+        CompletableFuture.runAsync(() -> b.putAllSubmissions(
+            getMapFrom(path + "/submissions", Submission[].class, Submission::getId)),
+            executor),
+        CompletableFuture.runAsync(() -> b.putAllJudgements(
+            getMapFrom(path + "/judgements", Judgement[].class, Judgement::getId)),
+            executor))
+        .thenApplyAsync(ignore -> b)
+        .join();
   }
 
   // Including usually-unnecessary fields like run information, clarifications, and team members.
@@ -173,21 +197,21 @@ public class ClicsRest extends RestClient<ClicsRest> {
   }
 
   protected <T, K> Map<K, T> getMapFrom(String endpoint, Class<T[]> c, Function<T, K> m)
-      throws IOException {
+      throws CompletionException {
     return getListFrom(endpoint, c).stream().collect(Collectors.toMap(m, Function.identity()));
   }
 
-  protected <T> List<T> getListFrom(String endpoint, Class<T[]> c) throws IOException {
+  protected <T> List<T> getListFrom(String endpoint, Class<T[]> c) throws CompletionException {
     return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)))
         .map(Arrays::asList)
         .orElseGet(Collections::emptyList);
   }
 
-  protected <T> Optional<T> getFrom(String endpoint, Class<T> c) throws IOException {
+  protected <T> Optional<T> getFrom(String endpoint, Class<T> c) throws CompletionException {
     return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)));
   }
 
-  protected <T> Optional<T> getFrom(String endpoint, Type c) throws IOException {
+  protected <T> Optional<T> getFrom(String endpoint, Type c) throws CompletionException {
     return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)));
   }
 
