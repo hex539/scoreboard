@@ -12,7 +12,7 @@ import java.util.Set;
 import edu.clics.proto.ClicsProto.*;
 
 public class JudgementDispatcher {
-  private static final boolean DEBUG = true;
+  private static final boolean DEBUG = false;
 
   @FunctionalInterface
   private interface Logger {
