@@ -139,6 +139,33 @@ public class DataStructuresTest {
     assertThat(l.subSet(3L, 8L)).containsExactly(3L, 4L, 5L, 6L, 7L).inOrder();
   }
 
+  @Test
+  public void testFlatList() {
+    SplayList<Long> l = new SplayList<>(SplayList.unordered());
+
+    l.addAll(longList(1, 2, 4, 6, 5, 9, 7, 3, 8));
+    assertThat(l.get(3)).isEqualTo(6);
+
+    l.remove(3);
+    assertThat(l.get(3)).isEqualTo(5);
+
+    l.set(3, Long.valueOf(55));
+    assertThat(l.get(3)).isEqualTo(55);
+    assertThat(l.subList(1, l.size() - 1)).containsExactly(2L, 4L, 55L, 9L, 7L, 3L).inOrder();
+
+    // Copy onto the end of another unsorted list.
+    SplayList<Long> b = new SplayList<>(SplayList.unordered());
+    b.addAll(longList(1, 2, 3));
+    b.addAll(l);
+    assertThat(b).containsExactly(1L, 2L, 3L, 1L, 2L, 4L, 55L, 9L, 7L, 3L, 8L).inOrder();
+
+    // Merge into another sorted list.
+    SplayList<Long> c = new SplayList<>();
+    c.addAll(longList(1, 2, 3));
+    c.addAll(l.subList(1, l.size() - 1));
+    assertThat(c).containsExactly(1L, 2L, 3L, 4L, 7L, 9L, 55L).inOrder();
+  }
+
   private static List<Long> longList(long... v) {
     return Arrays.stream(v).boxed().collect(Collectors.toList());
   }

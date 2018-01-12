@@ -32,6 +32,10 @@ public class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<
     addAll(other);
   }
 
+  public static <T> Comparator<T> unordered() {
+    return null;
+  }
+
   @Override
   public Comparator<? super T> comparator() {
     return comp;
@@ -54,7 +58,7 @@ public class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<
 
   @Override
   public SplayList<T> headSet(T toElement) {
-    SplayList<T> res = new SplayList<>(this);
+    SplayList<T> res = new SplayList<>(this, comparator());
     if (res.root != null) {
       res.root = res.root.splay().find(toElement).cutBefore();
     }
@@ -63,7 +67,7 @@ public class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<
 
   @Override
   public SplayList<T> tailSet(T fromElement) {
-    SplayList<T> res = new SplayList<>(this);
+    SplayList<T> res = new SplayList<>(this, comparator());
     if (res.root != null) {
       res.root = res.root.splay().find(fromElement);
       res.root.cutBefore();
@@ -78,7 +82,15 @@ public class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<
 
   @Override
   public SplayList<T> subList(int fromIndex, int toIndex) {
-    throw new UnsupportedOperationException();
+    SplayList<T> res = new SplayList<>(this, comparator());
+    if (res.root != null && toIndex < size()) {
+      res.root = res.root.get(toIndex).splay().cutBefore();
+    }
+    if (res.root != null && fromIndex > 0) {
+      res.root = res.root.get(fromIndex).splay();
+      res.root.cutBefore();
+    }
+    return res;
   }
 
   @Override
@@ -129,14 +141,20 @@ public class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<
     if (index < 0 || index >= size()) {
       throw new NoSuchElementException();
     }
-    if (index > 0 && comparator().compare(get(index - 1), value) >= 0) {
-      throw new IllegalArgumentException();
+    final T res;
+    if (comparator() != null) {
+      if (index > 0 && comparator().compare(get(index - 1), value) >= 0) {
+        throw new IllegalArgumentException();
+      }
+      if (index + 1 < size() && comparator().compare(get(index + 1), value) <= 0) {
+        throw new IllegalArgumentException();
+      }
+      res = remove(index);
+      add(value);
+    } else {
+      res = remove(index);
+      add(index, value);
     }
-    if (index + 1 < size() && comparator().compare(get(index + 1), value) <= 0) {
-      throw new IllegalArgumentException();
-    }
-    T res = remove(index);
-    add(value);
     return res;
   }
 
@@ -145,20 +163,36 @@ public class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<
     if (index < 0 || index > size()) {
       throw new NoSuchElementException();
     }
-    if (index > 0 && comparator().compare(get(index - 1), value) >= 0) {
-      throw new IllegalArgumentException();
+    if (comparator() != null) {
+      if (index > 0 && comparator().compare(get(index - 1), value) >= 0) {
+        throw new IllegalArgumentException();
+      }
+      if (index < size() && comparator().compare(get(index), value) <= 0) {
+        throw new IllegalArgumentException();
+      }
+      add(value);
+    } else {
+      SplayTree t = new SplayTree(value);
+      if (root == null) {
+        root = t;
+      } else if (index == 0) {
+        root = t.insertBefore(root.splay().get(index));
+      } else {
+        root = t.insertAfter(root.splay().get(index - 1));
+      }
     }
-    if (index < size() && comparator().compare(get(index), value) <= 0) {
-      throw new IllegalArgumentException();
-    }
-    add(value);
   }
 
   @Override
   public boolean add(T value) {
-    SplayTree t = new SplayTree(value);
-    root = t.insertInto(root != null ? root.splay() : null);
-    return true;
+    final int oldSize = size();
+    if (comparator() == null) {
+      add(size(), value);
+    } else {
+      SplayTree t = new SplayTree(value);
+      root = t.insertInto(root != null ? root.splay() : null);
+    }
+    return size() == oldSize + 1;
   }
 
   @Override
@@ -204,6 +238,36 @@ public class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<
         } else {
           final int side = comparator().compare(key, parent.key);
           if (side == 0) {
+            // Already exists. Don't insert.
+            return parent.splay();
+          } else if (side < 0) {
+            if (parent.l == null) {
+              parent.setL(this);
+            } else {
+              parent = parent.l;
+              continue;
+            }
+          } else if (side > 0) {
+            if (parent.r == null) {
+              parent.setR(this);
+            } else {
+              parent = parent.r;
+              continue;
+            }
+          }
+        }
+        return splay();
+      }
+    }
+
+    public SplayTree insertBefore(SplayTree parent) {
+      SplayTree orig = parent;
+      while (true) {
+        if (parent == null) {
+          p = null;
+        } else {
+          final int side = (parent == orig ? -1 : 1);
+          if (side == 0) {
             // Technically the outer container should return false, but we aren't inserting
             // anything more than once by design, so this is OK for now.
             throw new Error("Comparator should not return 0");
@@ -227,6 +291,53 @@ public class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<
       }
     }
 
+    public SplayTree insertBefore(SplayTree parent, boolean z) {
+      splay();
+      if (parent == null) {
+        return splay();
+      } else if (parent.l == null) {
+        parent.setL(this);
+      } else {
+        parent = parent.l;
+        while (parent.r != null) {
+          parent = parent.r;
+        }
+        parent.setR(this);
+      }
+      return splay();
+    }
+
+    public SplayTree insertAfter(SplayTree parent) {
+      splay();
+      if (parent == null) {
+        return this;
+      } else if (parent.r == null) {
+        parent.setR(this);
+      } else {
+        parent = parent.r;
+        while (parent.l != null) {
+          parent = parent.l;
+        }
+        parent.setL(this);
+      }
+      return splay();
+    }
+
+    public SplayTree getFirst() {
+      SplayTree res = this;
+      while (res.l != null) {
+        res = res.l;
+      }
+      return res.splay();
+    }
+
+    public SplayTree getLast() {
+      SplayTree res = this;
+      while (res.r != null) {
+        res = res.r;
+      }
+      return res.splay();
+    }
     private void setL(SplayTree l) {
       if ((this.l = l) != null) l.p = this;
       updateSize();
@@ -292,7 +403,7 @@ public class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<
       } else {
         SplayTree a = cutBefore();
         SplayTree b = cutAfter();
-        return a.insertInto(b);
+        return a.getLast().insertBefore(b.getFirst());
       }
     }
 
