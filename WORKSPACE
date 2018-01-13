@@ -62,6 +62,6 @@ maven_jar(
 
 new_http_archive(
     name = "auto_value",
-    url = "http://repo1.maven.org/maven2/com/google/auto/value/auto-value/1.5.3/auto-value-1.5.3.jar",
+    url = "http://repo1.maven.org/maven2/com/google/auto/value/auto-value/1.4/auto-value-1.4.jar",
     build_file = "third_party/com/google/autovalue.BUILD",
 )

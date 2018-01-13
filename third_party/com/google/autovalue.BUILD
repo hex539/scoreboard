@@ -1,6 +1,6 @@
 java_import(
     name = "jar",
-    jars = ["auto-value-1.5.3.jar"],
+    jars = ["auto-value-1.4.jar"],
 )
 
 java_plugin(
