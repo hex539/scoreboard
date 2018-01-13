@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import java.io.InputStream;
 import me.hex539.app.intent.IntentUtils;
 import me.hex539.app.R;
 import me.hex539.app.view.ScoreboardRowView;
@@ -55,12 +56,10 @@ public class LiveScoreboardActivity extends Activity {
 
 //    final String uri = getIntent().getStringExtra(Extras.URI);
     mApiHandler.post(() -> {
-      try {
+      try (final InputStream nwerc2017 = getAssets().open("contests/nwerc2017.pb")) {
         mDownloader = new ContestDownloader()
-            .setUrl("https://domjudge.bath.ac.uk/domjudge/api")
+            .setStream(nwerc2017)
             .setApi("clics");
-//            .setUrl("https://domjudge.bath.ac.uk/domjudge/api/v3")
-//            .setApi("domjudge3");
         mEntireContest = mDownloader.fetch();
         mContest = mEntireContest.getContest();
         mModel = ScoreboardModelImpl.newBuilder(mEntireContest)
@@ -111,9 +110,6 @@ public class LiveScoreboardActivity extends Activity {
       ClicsProto.Team team = mModel.getTeam(row.getTeamId());
       ClicsProto.Organization organization = mModel.getOrganization(team.getOrganizationId());
       viewHolder.view.setRowInfo(ScoreboardRowView.RowInfo.create(row, team, organization));
-
-//      final ClicsProto.Team team = mModel.getTeam(mModel.getRow(position).getTeamId());
-//      viewHolder.view.setTeam(team, mModel.getOrganization(team.getOrganizationId()));
     }
   }
 

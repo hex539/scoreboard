@@ -17,6 +17,10 @@ android_binary(
   srcs = glob([
     "src/java/**",
   ]),
+  assets_dir = "assets",
+  assets = glob([
+    "assets/**",
+  ]),
   resource_files = glob([
     "res/**",
   ]),

@@ -2,17 +2,16 @@ package me.hex539.contest;
 
 import com.google.protobuf.TextFormat;
 
+import edu.clics.api.ClicsRest;
+import edu.clics.proto.ClicsProto;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.concurrent.atomic.AtomicReference;
-
-import edu.clics.api.ClicsRest;
-import edu.clics.proto.ClicsProto;
-
-import me.hex539.interop.ContestConverters;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import me.hex539.interop.ContestConverters;
 import org.domjudge.api.DomjudgeRest;
 import org.domjudge.proto.DomjudgeProto;
 
@@ -24,6 +23,7 @@ public class ContestDownloader {
 
   private String url;
   private String file;
+  private InputStream stream;
   private ApiTarget apiTarget = ApiTarget.clics;
   private boolean textFormat = false;
   private String username;
@@ -36,6 +36,11 @@ public class ContestDownloader {
 
   public ContestDownloader setFile(String file) {
     this.file = file;
+    return this;
+  }
+
+  public ContestDownloader setStream(InputStream stream) {
+    this.stream = stream;
     return this;
   }
 
@@ -60,13 +65,21 @@ public class ContestDownloader {
   }
 
   public ClicsProto.ClicsContest fetch() throws Exception {
-    switch (apiTarget) {
-      case clics:
-        return fetchClics();
-      case domjudge3:
-        return ContestConverters.toClics(fetchDomjudge3());
-      default:
-        throw new IllegalArgumentException("No such API type: " + apiTarget);
+    final InputStream fileStream = (file != null ? (stream = new FileInputStream(file)) : null);
+    try {
+      switch (apiTarget) {
+        case clics:
+          return fetchClics();
+        case domjudge3:
+          return ContestConverters.toClics(fetchDomjudge3());
+        default:
+          throw new IllegalArgumentException("No such API type: " + apiTarget);
+      }
+
+    } finally {
+      if (fileStream != null) {
+        fileStream.close();
+      }
     }
   }
 
@@ -75,8 +88,8 @@ public class ContestDownloader {
       final ClicsRest rest = getClicsRestApi();
       return rest.downloadAllContests().values().iterator().next();
     }
-    if (file != null) {
-      return fetchClicsContestFile(file, textFormat);
+    if (stream != null) {
+      return fetchClicsContestFile(stream, textFormat);
     }
     throw new Error();
   }
@@ -85,39 +98,35 @@ public class ContestDownloader {
     if (url != null) {
       return getRestApi().getEntireContest();
     }
-    if (file != null) {
-      return fetchDomjudgeContestFile(file, textFormat);
+    if (stream != null) {
+      return fetchDomjudgeContestFile(stream, textFormat);
     }
     throw new Error();
   }
 
-  private ClicsProto.ClicsContest fetchClicsContestFile(
-      String path, boolean isTextFormat) throws Exception {
-    try (FileInputStream f = new FileInputStream(path)) {
-      if (isTextFormat) {
-        try (Reader is = new InputStreamReader(f)) {
-          ClicsProto.ClicsContest.Builder ccb = ClicsProto.ClicsContest.newBuilder();
-          TextFormat.merge(is, ccb);
-          return ccb.build();
-        }
-      } else {
-        return ClicsProto.ClicsContest.parseFrom(f);
+  private ClicsProto.ClicsContest fetchClicsContestFile(InputStream f, boolean isTextFormat)
+      throws Exception {
+    if (isTextFormat) {
+      try (Reader is = new InputStreamReader(f)) {
+        ClicsProto.ClicsContest.Builder ccb = ClicsProto.ClicsContest.newBuilder();
+        TextFormat.merge(is, ccb);
+        return ccb.build();
       }
+    } else {
+      return ClicsProto.ClicsContest.parseFrom(f);
     }
   }
 
-  private DomjudgeProto.EntireContest fetchDomjudgeContestFile(String path, boolean isTextFormat)
+  private DomjudgeProto.EntireContest fetchDomjudgeContestFile(InputStream f, boolean isTextFormat)
       throws Exception {
-    try (FileInputStream f = new FileInputStream(path)) {
-      if (isTextFormat) {
-        try (Reader is = new InputStreamReader(f)) {
-          DomjudgeProto.EntireContest.Builder ecb = DomjudgeProto.EntireContest.newBuilder();
-          TextFormat.merge(is, ecb);
-          return ecb.build();
-        }
-      } else {
-        return DomjudgeProto.EntireContest.parseFrom(f);
+    if (isTextFormat) {
+      try (Reader is = new InputStreamReader(f)) {
+        DomjudgeProto.EntireContest.Builder ecb = DomjudgeProto.EntireContest.newBuilder();
+        TextFormat.merge(is, ecb);
+        return ecb.build();
       }
+    } else {
+      return DomjudgeProto.EntireContest.parseFrom(f);
     }
   }
 
