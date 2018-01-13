@@ -10,12 +10,9 @@ java_binary(
     "src/resources/**",
   ]),
   deps = [
-    "//clics/api",
     "//clics/proto",
-    "//domjudge/api",
     "//contest",
     "//interop",
-    "@jfoenix//jar",
   ],
 )
 

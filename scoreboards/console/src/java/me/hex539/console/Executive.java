@@ -11,25 +11,32 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import edu.clics.api.ClicsRest;
 import edu.clics.proto.ClicsProto.*;
 
+import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.JudgementDispatcher;
 import me.hex539.contest.ResolverController;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
 
 public class Executive {
-  private final ContestFetcher contestFetcher;
+  private final ContestDownloader contestFetcher;
   private static final int MAX_TEAM_NAME_LENGTH = 24;
 
-  public Executive(ContestFetcher contestFetcher) {
+  public Executive(ContestDownloader contestFetcher) {
     this.contestFetcher = contestFetcher;
   }
 
   public static void main(String[] args) throws Exception {
     Invocation invocation = Invocation.parseFrom(args);
-    final ContestFetcher contestFetcher = new ContestFetcher(invocation);
+    final ContestDownloader contestFetcher = new ContestDownloader()
+        .setFile(invocation.getFile())
+        .setUrl(invocation.getUrl())
+        .setTextFormat(invocation.isTextFormat())
+        .setApi(invocation.getApi());
+    if (invocation.getUsername() != null || invocation.getPassword() != null) {
+      contestFetcher.setCredentials(invocation.getUsername(), invocation.getPassword());
+    }
 
     List<String> actions = invocation.getActions();
     if (actions == null) {
@@ -57,7 +64,7 @@ public class Executive {
 
   @Command(name = "scoreboard")
   private void showScoreboard(Invocation invocation) throws Exception {
-    ClicsContest entireContest = contestFetcher.get();
+    ClicsContest entireContest = contestFetcher.fetch();
     List<ScoreboardRow> scoreboard = entireContest.getScoreboardList();
 
     System.out.println(PrettyPrinter.formatScoreboardHeader(
@@ -72,10 +79,10 @@ public class Executive {
 
   @Command(name = "verdicts")
   private void showJudgements(Invocation invocation) throws Exception {
-    ClicsContest entireContest = contestFetcher.get();
+    ClicsContest entireContest = contestFetcher.fetch();
 
     ScoreboardModelImpl fullModel = ScoreboardModelImpl.newBuilder(entireContest)
-        .filterGroups(g -> invocation.getGroup() == null || invocation.getGroup().equals(g.getName()))
+        .filterGroups(g -> invocation.getGroups() == null || invocation.getGroups().equals(g.getName()))
         .filterTooLateSubmissions()
         .build();
     ScoreboardModelImpl model = fullModel.toBuilder()
@@ -115,9 +122,9 @@ public class Executive {
 
   @Command(name = "resolver")
   private void showResolver(Invocation invocation) throws Exception {
-    ClicsContest entireContest = contestFetcher.get();
+    ClicsContest entireContest = contestFetcher.fetch();
     ScoreboardModelImpl reference = ScoreboardModelImpl.newBuilder(entireContest)
-        .filterGroups(g -> invocation.getGroup() == null || invocation.getGroup().equals(g.getName()))
+        .filterGroups(g -> invocation.getGroups() == null || invocation.getGroups().equals(g.getName()))
         .filterTooLateSubmissions()
         .build();
     ResolverController controller = new ResolverController(entireContest, reference);
@@ -156,9 +163,9 @@ public class Executive {
   @Command(name = "download")
   private void downloadContest(Invocation invocation) throws Exception {
     if (invocation.isTextFormat()) {
-      TextFormat.print(contestFetcher.get(), System.out);
+      TextFormat.print(contestFetcher.fetch(), System.out);
     } else {
-      contestFetcher.get().writeTo(System.out);
+      contestFetcher.fetch().writeTo(System.out);
     }
   }
 

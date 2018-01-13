@@ -1,10 +1,11 @@
 package(default_visibility = ["//visibility:public"])
 
 DEPS = [
-  "//domjudge/api",
-  "//domjudge/proto",
   "//clics/api",
   "//clics/proto",
+  "//domjudge/api",
+  "//domjudge/proto",
+  "//interop",
   "@auto_value//:processor",
 ]
 

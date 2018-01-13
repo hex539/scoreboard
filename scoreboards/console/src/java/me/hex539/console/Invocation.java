@@ -37,14 +37,14 @@ public @CommandLineInterface interface Invocation {
       longName = "api",
       defaultValue = "domjudge3",
       description = "API version to use (domjudge3 or clics)")
-    String getApiTarget();
+    String getApi();
 
   @Option(
       shortName = "g",
-      longName = "group",
+      longName = "groups",
       defaultToNull = true,
-      description = "Restrict to given group if showing a scoreboard")
-    String getGroup();
+      description = "Restrict to given comma-separated groups if showing a scoreboard")
+    String getGroups();
 
   @Option(
       shortName = "l",

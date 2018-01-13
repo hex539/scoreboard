@@ -1,12 +1,9 @@
 package me.hex539.resolver;
 
-import com.google.protobuf.TextFormat;
-
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.Reader;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -16,13 +13,10 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-import me.hex539.resolver.cells.ProblemCell;
-
-import org.domjudge.api.DomjudgeRest;
+import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
-import me.hex539.interop.ContestConverters;
-import edu.clics.proto.ClicsProto;
+import me.hex539.resolver.cells.ProblemCell;
 
 public class Executive extends Application {
   private ScoreboardModel model;
@@ -31,17 +25,26 @@ public class Executive extends Application {
   @Override
   public void start(Stage stage) throws Exception {
     Map<String, String> args = getParameters().getNamed();
-    String url = args.get("url");
-    String file = args.get("file");
+    Set<String> flags = new HashSet<>(getParameters().getUnnamed());
 
-    if (url != null) {
-      model = getModel(url);
-    } else if (file != null) {
-      model = getLocalModel(file);
-    } else {
+    if (args.get("url") == null && args.get("file") == null) {
       System.err.println("Need to supply a contest with either of --url or --file");
       System.exit(1);
     }
+
+    final Set<String> groups = args.containsKey("groups")
+        ? new HashSet<>(Arrays.asList(args.get("groups").split(",")))
+        : null;
+
+    model = ScoreboardModelImpl.newBuilder(
+        new ContestDownloader()
+            .setUrl(args.get("url"))
+            .setFile(args.get("file"))
+            .setApi(args.get("api"))
+            .setTextFormat(flags.contains("--textformat"))
+            .fetch())
+        .filterGroups(g -> groups == null || groups.contains(g.getName()))
+        .build();
 
     final Parent root = FXMLLoader.load(
         getClass().getResource("/resources/javafx/scoreboard.fxml"));
@@ -58,26 +61,6 @@ public class Executive extends Application {
     stage.setMaximized(true);
     stage.setScene(scene);
     stage.show();
-  }
-
-  private static ScoreboardModel getModel(String url) throws Exception {
-    System.err.println("Fetching from: " + url);
-
-    DomjudgeRest api = new DomjudgeRest(url);
-    return ScoreboardModelImpl.newBuilder(
-        ContestConverters.toClics(api.getEntireContest())).build();
-  }
-
-  private static ScoreboardModel getLocalModel(String path) throws IOException {
-    System.err.println("Fetching from file: " + path);
-
-    try (Reader is = new InputStreamReader(new FileInputStream(path))) {
-      ClicsProto.ClicsContest.Builder ecb = ClicsProto.ClicsContest.newBuilder();
-      TextFormat.merge(is, ecb);
-      return ScoreboardModelImpl.newBuilder(ecb.build())
-          .filterGroups(x -> "University of Bath".equals(x.getName()))
-          .build();
-    }
   }
 
   public static void main(String[] args) {
