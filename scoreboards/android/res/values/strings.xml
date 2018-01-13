@@ -2,4 +2,5 @@
 <resources>
   <string name="scoreboard_app">Scoreboard Monitor</string>
   <string name="live_scoreboard_activity">Scoreboard</string>
+  <string name="demo_contest">Demo Contest</string>
 </resources>

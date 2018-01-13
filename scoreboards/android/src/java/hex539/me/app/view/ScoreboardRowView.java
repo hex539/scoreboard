@@ -9,20 +9,34 @@ import android.os.HandlerThread;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.LongSparseArray;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import com.google.auto.value.AutoValue;
+import edu.clics.proto.ClicsProto;
 import me.hex539.app.R;
 import me.hex539.app.intent.IntentUtils;
-import org.domjudge.proto.DomjudgeProto;
-import org.domjudge.scoreboard.ScoreboardModel;
+import me.hex539.contest.ScoreboardModel;
 
-public class ScoreboardRowView extends LinearLayout implements ScoreboardModel.Observer{
+public class ScoreboardRowView extends LinearLayout implements ScoreboardModel.Observer {
+
+  @AutoValue
+  public static abstract class RowInfo {
+    public abstract ClicsProto.ScoreboardRow getRow();
+    public abstract ClicsProto.Team getTeam();
+    public abstract ClicsProto.Organization getOrganization();
+
+    public static RowInfo create(
+        ClicsProto.ScoreboardRow row,
+        ClicsProto.Team team,
+        ClicsProto.Organization organization) {
+      return new AutoValue_ScoreboardRowView_RowInfo(row, team, organization);
+    }
+  }
 
   private TextView mTeamNameView;
   private TextView mTeamAffiliationView;
-  private LongSparseArray<View> mProblems = new LongSparseArray<>();
+  private RowInfo rowInfo;
 
   public ScoreboardRowView(Context context) {
     super(context);
@@ -40,9 +54,15 @@ public class ScoreboardRowView extends LinearLayout implements ScoreboardModel.O
     mTeamAffiliationView = (TextView) findViewById(R.id.team_affiliation);
   }
 
-  public void setTeam(DomjudgeProto.Team team) {
+  public void setRowInfo(RowInfo rowInfo) {
+    this.rowInfo = rowInfo;
+    mTeamNameView.setText(rowInfo.getTeam().getName());
+    mTeamAffiliationView.setText(rowInfo.getOrganization().getName());
+  }
+
+  public void setTeam(ClicsProto.Team team, ClicsProto.Organization organization) {
     mTeamNameView.setText(team.getName());
-    mTeamAffiliationView.setText(team.getAffiliation());
+    mTeamAffiliationView.setText(organization.getName());
   }
 /*
   // TODO

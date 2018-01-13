@@ -11,9 +11,14 @@
       android:theme="@android:style/Theme.NoTitleBar">
     <activity
         android:name="me.hex539.app.activity.LiveScoreboardActivity"
-        android:label="@string/live_scoreboard_activity"
+        android:icon="@drawable/app_icon"
+        android:label="@string/demo_contest"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:exported="true">
+      <intent-filter>
+        <category android:name="android.intent.category.LAUNCHER" />
+        <action android:name="android.intent.action.MAIN" />
+      </intent-filter>
     </activity>
   </application>
 </manifest>

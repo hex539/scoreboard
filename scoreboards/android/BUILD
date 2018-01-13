@@ -1,7 +1,7 @@
 package(default_visibility = ["//visibility:private"])
 
 android_binary(
-  name = "app",
+  name = "android",
   manifest = "AndroidManifest.xml",
   custom_package = "me.hex539.app",
   multidex = "native",
@@ -21,9 +21,9 @@ android_binary(
     "res/**",
   ]),
   deps = [
-    "//domjudge/api:android",
-    "//domjudge/proto",
-    "//domjudge/scoreboard:android",
+    "//clics/proto",
+    "//contest:android",
     "@androidsdk//com.android.support:recyclerview-v7-25.3.1",
+    "@auto_value//:processor",
   ],
 )

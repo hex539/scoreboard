@@ -16,8 +16,10 @@ import android.widget.TextView;
 import me.hex539.app.intent.IntentUtils;
 import me.hex539.app.R;
 import me.hex539.app.view.ScoreboardRowView;
-import org.domjudge.api.DomjudgeRest;
-import org.domjudge.proto.DomjudgeProto;
+import me.hex539.contest.ContestDownloader;
+import me.hex539.contest.ScoreboardModel;
+import me.hex539.contest.ScoreboardModelImpl;
+import edu.clics.proto.ClicsProto;
 
 public class LiveScoreboardActivity extends Activity {
   private static final String TAG = LiveScoreboardActivity.class.getSimpleName();
@@ -31,28 +33,39 @@ public class LiveScoreboardActivity extends Activity {
   private Handler mApiHandler;
   private HandlerThread mApiHandlerThread;
 
-  private DomjudgeRest mApi;
-  private DomjudgeProto.Contest mContest;
+  private ContestDownloader mDownloader;
+  private ClicsProto.ClicsContest mEntireContest;
+  private ClicsProto.Contest mContest;
+  private ScoreboardModel mModel;
 
   @Override
   public void onCreate(Bundle savedState) {
     super.onCreate(savedState);
+/*
     if (!IntentUtils.validateIntent(getIntent(), Extras.class, TAG)) {
       finish();
       return;
     }
-
+*/
     setContentView(R.layout.scoreboard);
 
     mApiHandlerThread = new HandlerThread("api");
     mApiHandlerThread.start();
     mApiHandler = new Handler(mApiHandlerThread.getLooper());
 
-    final String uri = getIntent().getStringExtra(Extras.URI);
+//    final String uri = getIntent().getStringExtra(Extras.URI);
     mApiHandler.post(() -> {
       try {
-        mApi = new DomjudgeRest(uri);
-        mContest = mApi.getContest();
+        mDownloader = new ContestDownloader()
+            .setUrl("https://domjudge.bath.ac.uk/domjudge/api")
+            .setApi("clics");
+//            .setUrl("https://domjudge.bath.ac.uk/domjudge/api/v3")
+//            .setApi("domjudge3");
+        mEntireContest = mDownloader.fetch();
+        mContest = mEntireContest.getContest();
+        mModel = ScoreboardModelImpl.newBuilder(mEntireContest)
+            .filterGroups(g -> "University of Bath".equals(g.getName()))
+            .build();
       } catch (Exception e) {
         Log.e(TAG, "Failed to fetch active contest", e);
         finish();
@@ -60,22 +73,8 @@ public class LiveScoreboardActivity extends Activity {
       }
       runOnUiThread(() -> {
         ((TextView) findViewById(R.id.contest_name)).setText(mContest.getName());
-      });
-      mApiHandler.post(() -> {
-        final DomjudgeProto.ScoreboardRow[] rows;
-        final DomjudgeProto.Team[] teams;
-        try{
-          rows = mApi.getScoreboard(mContest);
-          teams = mApi.getTeams();
-        } catch (Exception e) {
-          Log.e(TAG, "Failed to fetch teams list", e);
-          finish();
-          return;
-        }
-        runOnUiThread(() -> {
-          final RecyclerView scoreboardRows = (RecyclerView) findViewById(R.id.scoreboard_rows);
-          scoreboardRows.setAdapter(new Adapter(rows, teams));
-        });
+        final RecyclerView scoreboardRows = (RecyclerView) findViewById(R.id.scoreboard_rows);
+        scoreboardRows.setAdapter(new Adapter(mModel));
       });
     });
   }
@@ -90,20 +89,15 @@ public class LiveScoreboardActivity extends Activity {
   }
 
   private static class Adapter extends RecyclerView.Adapter<ViewHolder> {
-    private final DomjudgeProto.ScoreboardRow[] mRows;
-    private final LongSparseArray<DomjudgeProto.Team> mTeams
-        = new LongSparseArray<>();
+    private final ScoreboardModel mModel;
 
-    public Adapter(DomjudgeProto.ScoreboardRow[] rows, DomjudgeProto.Team[] teams) {
-      mRows = rows;
-      for (DomjudgeProto.Team team : teams) {
-        mTeams.put(team.getId(), team);
-      }
+    public Adapter(ScoreboardModel model) {
+      mModel = model;
     }
 
     @Override
     public int getItemCount() {
-      return mRows.length;
+      return mModel.getTeams().size();
     }
 
     @Override
@@ -113,7 +107,13 @@ public class LiveScoreboardActivity extends Activity {
 
     @Override
     public void onBindViewHolder(ViewHolder viewHolder, int position) {
-      viewHolder.view.setTeam(mTeams.get(mRows[position].getTeam()));
+      ClicsProto.ScoreboardRow row = mModel.getRow(position);
+      ClicsProto.Team team = mModel.getTeam(row.getTeamId());
+      ClicsProto.Organization organization = mModel.getOrganization(team.getOrganizationId());
+      viewHolder.view.setRowInfo(ScoreboardRowView.RowInfo.create(row, team, organization));
+
+//      final ClicsProto.Team team = mModel.getTeam(mModel.getRow(position).getTeamId());
+//      viewHolder.view.setTeam(team, mModel.getOrganization(team.getOrganizationId()));
     }
   }
 
