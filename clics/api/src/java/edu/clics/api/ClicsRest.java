@@ -169,6 +169,9 @@ public class ClicsRest extends RestClient<ClicsRest> {
         CompletableFuture.runAsync(() -> b.putAllGroups(
             getMapFrom(path + "/groups", Group[].class, Group::getId)),
             executor),
+        CompletableFuture.runAsync(() -> b.putAllOrganizations(
+            getMapFrom(path + "/organizations", Organization[].class, Organization::getId)),
+            executor),
         CompletableFuture.runAsync(() -> b.putAllTeams(
             getMapFrom(path + "/teams", Team[].class, Team::getId)),
             executor),
