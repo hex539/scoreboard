@@ -44,6 +44,7 @@ public class ScoreboardRowView extends LinearLayout implements ScoreboardModel.O
     mTeamNameView.setText(team.getName());
     mTeamAffiliationView.setText(team.getAffiliation());
   }
+
 /*
   // TODO
   @Override

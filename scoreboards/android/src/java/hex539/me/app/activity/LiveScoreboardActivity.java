@@ -13,10 +13,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import java.util.ArrayDeque;
+import java.util.List;
+import java.util.Queue;
+import java.util.function.Consumer;
 import me.hex539.app.intent.IntentUtils;
 import me.hex539.app.R;
 import me.hex539.app.view.ScoreboardRowView;
 import org.domjudge.api.DomjudgeRest;
+import org.domjudge.api.JudgingDispatcher;
+import org.domjudge.api.ScoreboardModel;
+import org.domjudge.api.ScoreboardModelImpl;
 import org.domjudge.proto.DomjudgeProto;
 
 public class LiveScoreboardActivity extends Activity {
@@ -25,14 +32,19 @@ public class LiveScoreboardActivity extends Activity {
   public static class Extras {
     private Extras() {}
 
-    public static String URI = "uri";
+    public static final String URI = "uri";
+    public static final String USERNAME = "username";
+    public static final String PASSWORD = "password";
   }
 
   private Handler mApiHandler;
   private HandlerThread mApiHandlerThread;
 
   private DomjudgeRest mApi;
-  private DomjudgeProto.Contest mContest;
+  private ScoreboardModelImpl mScoreboard;
+  private JudgingDispatcher mDispatcher;
+  private Queue<DomjudgeProto.Submission> mPendingSubmissions = new ArrayDeque<>();
+  private Queue<DomjudgeProto.Judging> mPendingJudgings = new ArrayDeque<>();
 
   @Override
   public void onCreate(Bundle savedState) {
@@ -49,35 +61,75 @@ public class LiveScoreboardActivity extends Activity {
     mApiHandler = new Handler(mApiHandlerThread.getLooper());
 
     final String uri = getIntent().getStringExtra(Extras.URI);
+    final String username = getIntent().getStringExtra(Extras.USERNAME);
+    final String password = getIntent().getStringExtra(Extras.PASSWORD);
+
     mApiHandler.post(() -> {
       try {
         mApi = new DomjudgeRest(uri);
-        mContest = mApi.getContest();
+        if (username != null) {
+          mApi.setCredentials(username, password);
+        }
+        mScoreboard = ScoreboardModelImpl.create(mApi).withoutSubmissions();
+        mDispatcher = new JudgingDispatcher(mScoreboard);
+        mDispatcher.observers.add(mScoreboard);
+
+        for (DomjudgeProto.Submission submission : mApi.getSubmissions(mScoreboard.getContest())) {
+          mPendingSubmissions.add(submission);
+        }
+        for (DomjudgeProto.Judging judging : mApi.getJudgings(mScoreboard.getContest())) {
+          mPendingJudgings.add(judging);
+        }
       } catch (Exception e) {
         Log.e(TAG, "Failed to fetch active contest", e);
         finish();
         return;
       }
-      runOnUiThread(() -> {
-        ((TextView) findViewById(R.id.contest_name)).setText(mContest.getName());
-      });
-      mApiHandler.post(() -> {
-        final DomjudgeProto.ScoreboardRow[] rows;
-        final DomjudgeProto.Team[] teams;
-        try{
-          rows = mApi.getScoreboard(mContest);
-          teams = mApi.getTeams();
-        } catch (Exception e) {
-          Log.e(TAG, "Failed to fetch teams list", e);
-          finish();
-          return;
-        }
-        runOnUiThread(() -> {
-          final RecyclerView scoreboardRows = (RecyclerView) findViewById(R.id.scoreboard_rows);
-          scoreboardRows.setAdapter(new Adapter(rows, teams));
-        });
-      });
+      runOnUiThread(this::initUi);
     });
+  }
+
+  private void handleNextSubmission() {
+    DomjudgeProto.Submission submission = mPendingSubmissions.poll();
+    while (submission != null && submission.getTeam() > 120) {
+      submission = mPendingSubmissions.poll();
+    }
+    if (submission != null) {
+      mApiHandler.postDelayed(this::handleNextSubmission, 0);
+      mDispatcher.notifySubmission(submission);
+    }
+    else handleNextJudging();
+  }
+
+  private void handleNextJudging() {
+    DomjudgeProto.Judging judging = mPendingJudgings.poll();
+    while (judging != null) {
+      try {
+        mDispatcher.notifyJudging(judging);
+        mApiHandler.postDelayed(this::handleNextJudging, 100);
+        break;
+      } catch (Exception e) {
+        judging = mPendingJudgings.poll();
+      }
+    }
+  }
+
+  private void initUi() {
+    final TextView contestName = ((TextView) findViewById(R.id.contest_name));
+    contestName.setText(mScoreboard.getContest().getName());
+
+    final RecyclerView scoreboardRows = (RecyclerView) findViewById(R.id.scoreboard_rows);
+    scoreboardRows.setAdapter(new Adapter(mScoreboard, mDispatcher, this::runOnUiThread));
+
+    mApiHandler.post(this::handleNextSubmission);
+  }
+
+  @Override
+  public void onDestroy() {
+    if (mApiHandlerThread != null) {
+      mApiHandlerThread.interrupt();
+    }
+    super.onDestroy();
   }
 
   private static class ViewHolder extends RecyclerView.ViewHolder {
@@ -89,21 +141,44 @@ public class LiveScoreboardActivity extends Activity {
     }
   }
 
-  private static class Adapter extends RecyclerView.Adapter<ViewHolder> {
-    private final DomjudgeProto.ScoreboardRow[] mRows;
-    private final LongSparseArray<DomjudgeProto.Team> mTeams
-        = new LongSparseArray<>();
+  private static class Adapter
+      extends RecyclerView.Adapter<ViewHolder>
+      implements ScoreboardModel.Observer {
 
-    public Adapter(DomjudgeProto.ScoreboardRow[] rows, DomjudgeProto.Team[] teams) {
-      mRows = rows;
-      for (DomjudgeProto.Team team : teams) {
-        mTeams.put(team.getId(), team);
-      }
+    private final ScoreboardModel mModel;
+    private final JudgingDispatcher mDispatcher;
+    private final Consumer<Runnable> mRunOnUiThread;
+
+    private List<DomjudgeProto.ScoreboardRow> mCurrentRows;
+
+    public Adapter(
+        ScoreboardModel model,
+        JudgingDispatcher dispatcher,
+        Consumer<Runnable> runOnUiThread) {
+      mModel = model;
+      mDispatcher = dispatcher;
+      mRunOnUiThread = runOnUiThread;
+
+      mDispatcher.observers.add(this);
+
+      mCurrentRows = mModel.getRows();
+      setHasStableIds(true);
+    }
+
+    private void runOnUiThread(Runnable r) {
+      mRunOnUiThread.accept(r);
+    }
+
+    // RecyclerView.Adapter
+
+    @Override
+    public long getItemId(int position) {
+      return getTeamAt(position).getId();
     }
 
     @Override
     public int getItemCount() {
-      return mRows.length;
+      return mModel.getRows().size();
     }
 
     @Override
@@ -113,15 +188,66 @@ public class LiveScoreboardActivity extends Activity {
 
     @Override
     public void onBindViewHolder(ViewHolder viewHolder, int position) {
-      viewHolder.view.setTeam(mTeams.get(mRows[position].getTeam()));
+      viewHolder.view.setTeam(getTeamAt(position));
     }
-  }
 
-  @Override
-  public void onDestroy() {
-    if (mApiHandlerThread != null) {
-      mApiHandlerThread.interrupt();
+    @Override
+    public void registerAdapterDataObserver(RecyclerView.AdapterDataObserver observer) {
+//      if (mDispatcher != null && !hasObservers()) {
+//        mDispatcher.observers.add(this);
+//      }
+      super.registerAdapterDataObserver(observer);
     }
-    super.onDestroy();
+
+    @Override
+    public void unregisterAdapterDataObserver(RecyclerView.AdapterDataObserver observer) {
+      super.unregisterAdapterDataObserver(observer);
+//      if (mDispatcher != null && !hasObservers()) {
+//        mDispatcher.observers.remove(this);
+//      }
+    }
+
+    // ScoreboardModel.Observer
+
+    @Override
+    public void onProblemSubmitted(DomjudgeProto.Team team, DomjudgeProto.Submission submission) {
+      final List<DomjudgeProto.ScoreboardRow> nextRows = mModel.getRows();
+      final long position = mModel.getRow(team).getRank() - 1;
+      runOnUiThread(() -> {
+        mCurrentRows = nextRows;
+        System.err.println("onProblemSubmitted " + team.getName());
+        notifyItemChanged((int) position);
+      });
+    }
+
+    @Override
+    public void onProblemAttempted(
+        DomjudgeProto.Team team,
+        DomjudgeProto.ScoreboardProblem problem,
+        DomjudgeProto.ScoreboardScore score) {
+      final List<DomjudgeProto.ScoreboardRow> nextRows = mModel.getRows();
+      final long position = mModel.getRow(team).getRank() - 1;
+      runOnUiThread(() -> {
+        mCurrentRows = nextRows;
+        System.err.println("onProblemAttempted " + team.getName());
+        notifyItemChanged((int) position);
+      });
+    }
+
+    @Override
+    public void onTeamRankChanged(DomjudgeProto.Team team, int oldRank, int newRank) {
+      final List<DomjudgeProto.ScoreboardRow> nextRows = mModel.getRows();
+      runOnUiThread(() -> {
+        mCurrentRows = nextRows;
+        notifyItemMoved(oldRank - 1, newRank - 1);
+        System.err.println("notifyItemMoved " + (oldRank - 1) + " " + (newRank - 1));
+      });
+    }
+
+    // Misc
+
+    private DomjudgeProto.Team getTeamAt(int position) {
+      return mModel.getTeam(mModel.getRows().get(position).getTeam());
+    }
   }
 }
