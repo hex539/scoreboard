@@ -104,19 +104,14 @@ public class Executive {
         continue;
       }
 
+      final JudgementType judgementType = model.getJudgementType(judgement.getJudgementTypeId());
       final Submission submission = model.getSubmission(judgement.getSubmissionId());
+      final Problem problem = model.getProblem(submission.getProblemId());
       final Team team = model.getTeam(submission.getTeamId());
       final ScoreboardRow row = model.getRow(team);
 
-      System.out.format(
-          "%-" + MAX_TEAM_NAME_LENGTH + "s \t| %-20s | %-16s | %4d | %6d | rank=%3d | %s%n",
-          team.getName(),
-          model.getProblem(submission.getProblemId()).getName(),
-          entireContest.getJudgementTypesOrThrow(judgement.getJudgementTypeId()).getName(),
-          row.getScore().getNumSolved(),
-          row.getScore().getTotalTime(),
-          row.getRank(),
-          PrettyPrinter.formatMiniScoreboardRow(model.getRow(team).getProblemsList()));
+      System.out.println(
+          PrettyPrinter.formatVerdictRow(team, problem, submission, judgementType, row));
     }
   }
 
@@ -166,43 +161,6 @@ public class Executive {
       TextFormat.print(contestFetcher.fetch(), System.out);
     } else {
       contestFetcher.fetch().writeTo(System.out);
-    }
-  }
-
-  private static class PrettyPrinter {
-    static String formatScoreboardHeader(List<Problem> problems) {
-      StringBuilder sb = new StringBuilder(
-          String.format("%-" + MAX_TEAM_NAME_LENGTH + "s\t│ ## │  time ", "team"));
-      problems.forEach(p -> sb.append(" │ " + p.getLabel().charAt(0)));
-      final String header = sb.toString();
-      final String borderT = header.replaceAll("\\│", "┬").replaceAll("[^\\t┬]", "─") + "─┐";
-      final String borderB = header.replaceAll("\\│", "┼").replaceAll("[^\\t┼]", "─") + "─┤";
-      return borderT + "\n" + header + " │\n" + borderB;
-    }
-
-    static String formatScoreboardRow(Team team, ScoreboardRow row) {
-      return formatScoreboardRow(team, row, null);
-    }
-
-    static String formatScoreboardRow(Team team, ScoreboardRow row, Problem highlight) {
-      StringBuilder sb = new StringBuilder(
-          String.format("%-" + MAX_TEAM_NAME_LENGTH + "s\t│ %2d │ %6d ",
-              team.getName(),
-              Math.max(0, row.getScore().getNumSolved()),
-              Math.max(0, row.getScore().getTotalTime())));
-      for (ScoreboardProblem p : row.getProblemsList()) {
-        boolean hl = (highlight != null && highlight.getId().equals(p.getProblemId()));
-        sb.append("│" + (hl ? '[' : ' ') + formatAttempt(p) + (hl ? ']' : ' '));
-      }
-      return sb.toString() + "│";
-    }
-
-    static String formatMiniScoreboardRow(List<ScoreboardProblem> row) {
-      return row.stream().map(PrettyPrinter::formatAttempt).collect(Collectors.joining(""));
-    }
-
-    static String formatAttempt(ScoreboardProblem p) {
-      return p.getSolved() ? "+" : p.getNumPending() > 0 ? "?" : p.getNumJudged() > 0 ? "-" : " ";
     }
   }
 }
