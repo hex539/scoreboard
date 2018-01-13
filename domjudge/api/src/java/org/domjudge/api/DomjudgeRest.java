@@ -15,6 +15,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 
 import org.domjudge.api.RequiresRole;
 import org.domjudge.proto.Annotations;
@@ -53,27 +57,27 @@ public class DomjudgeRest {
   }
 
   @RequiresRole(any = true)
-  public Affiliation[] getAffiliations() throws Exception {
+  public Affiliation[] getAffiliations() throws CompletionException {
     return getFrom("/affiliations", Affiliation[].class).get();
   }
 
   @RequiresRole(any = true)
-  public Category[] getCategories() throws Exception {
+  public Category[] getCategories() throws CompletionException {
     return getFrom("/categories", Category[].class).get();
   }
 
   @RequiresRole(any = true)
-  public Clarification[] getClarifications() throws Exception {
+  public Clarification[] getClarifications() throws CompletionException {
     return getFrom("/clarifications", Clarification[].class).get();
   }
 
   @RequiresRole(any = true)
-  public Contest getContest() throws Exception {
+  public Contest getContest() throws CompletionException {
     return getFrom("/contest", Contest.class).get();
   }
 
   @RequiresRole(any = true)
-  public Contest[] getContests() throws Exception {
+  public Contest[] getContests() throws CompletionException {
     Type type = new TypeToken<Map<String, Contest>>(){}.getType();
     return ((Map<String, Contest>) getFrom("/contests", type).get())
         .values()
@@ -83,7 +87,7 @@ public class DomjudgeRest {
   }
 
   @RequiresRole(any = true)
-  public JudgementType[] getJudgementTypes(Contest contest) throws Exception {
+  public JudgementType[] getJudgementTypes(Contest contest) throws CompletionException {
     return getFrom("/judgement_types", JudgementType[].class).get();
   }
 
@@ -94,7 +98,7 @@ public class DomjudgeRest {
       User.Role.admin,
       User.Role.event_reader,
       User.Role.full_event_reader})
-  public Judging[] getJudgings(Contest contest) throws Exception {
+  public Judging[] getJudgings(Contest contest) throws CompletionException {
     return getJudgingsInternal(contest).get();
   }
 
@@ -105,12 +109,12 @@ public class DomjudgeRest {
       User.Role.admin,
       User.Role.event_reader,
       User.Role.full_event_reader})
-  public Optional<Judging[]> getJudgingsInternal(Contest contest) throws Exception {
+  public Optional<Judging[]> getJudgingsInternal(Contest contest) throws CompletionException {
     return getFrom("/judgings?cid=" + contest.getId(), Judging[].class);
   }
 
   @RequiresRole(any = true)
-  public Problem[] getProblems(Contest contest) throws Exception {
+  public Problem[] getProblems(Contest contest) throws CompletionException {
     // We need to sort the problems by label because DOMjudge gives them out in a not-very-useful
     // order, despite showing them in sorted order on the scoreboard.
     Optional<Problem[]> problems = getFrom("/problems?cid=" + contest.getId(), Problem[].class);
@@ -125,22 +129,22 @@ public class DomjudgeRest {
   }
 
   @RequiresRole(any = true)
-  public ScoreboardRow[] getScoreboard(Contest contest) throws Exception {
+  public ScoreboardRow[] getScoreboard(Contest contest) throws CompletionException {
     return getFrom("/scoreboard?cid=" + contest.getId(), ScoreboardRow[].class).get();
   }
 
   @RequiresRole(any = true)
-  public Submission[] getSubmissions(Contest contest) throws Exception {
+  public Submission[] getSubmissions(Contest contest) throws CompletionException {
     return getFrom("/submissions?cid=" + contest.getId(), Submission[].class).get();
   }
 
   @RequiresRole(any = true)
-  public Team[] getTeams() throws Exception {
+  public Team[] getTeams() throws CompletionException {
     return getFrom("/teams", Team[].class).get();
   }
 
   @RequiresRole(any = true)
-  public Optional<User> getUser() throws Exception {
+  public Optional<User> getUser() throws CompletionException {
     return getFrom("/user", User.class).filter(u -> u.getId() != 0);
   }
 
@@ -150,36 +154,49 @@ public class DomjudgeRest {
   }
 
   public EntireContest getEntireContest(Contest contest) throws Exception {
-    final Set<User.Role> roles =
-        getUser().map(User::getRolesList).map(HashSet::new).orElseGet(HashSet::new);
+    return getEntireContest(contest, ForkJoinPool.commonPool());
+  }
 
-    final EntireContest.Builder builder = EntireContest.newBuilder()
-        .addAllAffiliations(Arrays.asList(getAffiliations()))
-        .addAllCategories(Arrays.asList(getCategories()))
-        .addAllClarifications(Arrays.asList(getClarifications()))
-        .setContest(contest)
-        .addAllContests(Arrays.asList(getContests()))
-        .addAllJudgementTypes(Arrays.asList(getJudgementTypes(contest)))
-        .addAllProblems(Arrays.asList(getProblems(contest)))
-        .addAllScoreboard(Arrays.asList(getScoreboard(contest)))
-        .addAllSubmissions(Arrays.asList(getSubmissions(contest)))
-        .addAllTeams(Arrays.asList(getTeams()));
+  public EntireContest getEntireContest(Contest contest, Executor executor) throws Exception {
+    // final Set<User.Role> roles =
+    //    getUser().map(User::getRolesList).map(HashSet::new).orElseGet(HashSet::new);
 
-    // Optional items that need credentials and may be denied.
-    getJudgingsInternal(contest).map(Arrays::asList).ifPresent(builder::addAllJudgings);
-
-    return builder.build();
+    final EntireContest.Builder b = EntireContest.newBuilder().setContest(contest);
+    return CompletableFuture.allOf(
+        CompletableFuture.runAsync(
+            () -> b.addAllAffiliations(Arrays.asList(getAffiliations())), executor),
+        CompletableFuture.runAsync(
+            () -> b.addAllCategories(Arrays.asList(getCategories())), executor),
+        CompletableFuture.runAsync(
+            () -> b.addAllClarifications(Arrays.asList(getClarifications())), executor),
+        CompletableFuture.runAsync(
+            () -> b.addAllContests(Arrays.asList(getContests())), executor),
+        CompletableFuture.runAsync(
+            () -> b.addAllJudgementTypes(Arrays.asList(getJudgementTypes(contest))), executor),
+        CompletableFuture.runAsync(
+            () -> b.addAllProblems(Arrays.asList(getProblems(contest))), executor),
+        CompletableFuture.runAsync(
+            () -> b.addAllScoreboard(Arrays.asList(getScoreboard(contest))), executor),
+        CompletableFuture.runAsync(
+            () -> b.addAllSubmissions(Arrays.asList(getSubmissions(contest))), executor),
+        CompletableFuture.runAsync(
+            () -> b.addAllTeams(Arrays.asList(getTeams()))),
+        // Optional items that need credentials and may be denied.
+        CompletableFuture.runAsync(
+            () -> getJudgingsInternal(contest).map(Arrays::asList).ifPresent(b::addAllJudgings)))
+      .thenApply(ignore -> b.build())
+      .join();
   }
 
   protected static boolean userHasAnyRole(Set<User.Role> user, User.Role... roles) {
     return new HashSet<>(Arrays.asList(roles)).removeAll(user);
   }
 
-  protected <T> Optional<T> getFrom(String endpoint, Class<T> c) throws IOException {
+  protected <T> Optional<T> getFrom(String endpoint, Class<T> c) throws CompletionException {
     return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)));
   }
 
-  protected <T> Optional<T> getFrom(String endpoint, Type c) throws IOException {
+  protected <T> Optional<T> getFrom(String endpoint, Type c) throws CompletionException {
     return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)));
   }
 
@@ -189,7 +206,7 @@ public class DomjudgeRest {
   }
 
   protected <T> T requestFrom(String endpoint, ResponseHandler<? super String, T> handler)
-        throws IOException {
+        throws CompletionException {
     Request.Builder request = new Request.Builder()
         .url(url + endpoint);
 
@@ -209,6 +226,8 @@ public class DomjudgeRest {
           // Not handled. Probably an invalid request.
           throw new IOException(response.code() + ": " + response.message());
       }
+    } catch (IOException e) {
+      throw new CompletionException(e);
     }
   }
 
