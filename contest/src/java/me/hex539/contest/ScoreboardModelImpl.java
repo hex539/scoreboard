@@ -234,7 +234,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     try {
       return getClics().getJudgementTypesOrThrow(id);
     } catch (IllegalArgumentException e) {
-      throw new NoSuchElementException(e.getMessage());
+      throw new NoSuchElementException("Judgement type '" + id + "'");
     }
   }
 
@@ -243,7 +243,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     try {
       return getClics().getOrganizationsOrThrow(id);
     } catch (IllegalArgumentException e) {
-      throw new NoSuchElementException(e.getMessage());
+      throw new NoSuchElementException("Organization '" + id + "'");
     }
   }
 
@@ -308,9 +308,13 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   @Override
+  public ScoreboardRow getRow(long index) throws NoSuchElementException {
+    return fixRank(getScoreboardRows().get((int) index));
+  }
+
+  @Override
   public ScoreboardRow getRow(Team team) throws NoSuchElementException {
     return fixRank(getRowInternal(team));
-
   }
 
   private ScoreboardRow getRowInternal(Team team) throws NoSuchElementException {
@@ -323,12 +327,16 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   @Override
-  public ScoreboardProblem getAttempts(Team team, Problem problem) {
-    return getRowInternal(team).getProblemsList().stream()
-        .filter(x -> x.getProblemId().equals(problem.getId()))
-        .findFirst()
-        .orElseThrow(
-            () -> new NoSuchElementException("Cannot find problem " + problem.getLabel()));
+  public ScoreboardProblem getAttempts(Team team, Problem problem) throws NoSuchElementException {
+    try {
+      return getRowInternal(team).getProblemsList().stream()
+          .filter(x -> x.getProblemId().equals(problem.getId()))
+          .findFirst()
+          .orElseThrow(
+              () -> new NoSuchElementException("Cannot find problem " + problem.getLabel()));
+    } catch (Throwable fromOrElseThrow) {
+      throw (NoSuchElementException) fromOrElseThrow;
+    }
   }
 
   @Override
@@ -389,8 +397,6 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     if (realRank == 0) {
       throw new AssertionError("Scoreboard row for team " + row.getTeamId() + " is missing");
     }
-    return realRank == row.getRank()
-        ? row
-        : row.toBuilder().setRank(realRank).build();
+    return realRank == row.getRank() ? row : row.toBuilder().setRank(realRank).build();
   }
 }

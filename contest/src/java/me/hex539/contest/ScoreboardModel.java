@@ -22,6 +22,10 @@ public interface ScoreboardModel extends Judge, Teams, Problems {
   List<ScoreboardRow> getRows();
   Contest getContest();
 
+  default ScoreboardRow getRow(long index) throws NoSuchElementException {
+    return getRows().get((int) index);
+  }
+
   default ScoreboardRow getRow(Team team) throws NoSuchElementException {
     return getRows().stream().filter(x -> team.getId().equals(x.getTeamId())).findFirst().get();
   }
@@ -31,12 +35,15 @@ public interface ScoreboardModel extends Judge, Teams, Problems {
   }
 
   default ScoreboardProblem getAttempts(Team team, Problem problem) throws NoSuchElementException {
-    return getRow(team).getProblemsList().stream()
-            .filter(x -> x.getProblemId().equals(problem.getId()))
-            .findFirst()
-            .orElseThrow(
-                () -> new NoSuchElementException("Cannot find problem " + problem.getLabel()));
-
+    try {
+      return getRow(team).getProblemsList().stream()
+              .filter(x -> x.getProblemId().equals(problem.getId()))
+              .findFirst()
+              .orElseThrow(
+                  () -> new NoSuchElementException("Cannot find problem " + problem.getLabel()));
+    } catch (Throwable fromOrElseThrow) {
+      throw (NoSuchElementException) fromOrElseThrow;
+    }
   }
 }
 

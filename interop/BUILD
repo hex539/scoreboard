@@ -3,8 +3,6 @@ package(default_visibility = ["//visibility:public"])
 DEPS = [
     "//clics/proto",
     "//domjudge/proto",
-    "@auto_value//:processor",
-    "@com_google_protobuf//:protobuf_java",
 ]
 
 android_library(
