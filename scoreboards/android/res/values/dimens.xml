@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <dimen name="team_name_width">400dp</dimen>
+  <dimen name="problem_score_width">60dp</dimen>
+  <dimen name="problem_score_height">37dp</dimen>
+</resources>

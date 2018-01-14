@@ -35,10 +35,12 @@ public class ScoreboardView extends TableView<ClicsProto.ScoreboardRow>
   }
 
   @Override
-  public void onScoreChanged(
-      ClicsProto.Team team,
-      ClicsProto.ScoreboardProblem attempt,
-      ClicsProto.ScoreboardScore score) {
+  public void onProblemScoreChanged(ClicsProto.Team team, ClicsProto.ScoreboardProblem attempt) {
+    refresh();
+  }
+
+  @Override
+  public void onScoreChanged(ClicsProto.Team team, ClicsProto.ScoreboardScore score) {
     refresh();
   }
 

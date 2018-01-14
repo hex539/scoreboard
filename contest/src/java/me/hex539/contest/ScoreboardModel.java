@@ -15,7 +15,8 @@ public interface ScoreboardModel extends Judge, Teams, Problems {
     default void setModel(ScoreboardModel model) {}
     default void onProblemSubmitted(Team team, Submission submission) {}
     default void onSubmissionJudged(Team team, Judgement judgement) {}
-    default void onScoreChanged(Team team, ScoreboardProblem problem, ScoreboardScore score) {}
+    default void onProblemScoreChanged(Team team, ScoreboardProblem problem) {}
+    default void onScoreChanged(Team team, ScoreboardScore score) {}
     default void onTeamRankChanged(Team team, int oldRank, int newRank) {}
   }
 

@@ -2,20 +2,21 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="8dp">
+    android:padding="8dp"
+    android:gravity="end">
   <LinearLayout
       android:id="@+id/team_header"
       android:layout_weight="0"
-      android:layout_width="wrap_content"
+      android:layout_width="@dimen/team_name_width"
       android:layout_height="wrap_content"
       android:orientation="vertical">
     <TextView
         android:id="@+id/team_name"
+        android:textStyle="bold"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"/>
+        android:layout_height="wrap_content" />
     <TextView
         android:id="@+id/team_affiliation"
         android:layout_width="wrap_content"
@@ -23,8 +24,8 @@
   </LinearLayout>
   <LinearLayout
       android:id="@+id/problems"
-      android:layout_width="match_parent"
+      android:layout_weight="1"
+      android:layout_width="wrap_content"
       android:layout_height="match_parent"
-      android:orientation="horizontal" >
-  </LinearLayout>
+      android:orientation="horizontal" />
 </LinearLayout>

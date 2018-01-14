@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="@dimen/problem_score_width"
+    android:layout_height="@dimen/problem_score_height"
+    android:orientation="vertical"
+    android:padding="4dp">
+  <TextView
+      android:id="@+id/score"
+      android:gravity="center"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:layout_centerHorizontal="true"
+      android:textColor="@color/problem_label"
+      android:shadowColor="@color/problem_label_shadow"
+      android:shadowRadius="1.5"
+      android:shadowDx="0"
+      android:shadowDy="0" />
+</LinearLayout>

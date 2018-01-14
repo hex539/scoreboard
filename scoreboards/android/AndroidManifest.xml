@@ -8,12 +8,12 @@
   <application
       android:label="@string/scoreboard_app"
       android:allowBackup="false"
-      android:theme="@android:style/Theme.NoTitleBar">
+      android:theme="@style/ScoreboardTheme">
     <activity
         android:name="me.hex539.app.activity.LiveScoreboardActivity"
         android:icon="@drawable/app_icon"
         android:label="@string/demo_contest"
-        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+        android:theme="@style/ScoreboardTheme"
         android:exported="true">
       <intent-filter>
         <category android:name="android.intent.category.LAUNCHER" />

@@ -76,7 +76,8 @@ public class JudgementDispatcher {
     final ScoreboardScore score = model.getScore(team);
     observers.forEach(x -> {
       x.onProblemSubmitted(team, submission);
-      x.onScoreChanged(team, attempts, score);
+      x.onProblemScoreChanged(team, attempts);
+      x.onScoreChanged(team, score);
     });
     return true;
   }
@@ -151,21 +152,18 @@ public class JudgementDispatcher {
     final int oldRank = (oldScore != newScore) ? (int) computeRank(team) : 0;
     observers.forEach(x -> {
       x.onSubmissionJudged(team, j);
-      if (newScore != oldScore) {
-        x.onScoreChanged(team, attempts, newScore);
-      }
+      x.onProblemScoreChanged(team, attempts);
     });
     if (oldScore != newScore) {
-      notifyRankChanged(team, oldRank, (int) computeRank(team));
+      observers.forEach(x -> x.onScoreChanged(team, newScore));
+
+      final int newRank = (int) computeRank(team);
+      if (oldRank != newRank) {
+        logger.log("Team rank " + oldRank + " -> " + newRank + " for " + team.getName());
+        observers.forEach(x -> x.onTeamRankChanged(team, oldRank, newRank));
+      }
     }
     return true;
-  }
-
-  private void notifyRankChanged(Team team, int oldRank, int newRank) {
-    if (newRank != oldRank) {
-      logger.log("Team rank " + oldRank + " -> " + newRank + " for " + team.getName());
-      observers.forEach(x -> x.onTeamRankChanged(team, oldRank, newRank));
-    }
   }
 
   private ScoreboardProblem scoreProblem(
@@ -183,7 +181,7 @@ public class JudgementDispatcher {
     if (submissions.size() < verdicts.size()) {
       throw new Error("More verdicts than submissions for team");
     }
-    long penaltyCount = 0;
+    int penaltyCount = 0;
     int attemptsToSolve = 0;
     Judgement solvedAt = null;
 
@@ -203,7 +201,7 @@ public class JudgementDispatcher {
       penalty[0] = penaltyCount;
       return ScoreboardProblem.newBuilder()
           .setProblemId(problem.getId())
-          .setNumJudged(attemptsToSolve)
+          .setNumJudged(penaltyCount + 1)
           .setNumPending(submissions.size() - verdicts.size())
           .setSolved(true)
           .setTime(
@@ -213,7 +211,7 @@ public class JudgementDispatcher {
       penalty[0] = 0;
       return ScoreboardProblem.newBuilder()
           .setProblemId(problem.getId())
-          .setNumJudged(attemptsToSolve)
+          .setNumJudged(penaltyCount)
           .setNumPending(submissions.size() - verdicts.size())
           .setSolved(false)
           .build();

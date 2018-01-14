@@ -96,7 +96,7 @@ class Comparators {
 
       long[] ourSolve = getSolvedTimes(row1);
       long[] theirSolve = getSolvedTimes(row2);
-      for (int i = ourSolve.length; i --> 0;) {
+      for (int i = Math.min(ourSolve.length, theirSolve.length); i --> 0;) {
         if (ourSolve[i] != theirSolve[i]) {
           return Long.compare(ourSolve[i], theirSolve[i]);
         }

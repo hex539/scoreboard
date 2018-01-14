@@ -84,7 +84,7 @@ public class ResolverController {
   public ResolverController(final ClicsContest contest, final ScoreboardModel sourceModel) {
     this.contest = ensureJudgings(contest, sourceModel);
     this.sourceModel = sourceModel;
-    this.model = // ((ScoreboardModelImpl) sourceModel).toBuilder()
+    this.model =
       ScoreboardModelImpl.newBuilder(contest, sourceModel)
         .withEmptyScoreboard()
         .filterSubmissions(s -> false)
@@ -95,7 +95,6 @@ public class ResolverController {
     this.dispatcher = new JudgementDispatcher(model, rowComparator);
     this.observers = dispatcher.observers;
     observers.add(this.model);
-
   }
 
   public void start() {
@@ -106,9 +105,9 @@ public class ResolverController {
   }
 
   private static ClicsContest ensureJudgings(ClicsContest contest, ScoreboardModel model) {
-//    if (contest.getJudgementsCount() != 0 || contest.getSubmissionsCount() == 0) {
-//      return contest;
-//    }
+    if (contest.getJudgementsCount() != 0 || contest.getSubmissionsCount() == 0) {
+      return contest;
+    }
     return contest.toBuilder().putAllJudgements(inventJudgements(contest, model)).build();
   }
 
@@ -161,6 +160,9 @@ public class ResolverController {
   }
 
   public boolean finished() {
+    if (!started) {
+      start();
+    }
     return pendingActions.isEmpty() && teamOrdering.isEmpty();
   }
 

@@ -355,17 +355,29 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   @Override
-  public void onScoreChanged(Team team, ScoreboardProblem attempt, ScoreboardScore score) {
-    final ScoreboardRow row = getRow(team);
+  public void onProblemScoreChanged(Team team, ScoreboardProblem attempt) {
+    final ScoreboardRow row = getRowInternal(team);
 
     final List<ScoreboardProblem> changed = row.getProblemsList()
         .stream()
         .map(x -> x.getProblemId().equals(attempt.getProblemId()) ? attempt : x)
         .collect(toList());
-    final ScoreboardRow upRow = 
+    final ScoreboardRow upRow =
         row.toBuilder()
             .clearProblems()
             .addAllProblems(changed)
+            .build();
+
+    getFancyScoreboardRows().remove(row);
+    getFancyScoreboardRows().add(upRow);
+    getTeamRowMap().put(team.getId(), upRow);
+  }
+
+  @Override
+  public void onScoreChanged(Team team, ScoreboardScore score) {
+    final ScoreboardRow row = getRowInternal(team);
+    final ScoreboardRow upRow =
+        row.toBuilder()
             .setScore(score)
             .build();
 
