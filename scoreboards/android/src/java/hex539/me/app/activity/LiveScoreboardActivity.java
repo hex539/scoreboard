@@ -23,15 +23,18 @@ import me.hex539.contest.JudgementDispatcher;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
 import me.hex539.contest.ResolverController;
+import me.hex539.contest.SplayList;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.function.Consumer;
 import me.hex539.app.intent.IntentUtils;
+import me.hex539.app.data.ScoreboardAdapter;
 import me.hex539.app.R;
 
 public class LiveScoreboardActivity extends Activity {
@@ -53,7 +56,7 @@ public class LiveScoreboardActivity extends Activity {
   private ClicsProto.ClicsContest mEntireContest;
   private ClicsProto.Contest mContest;
   private ScoreboardModelImpl mModel;
-  private Adapter mAdapter;
+  private ScoreboardAdapter mAdapter;
 
   @Override
   public void onCreate(Bundle savedState) {
@@ -79,17 +82,19 @@ public class LiveScoreboardActivity extends Activity {
         mEntireContest = mDownloader.fetch();
         mContest = mEntireContest.getContest();
 
-        final ScoreboardModelImpl fullModel = ScoreboardModelImpl.newBuilder(mEntireContest)
+        mModel = ScoreboardModelImpl.newBuilder(mEntireContest)
             .filterGroups(g -> "University of Bath".equals(g.getName()))
             .filterTooLateSubmissions()
             .build();
-        mResolverController = new ResolverController(mEntireContest, fullModel);
-        mModel = fullModel.toBuilder().withEmptyScoreboard().build();
-        mAdapter = new Adapter(
-          mModel,
-          mResolverController,
-          this::runOnUiThread);
 
+        ScoreboardModel emptyModel = mModel.toBuilder()
+            .filterSubmissions(s -> false)
+            .withEmptyScoreboard()
+            .build();
+        mAdapter = new ScoreboardAdapter(emptyModel, this::runOnUiThread);
+
+        mResolverController = new ResolverController(mEntireContest, mModel);
+        mResolverController.observers.add(mAdapter);
         mResolverController.start();
       } catch (Exception e) {
         Log.e(TAG, "Failed to fetch active contest", e);
@@ -106,18 +111,7 @@ public class LiveScoreboardActivity extends Activity {
 
     final RecyclerView scoreboardRows = (RecyclerView) findViewById(R.id.scoreboard_rows);
     scoreboardRows.setAdapter(mAdapter);
-
-    mResolverController.observers.add(new ResolverController.Observer() {
-      @Override
-      public void onProblemFocused(ClicsProto.Team team, ClicsProto.Problem problem) {
-        runOnUiThread(() -> {
-          if (team != null) {
-            scoreboardRows.smoothScrollToPosition((int) mModel.getRow(team).getRank() - 1);
-          }
-        });
-      }
-    });
-
+    scoreboardRows.smoothScrollToPosition(mModel.getTeams().size());
     mApiHandler.post(this::advanceResolver);
   }
 
@@ -136,153 +130,5 @@ public class LiveScoreboardActivity extends Activity {
       mApiHandlerThread.interrupt();
     }
     super.onDestroy();
-  }
-
-  private static class ViewHolder extends RecyclerView.ViewHolder {
-    final ScoreboardRowView view;
-
-    public ViewHolder(View v) {
-      super(v);
-      view = (ScoreboardRowView) v;
-    }
-  }
-
-  private static class Adapter
-      extends RecyclerView.Adapter<ViewHolder>
-      implements ResolverController.Observer {
-
-    private final ScoreboardModelImpl mModel;
-    private final ResolverController mDispatcher;
-    private final Consumer<Runnable> mRunOnUiThread;
-    private final Map<String, Long> stableIds = new HashMap<>();
-
-    public Adapter(
-        ScoreboardModelImpl model,
-        ResolverController dispatcher,
-        Consumer<Runnable> runOnUiThread) {
-      mModel = model;
-      mDispatcher = dispatcher;
-      mRunOnUiThread = runOnUiThread;
-
-      mDispatcher.observers.add(this);
-
-      setHasStableIds(true);
-    }
-
-    private void runOnUiThread(Runnable r) {
-      mRunOnUiThread.accept(r);
-    }
-
-    // RecyclerView.Adapter
-
-    @Override
-    public long getItemId(int position) {
-      final String teamId = mModel.getRow(position).getTeamId();
-      Long itemId = stableIds.get(teamId);
-      if (itemId == null) {
-        stableIds.put(teamId, (itemId = Long.valueOf(stableIds.size())));
-      }
-      return itemId;
-    }
-
-    @Override
-    public int getItemCount() {
-      return mModel.getTeams().size();
-    }
-
-    @Override
-    public ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
-      return new ViewHolder(new ScoreboardRowView(viewGroup.getContext()));
-    }
-
-    @Override
-    public void onBindViewHolder(ViewHolder viewHolder, int position) {
-      ClicsProto.ScoreboardRow row = mModel.getRow(position);
-      ClicsProto.Team team = mModel.getTeam(row.getTeamId());
-      ClicsProto.Organization organization = mModel.getOrganization(team.getOrganizationId());
-      viewHolder.view
-        .setRowInfo(ScoreboardRowView.RowInfo.create(row, team, organization))
-        .setFocusedProblem(mFocusedTeam == team ? mFocusedProblem : null);
-    }
-
-    @Override
-    public void registerAdapterDataObserver(RecyclerView.AdapterDataObserver observer) {
-      super.registerAdapterDataObserver(observer);
-    }
-
-    @Override
-    public void unregisterAdapterDataObserver(RecyclerView.AdapterDataObserver observer) {
-      super.unregisterAdapterDataObserver(observer);
-    }
-
-    // ResolverController.Observer
-
-    private ClicsProto.Team mFocusedTeam;
-    private ClicsProto.Problem mFocusedProblem;
-
-    @Override
-    public void onProblemFocused(ClicsProto.Team team, ClicsProto.Problem problem) {
-      runOnUiThread(() -> {
-        if (mFocusedTeam != null) {
-          notifyItemChanged((int) mModel.getRow(mFocusedTeam).getRank() - 1);
-        }
-        if (team != null && problem != null) {
-          notifyItemChanged((int) mModel.getRow(team).getRank() - 1);
-        }
-        mFocusedTeam = team;
-        mFocusedProblem = problem;
-      });
-    }
-
-    @Override
-    public synchronized void onProblemSubmitted(ClicsProto.Team team, ClicsProto.Submission submission) {
-      runOnUiThread(() -> {
-        System.err.println("onProblemSubmitted " + team.getName());
-        notifyItemChanged((int) mModel.getRow(team).getRank() - 1);
-        mModel.onProblemSubmitted(team, submission);
-      });
-    }
-
-    @Override
-    public synchronized void onSubmissionJudged(ClicsProto.Team team, ClicsProto.Judgement judgement) {
-      runOnUiThread(() -> {
-        mModel.onSubmissionJudged(team, judgement);
-      });
-    }
-
-    @Override
-    public synchronized void onTeamRankChanged(ClicsProto.Team team, int oldRank, int newRank) {
-      runOnUiThread(() -> {
-        mModel.onTeamRankChanged(team, oldRank, newRank);
-      });
-    }
-
-    @Override
-    public void onProblemScoreChanged(ClicsProto.Team team, ClicsProto.ScoreboardProblem attempt) {
-      runOnUiThread(() -> {
-        mModel.onProblemScoreChanged(team, attempt);
-        notifyItemChanged((int) mModel.getRow(team).getRank() - 1);
-      });
-    }
-
-    @Override
-    public void onScoreChanged(ClicsProto.Team team, ClicsProto.ScoreboardScore score) {
-      runOnUiThread(() -> {
-        final int oldRank = (int) mModel.getRow(team).getRank();
-        mModel.onScoreChanged(team, score);
-        final int newRank = (int) mModel.getRow(team).getRank();
-
-        notifyItemChanged(oldRank - 1);
-        if (oldRank != newRank) {
-          notifyItemMoved(oldRank - 1, newRank - 1);
-        }
-      });
-    }
-
-    // Misc
-
-    private synchronized ClicsProto.Team getTeamAt(int position) {
-      return mModel.getTeam(mModel.getRow(position).getTeamId());
-    }
   }
 }

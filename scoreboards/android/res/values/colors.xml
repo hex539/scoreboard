@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+  <color name="window_background">#000000</color>
+
   <color name="problem_correct">#00cf00</color>
   <color name="problem_pending">#0000ff</color>
   <color name="problem_incorrect">#cf0000</color>

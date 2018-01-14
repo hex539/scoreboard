@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<android.support.v7.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:cardview="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/problem_root"
+    android:layout_marginLeft="4dp"
+    android:layout_marginRight="4dp"
     android:layout_width="@dimen/problem_score_width"
     android:layout_height="@dimen/problem_score_height"
-    android:orientation="vertical"
-    android:padding="4dp">
+    cardview:cardBackgroundColor="@color/problem_unattempted"
+    cardview:cardCornerRadius="2dp">
   <TextView
       android:id="@+id/score"
       android:gravity="center"
       android:layout_width="match_parent"
       android:layout_height="match_parent"
+      android:background="@android:color/transparent"
       android:layout_centerHorizontal="true"
       android:textColor="@color/problem_label"
       android:shadowColor="@color/problem_label_shadow"
       android:shadowRadius="1.5"
       android:shadowDx="0"
       android:shadowDy="0" />
-</LinearLayout>
+</android.support.v7.widget.CardView>

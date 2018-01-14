@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.support.v7.widget.CardView;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -23,6 +24,7 @@ import me.hex539.contest.ScoreboardModel;
 public class ScoreboardProblemView extends LinearLayout {
 
   private TextView mScoreView;
+  private CardView mBackgroundView;
   private ClicsProto.ScoreboardProblem mProblem;
   private boolean mFocused = false;
 
@@ -39,6 +41,7 @@ public class ScoreboardProblemView extends LinearLayout {
   private void onCreate() {
     inflate(getContext(), R.layout.scoreboard_problem, this);
     mScoreView = (TextView) findViewById(R.id.score);
+    mBackgroundView = (CardView) findViewById(R.id.problem_root);
   }
 
   public void setProblem(ClicsProto.ScoreboardProblem problem) {
@@ -58,20 +61,24 @@ public class ScoreboardProblemView extends LinearLayout {
       } else {
         mScoreView.setText("+");
       }
-      mScoreView.setBackgroundResource(R.color.problem_correct);
+      mBackgroundView.setCardBackgroundColor(getColor(getContext(), R.color.problem_correct));
     } else if (mProblem.getNumPending() > 0) {
       mScoreView.setText("?");
-      mScoreView.setBackgroundResource(R.color.problem_pending);
+      if (mFocused) {
+        mBackgroundView.setCardBackgroundColor(getColor(getContext(), R.color.problem_label_focused));
+      } else {
+        mBackgroundView.setCardBackgroundColor(getColor(getContext(), R.color.problem_pending));
+      }
     } else if (mProblem.getNumJudged() > 0) {
       mScoreView.setText("-" + (mProblem.getNumJudged()));
-      mScoreView.setBackgroundResource(R.color.problem_incorrect);
+      mBackgroundView.setCardBackgroundColor(getColor(getContext(), R.color.problem_incorrect));
     } else {
       mScoreView.setText(" ");
-      mScoreView.setBackgroundResource(R.color.problem_unattempted);
+      mBackgroundView.setCardBackgroundColor(getColor(getContext(), R.color.problem_unattempted));
+      mBackgroundView.setVisibility(View.INVISIBLE);
+      return;
     }
 
-    if (mFocused) {
-      mScoreView.setBackgroundResource(R.color.problem_label_focused);
-    }
+    mBackgroundView.setVisibility(View.VISIBLE);
   }
 }

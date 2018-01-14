@@ -28,6 +28,7 @@ android_binary(
     "//clics/proto",
     "//contest:android",
     "@androidsdk//com.android.support:recyclerview-v7-25.3.1",
+    "@androidsdk//com.android.support:cardview-v7-25.3.1",
     "@auto_value//:processor",
   ],
 )

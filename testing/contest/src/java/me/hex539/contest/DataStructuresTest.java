@@ -140,8 +140,8 @@ public class DataStructuresTest {
   }
 
   @Test
-  public void testFlatList() {
-    SplayList<Long> l = new SplayList<>(SplayList.unordered());
+  public void testFlatReversibleList() {
+    SplayList<Long> l = new SplayList<>(x -> x);
 
     l.addAll(longList(1, 2, 4, 6, 5, 9, 7, 3, 8));
     assertThat(l.get(3)).isEqualTo(6);
@@ -151,6 +151,7 @@ public class DataStructuresTest {
 
     l.set(3, Long.valueOf(55));
     assertThat(l.get(3)).isEqualTo(55);
+    assertThat(l.indexOfTag(55L)).isEqualTo(3);
     assertThat(l.subList(1, l.size() - 1)).containsExactly(2L, 4L, 55L, 9L, 7L, 3L).inOrder();
 
     // Copy onto the end of another unsorted list.
