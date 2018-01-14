@@ -52,12 +52,6 @@ public class ScoreboardProblemView extends LinearLayout {
   }
 
   private void updateAppearance() {
-    if (mFocused) {
-      mScoreView.setTextColor(getColor(getContext(), R.color.problem_label_focused));
-    } else {
-      mScoreView.setTextColor(getColor(getContext(), R.color.problem_label));
-    }
-
     if (mProblem.getSolved()) {
       if (mProblem.getNumJudged() > 1) {
         mScoreView.setText("+" + (mProblem.getNumJudged() - 1));
@@ -74,6 +68,10 @@ public class ScoreboardProblemView extends LinearLayout {
     } else {
       mScoreView.setText(" ");
       mScoreView.setBackgroundResource(R.color.problem_unattempted);
+    }
+
+    if (mFocused) {
+      mScoreView.setBackgroundResource(R.color.problem_label_focused);
     }
   }
 }

@@ -1,5 +1,7 @@
 package me.hex539.app.view;
 
+import static android.support.v4.content.ContextCompat.getDrawable;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -69,6 +71,13 @@ public class ScoreboardRowView extends LinearLayout {
 //    }
     problemRoot.removeAllViews();
     mProblemViews.clear();
+
+    final ViewGroup root = findViewById(R.id.row_root);
+    if (focusedProblem != null) {
+      root.setBackground(getDrawable(getContext(), R.color.row_background_focused));
+    } else {
+      root.setBackground(getDrawable(getContext(), R.color.row_background));
+    }
 
     for (ClicsProto.ScoreboardProblem p : rowInfo.getRow().getProblemsList()) {
       ScoreboardProblemView v = new ScoreboardProblemView(getContext());

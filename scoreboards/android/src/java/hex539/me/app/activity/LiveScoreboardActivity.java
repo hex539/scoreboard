@@ -118,18 +118,15 @@ public class LiveScoreboardActivity extends Activity {
       }
     });
 
-
-    System.err.println("advanceResolver!");
     mApiHandler.post(this::advanceResolver);
   }
 
   private void advanceResolver() {
-    System.err.println("advanceResolver!!!! " + mResolverController.finished());
     if (mResolverController.finished()) {
       return;
     }
     mResolverController.advance();
-    mApiHandler.postDelayed(this::advanceResolver, 200);
+    mApiHandler.postDelayed(this::advanceResolver, 500 /* milliseconds */);
   }
 
 
@@ -210,18 +207,12 @@ public class LiveScoreboardActivity extends Activity {
 
     @Override
     public void registerAdapterDataObserver(RecyclerView.AdapterDataObserver observer) {
-//      if (mDispatcher != null && !hasObservers()) {
-//        mDispatcher.observers.add(this);
-//      }
       super.registerAdapterDataObserver(observer);
     }
 
     @Override
     public void unregisterAdapterDataObserver(RecyclerView.AdapterDataObserver observer) {
       super.unregisterAdapterDataObserver(observer);
-//      if (mDispatcher != null && !hasObservers()) {
-//        mDispatcher.observers.remove(this);
-//      }
     }
 
     // ResolverController.Observer
