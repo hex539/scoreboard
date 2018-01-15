@@ -100,7 +100,7 @@ public class Executive {
           continue;
         }
       }
-      if (!dispatcher.notifyJudgement(judgement)) {
+      if (dispatcher.notifyJudgement(judgement) == null) {
         continue;
       }
 

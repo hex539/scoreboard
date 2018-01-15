@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <dimen name="team_name_width">400dp</dimen>
+  <dimen name="team_name_size">25sp</dimen>
+  <dimen name="institution_name_size">15sp</dimen>
+
   <dimen name="problem_score_width">60dp</dimen>
-  <dimen name="problem_score_height">37dp</dimen>
+  <dimen name="problem_score_height">30dp</dimen>
+  <dimen name="problem_score_label_size">20sp</dimen>
+
+  <dimen name="team_rank_width">70sp</dimen>
+  <dimen name="team_rank_size">30sp</dimen>
+
+  <dimen name="team_score_width">45sp</dimen>
+  <dimen name="team_score_size">20sp</dimen>
+
+  <dimen name="team_time_width">100sp</dimen>
 </resources>

@@ -5,34 +5,20 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Message;
+import android.os.Looper;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.util.LongSparseArray;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import edu.clics.proto.ClicsProto;
+import java.io.InputStream;
 import me.hex539.app.intent.IntentUtils;
 import me.hex539.app.R;
-import me.hex539.app.view.ScoreboardRowView;
 import me.hex539.contest.ContestDownloader;
-import me.hex539.contest.JudgementDispatcher;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
 import me.hex539.contest.ResolverController;
-import me.hex539.contest.SplayList;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.function.Consumer;
 import me.hex539.app.intent.IntentUtils;
 import me.hex539.app.data.ScoreboardAdapter;
 import me.hex539.app.R;
@@ -48,6 +34,7 @@ public class LiveScoreboardActivity extends Activity {
     public static final String PASSWORD = "password";
   }
 
+  private Handler mUiHandler;
   private Handler mApiHandler;
   private HandlerThread mApiHandlerThread;
 
@@ -58,6 +45,8 @@ public class LiveScoreboardActivity extends Activity {
   private ScoreboardModelImpl mModel;
   private ScoreboardAdapter mAdapter;
 
+  private RecyclerView mScoreboardRows;
+  private LinearLayoutManager mScoreboardLayout;
   @Override
   public void onCreate(Bundle savedState) {
     super.onCreate(savedState);
@@ -68,6 +57,8 @@ public class LiveScoreboardActivity extends Activity {
     }
 */
     setContentView(R.layout.scoreboard);
+
+    mUiHandler = new Handler(Looper.getMainLooper());
 
     mApiHandlerThread = new HandlerThread("api");
     mApiHandlerThread.start();
@@ -91,7 +82,8 @@ public class LiveScoreboardActivity extends Activity {
             .filterSubmissions(s -> false)
             .withEmptyScoreboard()
             .build();
-        mAdapter = new ScoreboardAdapter(emptyModel, this::runOnUiThread);
+        mAdapter = new ScoreboardAdapter(emptyModel, mUiHandler);
+        mAdapter.addFocusObserver(this::onTeamFocused);
 
         mResolverController = new ResolverController(mEntireContest, mModel);
         mResolverController.observers.add(mAdapter);
@@ -109,26 +101,66 @@ public class LiveScoreboardActivity extends Activity {
     final TextView contestName = ((TextView) findViewById(R.id.contest_name));
     contestName.setText(mModel.getContest().getName());
 
-    final RecyclerView scoreboardRows = (RecyclerView) findViewById(R.id.scoreboard_rows);
-    scoreboardRows.setAdapter(mAdapter);
-    scoreboardRows.smoothScrollToPosition(mModel.getTeams().size());
+    mScoreboardRows = (RecyclerView) findViewById(R.id.scoreboard_rows);
+    mScoreboardRows.setHasFixedSize(true);
+    mScoreboardRows.setAdapter(mAdapter);
+    mScoreboardRows.getItemAnimator().setMoveDuration(900L);
+    mScoreboardRows.setChildDrawingOrderCallback((a, b) -> a-1-b);
+    mScoreboardRows.scrollToPosition(mModel.getTeams().size());
+
+    mScoreboardLayout = (LinearLayoutManager) (mScoreboardRows.getLayoutManager());
+    mScoreboardLayout.setStackFromEnd(true);
+
     mApiHandler.post(this::advanceResolver);
+  }
+
+  @Override
+  public void onResume() {
+    super.onResume();
+    if (mApiHandlerThread == null) {
+      mApiHandlerThread = new HandlerThread("api");
+      mApiHandlerThread.start();
+      mApiHandler = new Handler(mApiHandlerThread.getLooper());
+      mApiHandler.post(this::advanceResolver);
+    }
+  }
+
+  @Override
+  public void onPause() {
+    if (mApiHandlerThread != null) {
+      mApiHandler.removeCallbacksAndMessages(null);
+      mApiHandlerThread.interrupt();
+      mApiHandlerThread = null;
+    }
+    super.onPause();
   }
 
   private void advanceResolver() {
     if (mResolverController.finished()) {
       return;
     }
-    mResolverController.advance();
-    mApiHandler.postDelayed(this::advanceResolver, 500 /* milliseconds */);
+
+    long advanceDelay;
+    switch (mResolverController.advance()) {
+      case SOLVED_PROBLEM:
+        advanceDelay = 1100;
+        break;
+      case FOCUSED_TEAM:
+        advanceDelay = 1000;
+        break;
+      default:
+        advanceDelay = 200;
+        break;
+    }
+ 
+    mApiHandler.postDelayed(this::advanceResolver, advanceDelay /* milliseconds */);
   }
 
-
-  @Override
-  public void onDestroy() {
-    if (mApiHandlerThread != null) {
-      mApiHandlerThread.interrupt();
+  private void onTeamFocused(ClicsProto.Team team) {
+    if (team != null) {
+      mScoreboardLayout.scrollToPositionWithOffset(
+          mAdapter.indexOfTeam(team),
+          mScoreboardRows.getHeight() / 2);
     }
-    super.onDestroy();
   }
 }

@@ -1,41 +1,30 @@
 package me.hex539.app.data;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
-import android.support.v7.widget.LinearLayoutManager;
+import android.os.SystemClock;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
-import android.util.LongSparseArray;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import edu.clics.proto.ClicsProto;
-import me.hex539.app.intent.IntentUtils;
 import me.hex539.app.R;
 import me.hex539.app.view.ScoreboardRowView;
-import me.hex539.contest.ContestDownloader;
-import me.hex539.contest.JudgementDispatcher;
 import me.hex539.contest.ScoreboardModel;
-import me.hex539.contest.ScoreboardModelImpl;
 import me.hex539.contest.ResolverController;
 import me.hex539.contest.SplayList;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
-import java.util.function.Consumer;
+import java.util.Set;
 
-public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.ViewHolder>
+public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.ViewHolder> 
     implements ResolverController.Observer {
+
+  public interface FocusObserver {
+    void onTeamFocused(ClicsProto.Team team);
+  }
 
   public static class ViewHolder extends RecyclerView.ViewHolder {
     final ScoreboardRowView view;
@@ -48,21 +37,62 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
 
   private final ScoreboardModel mModel;
   private final SplayList<ClicsProto.ScoreboardRow> mRows;
-  private final Consumer<Runnable> mRunOnUiThread;
+  private final Handler mHandler;
 
   private final Map<String, Long> stableIds = new HashMap<>();
+  private final Set<String> finalisedTeams = new HashSet<>();
+
+  private final Set<FocusObserver> focusObservers = new HashSet<>();
   private ClicsProto.Team mFocusedTeam;
   private ClicsProto.Problem mFocusedProblem;
 
-  public ScoreboardAdapter(ScoreboardModel model, Consumer<Runnable> runOnUiThread) {
+  private boolean everHadObservers;
+  private long lastEventTime;
+
+  private static final ViewGroup.LayoutParams layoutParams =
+      new ViewGroup.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT,
+          ViewGroup.LayoutParams.WRAP_CONTENT);
+
+  public ScoreboardAdapter(ScoreboardModel model, Handler handler) {
     mModel = model;
+    mHandler = handler;
     mRows = new SplayList<>(model.getRows(), ClicsProto.ScoreboardRow::getTeamId);
-    mRunOnUiThread = runOnUiThread;
     setHasStableIds(true);
   }
 
-  protected void runOnUiThread(Runnable r) {
-    mRunOnUiThread.accept(r);
+  public void addFocusObserver(FocusObserver f) {
+    mHandler.post(() -> focusObservers.add(f));
+  }
+
+  public void removeFocusObserver(FocusObserver f) {
+    mHandler.post(() -> focusObservers.remove(f));
+  }
+
+  public int indexOfTeam(ClicsProto.Team team) {
+    return mRows.indexOfTag(team.getId());
+  }
+
+  protected void runInOrder(Runnable r) {
+    runInOrder(r, 1L);
+  }
+
+  protected void runInOrder(Runnable r, long delayBefore) {
+    if (!everHadObservers) {
+      r.run();
+    } else {
+      lastEventTime = Math.max(lastEventTime + delayBefore, SystemClock.uptimeMillis());
+      mHandler.postAtTime(r, lastEventTime);
+    }
+  }
+
+  private void notifyTeamChanged(ClicsProto.Team team) {
+    notifyItemChanged(mRows.indexOfTag(team.getId()), team);
+  }
+
+  private void notifyTeamFocused(ClicsProto.Team team) {
+    notifyTeamChanged(team);
+    focusObservers.forEach(x -> x.onTeamFocused(team));
   }
 
   // RecyclerView.Adapter
@@ -84,22 +114,36 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
 
   @Override
   public ViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
-    return new ViewHolder(new ScoreboardRowView(viewGroup.getContext()));
+    ScoreboardRowView view = new ScoreboardRowView(viewGroup.getContext());
+    view.setLayoutParams(layoutParams);
+    return new ViewHolder(view);
   }
 
   @Override
   public void onBindViewHolder(ViewHolder viewHolder, int position) {
+    onBindViewHolder(viewHolder, position, Collections.emptyList());
+  }
+
+  @Override
+  public void onBindViewHolder(ViewHolder viewHolder, int position, List<Object> payloads) {
     ClicsProto.ScoreboardRow row = mRows.get(position);
     ClicsProto.Team team = mModel.getTeam(row.getTeamId());
     ClicsProto.Organization organization = mModel.getOrganization(team.getOrganizationId());
     viewHolder.view
-      .setRowInfo(ScoreboardRowView.RowInfo.create(row, team, organization))
-      .setFocusedProblem(mFocusedTeam == team ? mFocusedProblem : null);
+      .setRowInfo(
+          ScoreboardRowView.RowInfo.create(row, team, organization))
+      .setFocusedProblem(
+          mFocusedTeam == team ? team : null,
+          mFocusedTeam == team ? mFocusedProblem : null)
+      .setRank(
+          finalisedTeams.contains(team.getId()) ? Long.valueOf(position + 1) : null)
+      .rebuild(payloads.isEmpty());
   }
 
   @Override
   public void registerAdapterDataObserver(RecyclerView.AdapterDataObserver observer) {
     super.registerAdapterDataObserver(observer);
+    everHadObservers = true;
   }
 
   @Override
@@ -107,39 +151,37 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
     super.unregisterAdapterDataObserver(observer);
   }
 
-  private void notifyTeamChanged(ClicsProto.Team team) {
-    notifyItemChanged(mRows.indexOfTag(team.getId()), team);
-  }
-
   // ResolverController.Observer
 
   @Override
   public void onProblemFocused(ClicsProto.Team team, ClicsProto.Problem problem) {
-    runOnUiThread(() -> {
+    runInOrder(() -> {
       Optional.ofNullable(mFocusedTeam).ifPresent(this::notifyTeamChanged);
       mFocusedTeam = team;
       mFocusedProblem = problem;
-      Optional.ofNullable(mFocusedTeam).ifPresent(this::notifyTeamChanged);
+      Optional.ofNullable(mFocusedTeam).ifPresent(this::notifyTeamFocused);
     });
   }
 
   @Override
-  public synchronized void onProblemSubmitted(ClicsProto.Team team, ClicsProto.Submission submission) {
-    runOnUiThread(() -> notifyTeamChanged(team));
+  public void onTeamRankChanged(ClicsProto.Team team, int oldRank, int newRank) {
+    runInOrder(() -> {
+      mRows.add(newRank - 1, mRows.remove(oldRank - 1));
+      notifyItemMoved(oldRank - 1, newRank - 1);
+    }, 50 /* milliseconds */);
   }
 
   @Override
-  public synchronized void onTeamRankChanged(ClicsProto.Team team, int oldRank, int newRank) {
-    runOnUiThread(() -> {
-      mRows.add(newRank - 1, mRows.remove(oldRank - 1));
-      notifyItemChanged(oldRank - 1);
-      notifyItemMoved(oldRank - 1, newRank - 1);
+  public void onTeamRankFinalised(ClicsProto.Team team, int rank) {
+    runInOrder(() -> {
+      finalisedTeams.add(team.getId());
+      notifyTeamChanged(team);
     });
   }
 
   @Override
   public void onProblemScoreChanged(ClicsProto.Team team, ClicsProto.ScoreboardProblem attempt) {
-    runOnUiThread(() -> {
+    runInOrder(() -> {
       final int index = mRows.indexOfTag(team.getId());
       if (index == -1) {
         throw new AssertionError("Team " + team + " does not exist");
@@ -147,16 +189,18 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
       mRows.set(index, mRows.get(index).toBuilder()
           .setProblems(mModel.getProblem(attempt.getProblemId()).getOrdinal(), attempt)
           .build());
+      notifyItemChanged(index, team);
     });
   }
 
   @Override
   public void onScoreChanged(ClicsProto.Team team, ClicsProto.ScoreboardScore score) {
-    runOnUiThread(() -> {
+    runInOrder(() -> {
       final int index = mRows.indexOfTag(team.getId());
       mRows.set(index, mRows.get(index).toBuilder()
           .setScore(score)
           .build());
+      notifyItemChanged(index, team);
     });
-  }
+  }    
 }

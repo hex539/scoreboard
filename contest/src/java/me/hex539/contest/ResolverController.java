@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,6 +42,20 @@ public class ResolverController {
    */
   public interface Observer extends ScoreboardModel.Observer {
     default void onProblemFocused(Team team, Problem problem) {}
+    default void onTeamRankFinalised(Team team, int rank) {}
+  }
+
+  private static final int INVALID_RANK_STARTED = -1;
+  private static final int INVALID_RANK_FINISHED = 0;
+
+  public enum Resolution {
+    FAILED_PROBLEM,
+    SOLVED_PROBLEM,
+    FOCUSED_TEAM,
+    FOCUSED_PROBLEM,
+    FINALISED_RANK,
+    AWARD,
+    FINISHED
   }
 
   @FunctionalInterface
@@ -51,6 +66,7 @@ public class ResolverController {
   private final Logger logger = (DEBUG ? System.err::println : s -> {});
 
   private boolean started = false;
+  private int currentRank = -1;
 
   private final ClicsContest contest;
   private final ScoreboardModel sourceModel;
@@ -63,19 +79,14 @@ public class ResolverController {
    */
   public final Set<ScoreboardModel.Observer> observers;
 
-  private final Comparators.RowComparator rowComparator;
-
   private final Map<String, SortedMap<Integer, List<Submission>>> teamSubmissions = new HashMap<>();
-  private final Map<String, TeamKey> teamKeys = new HashMap<>();
-  private final PriorityQueue<TeamKey> teamOrdering = new PriorityQueue<>();
-
   private final Map<String, Judgement> judgementsForSubmissions = new HashMap<>();
 
-  // Judging a problem can be broken down into multiple actions, for example highliting the
+  // Judging a problem can be broken down into multiple actions, for example highlighting the
   // problem in the scoreboard and *then* revealing the result after a pause. This queue works
   // as a buffer to allow calculating the sequence of events once eagerly and letting clients
   // query for events one-by-one.
-  private final Queue<Runnable> pendingActions = new ArrayDeque<>();
+  private final Queue<Supplier<Resolution>> pendingActions = new ArrayDeque<>();
 
   public ResolverController(final ClicsContest contest) {
     this(contest, ScoreboardModelImpl.newBuilder(contest).build());
@@ -90,9 +101,7 @@ public class ResolverController {
         .filterSubmissions(s -> false)
         .build();
 
-    this.rowComparator = new Comparators.RowComparator(model);
-
-    this.dispatcher = new JudgementDispatcher(model, rowComparator);
+    this.dispatcher = new JudgementDispatcher(model, new Comparators.RowComparator(model));
     this.observers = dispatcher.observers;
     observers.add(this.model);
   }
@@ -163,19 +172,51 @@ public class ResolverController {
     if (!started) {
       start();
     }
-    return pendingActions.isEmpty() && teamOrdering.isEmpty();
+    return pendingActions.isEmpty() && currentRank == INVALID_RANK_FINISHED;
   }
 
-  public void advance() {
+  public Resolution advance() {
     if (!started) {
       start();
+    }
+    if (finished()) {
+      return Resolution.FINISHED;
+    }
+    populatePendingActions();
+    return pendingActions.poll().get();
+  }
+
+  private void populatePendingActions() {
+    if (currentRank == INVALID_RANK_FINISHED || !pendingActions.isEmpty()) {
       return;
     }
-    if (pendingActions.isEmpty()) {
-      removeInvalidatedKeys();
-      judgeNextProblem(teamOrdering.poll().team);
+    if (currentRank == INVALID_RANK_STARTED) {
+      currentRank = model.getTeams().size();
+      final int rank = currentRank;
+      pendingActions.offer(() -> moveToProblem(getTeamAt(rank), null));
+      return;
     }
-    pendingActions.poll().run();
+
+    final Team currentTeam = getTeamAt(currentRank);
+    if (judgeNextProblem(currentTeam)) {
+      return;
+    }
+
+    pendingActions.offer(() -> finaliseRank(currentTeam, currentRank));
+
+    if (currentRank == 1) {
+      pendingActions.offer(() -> moveToProblem(null, null));
+      currentRank = INVALID_RANK_FINISHED;
+      return;
+    } else {
+      currentRank--;
+      final int rank = currentRank;
+      pendingActions.offer(() -> moveToProblem(getTeamAt(rank), null));
+    }
+  }
+
+  private Team getTeamAt(int rank) {
+    return model.getTeam(model.getRow(rank - 1).getTeamId());
   }
 
   private void createSubmissions() {
@@ -215,15 +256,14 @@ public class ResolverController {
         judgeSubmission(submission);
       }
     });
-
-    sourceModel.getTeams().forEach(this::invalidateTeamOrdering);
   }
 
-  private void judgeSubmission(Submission submission) {
-    if (!judgementsForSubmissions.containsKey(submission.getId())) {
+  private ScoreboardProblem judgeSubmission(Submission submission) {
+    Judgement judgement = judgementsForSubmissions.get(submission.getId());
+    if (judgement == null) {
       throw new Error("Submission " + submission + " has no judgement");
     }
-    dispatcher.notifyJudgement(judgementsForSubmissions.get(submission.getId()));
+    return dispatcher.notifyJudgement(judgement);
   }
 
   private Stream<Observer> getResolverObservers() {
@@ -232,20 +272,32 @@ public class ResolverController {
 
   private void addPendingSubmission(final Submission submission) {
     final Problem problem = model.getProblem(submission.getProblemId());
+
+    // The submission needs to exist.
     final Team team;
     try {
       team = model.getTeam(submission.getTeamId());
     } catch (NoSuchElementException e) {
       return;
     }
+
+    // The problem needs to be pending (unsolved) as of the freeze.
+    if (model.getAttempts(team, problem).getSolved()) {
+      return;
+    }
+
     teamSubmissions
         .computeIfAbsent(team.getId(), k -> new TreeMap<>())
         .computeIfAbsent(problem.getOrdinal(), k -> new ArrayList<>())
         .add(submission);
   }
 
-  private void judgeNextProblem(final Team team) {
+  private boolean judgeNextProblem(final Team team) {
     logger.log("judgeNextProblem " + team.getId());
+
+    if (!teamSubmissions.containsKey(team.getId())) {
+      return false;
+    }
 
     final int problemOrdinal = teamSubmissions.get(team.getId()).firstKey();
     final List<Submission> attempts = teamSubmissions.get(team.getId()).remove(problemOrdinal);
@@ -256,63 +308,33 @@ public class ResolverController {
     final String problemId = attempts.get(0).getProblemId();
     pendingActions.offer(() -> moveToProblem(team, contest.getProblemsOrThrow(problemId)));
     pendingActions.offer(() -> judgeSubmissions(team, attempts));
+    return true;
   }
 
-  private void moveToProblem(final Team team, final Problem problem) {
+  private Resolution judgeSubmissions(final Team team, final List<Submission> attempts) {
+    boolean solved = false;
+    for (Submission attempt : attempts) {
+      if (judgeSubmission(attempt).getSolved()) {
+        solved = true;
+      }
+    }
+    if (solved) {
+      final Team teamAtRankNow = getTeamAt(currentRank);
+      if (teamAtRankNow != team) {
+        pendingActions.offer(() -> moveToProblem(teamAtRankNow, null));
+      }
+    }
+    return solved ? Resolution.SOLVED_PROBLEM : Resolution.FAILED_PROBLEM;
+  }
+
+  private Resolution finaliseRank(Team team, int rank) {
+    getResolverObservers().forEach(x -> x.onTeamRankFinalised(team, rank));
+    return Resolution.FINALISED_RANK;
+  }
+
+  private Resolution moveToProblem(final Team team, final Problem problem) {
     getResolverObservers().forEach(o -> o.onProblemFocused(team, problem));
-  }
-
-  private void judgeSubmissions(final Team team, final List<Submission> attempts) {
-    attempts.forEach(this::judgeSubmission);
-    invalidateTeamOrdering(team);
-    if (finished()) {
-      pendingActions.offer(() -> moveToProblem(null, null));
-    }
-  }
-
-  private void invalidateTeamOrdering(final Team team) {
-    logger.log("invalidateTeamOrdering " + team.getId());
-    TeamKey key =
-        teamSubmissions.containsKey(team.getId())
-            ? new TeamKey(team, model.getRow(team))
-            : null;
-    Optional.ofNullable(teamKeys.put(team.getId(), key)).ifPresent(TeamKey::invalidate);
-    Optional.ofNullable(key).ifPresent(teamOrdering::add);
-    removeInvalidatedKeys();
-  }
-
-  private void removeInvalidatedKeys() {
-    while (teamOrdering.peek() != null && teamOrdering.peek().invalidated) {
-      teamOrdering.poll();
-    }
-  }
-
-  /**
-   * Priority queue comparator holder for finding the least-ranked team with at least one
-   * submission still to be judged.
-   *
-   * Once an item becomes out-of-date it will be invalidated but left in the priority queue
-   * since this is more efficient than trying to remove it, and also more efficient than
-   * using something like TreeSet which has good asymptotics but worse real-world performance
-   * since it's based on a pointer tree instead of an array-backed heap.
-   */
-  private class TeamKey implements Comparable<TeamKey> {
-    private final Team team;
-    private final ScoreboardRow row;
-    public boolean invalidated = false;
-
-    public TeamKey(final Team team, final ScoreboardRow row) {
-      this.team = team;
-      this.row = row;
-    }
-
-    public void invalidate() {
-      invalidated = true;
-    }
-
-    @Override
-    public int compareTo(TeamKey other) {
-      return -rowComparator.compare(row, other.row);
-    }
+    return problem != null
+        ? Resolution.FOCUSED_PROBLEM : team != null ? Resolution.FOCUSED_TEAM : Resolution.FINISHED;
   }
 }

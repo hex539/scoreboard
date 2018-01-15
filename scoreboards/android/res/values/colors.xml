@@ -2,15 +2,22 @@
 <resources>
   <color name="window_background">#000000</color>
 
-  <color name="problem_correct">#00cf00</color>
-  <color name="problem_pending">#0000ff</color>
+  <color name="team_name">#afafaf</color>
+  <color name="team_name_focused">#ffffff</color>
+  <color name="team_rank">#3f3f3f</color>
+
+  <color name="problem_correct">#00af00</color>
+  <color name="problem_pending">#7f7fff</color>
   <color name="problem_incorrect">#cf0000</color>
   <color name="problem_unattempted">#00000000</color>
+  <color name="problem_background">#7f2f2f2f</color>
 
   <color name="problem_label">#ffffff</color>
   <color name="problem_label_shadow">#000000</color>
   <color name="problem_label_focused">#ffffff</color>
   
-  <color name="row_background">#0000ff00</color>
-  <color name="row_background_focused">#0000ff</color>
+  <color name="row_background">#000000</color>
+  <color name="row_background_focused">#7f03a9f4</color>
+  <color name="row_background_final_even">#0f0f0f</color>
+  <color name="row_background_final_odd">#1f1f1f</color>
 </resources>

@@ -1,34 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <!-- android:background="@color/row_background_focused" -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/row_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="end">
-  <LinearLayout
-      android:id="@+id/team_header"
-      android:layout_weight="0"
-      android:layout_width="@dimen/team_name_width"
+    android:orientation="horizontal">
+  <TextView
+      android:id="@+id/team_rank"
+      android:layout_gravity="center_vertical"
+      android:layout_width="@dimen/team_rank_width"
       android:layout_height="wrap_content"
-      android:padding="4dp"
-      android:orientation="vertical">
-    <TextView
-        android:id="@+id/team_name"
-        android:textStyle="bold"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-    <TextView
-        android:id="@+id/team_affiliation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
-  </LinearLayout>
+      android:gravity="center"
+      android:textColor="@color/team_rank"
+      android:textSize="@dimen/team_rank_size"
+      android:textStyle="bold" />
   <LinearLayout
-      android:id="@+id/problems"
-      android:padding="4dp"
-      android:layout_weight="1"
-      android:layout_width="wrap_content"
-      android:layout_height="match_parent"
-      android:orientation="horizontal" />
+      xmlns:android="http://schemas.android.com/apk/res/android"
+      android:id="@+id/row_attempts"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:orientation="vertical">
+    <LinearLayout
+        android:id="@+id/team_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="0"
+        android:layout_gravity="start"
+        android:paddingTop="4dp"
+        android:paddingLeft="4dp"
+        android:orientation="horizontal">
+      <TextView
+          android:id="@+id/team_name"
+          android:textColor="@color/team_name"
+          android:textSize="@dimen/team_name_size"
+          android:textStyle="bold"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content" />
+      <TextView
+          android:id="@+id/team_affiliation"
+          android:paddingLeft="8dp"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content" />
+    </LinearLayout>
+    <LinearLayout
+        android:paddingBottom="4dp"
+        android:layout_weight="1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+      <LinearLayout
+          android:id="@+id/problems"
+          android:layout_weight="1"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:orientation="horizontal" />
+      <TextView
+          android:id="@+id/team_score"
+          android:layout_gravity="center_vertical"
+          android:layout_weight="0"
+          android:layout_width="@dimen/team_score_width"
+          android:layout_height="wrap_content"
+          android:gravity="center"
+          android:textColor="@color/team_rank"
+          android:textSize="@dimen/team_score_size"
+          android:textStyle="bold" />
+      <TextView
+          android:id="@+id/team_time"
+          android:layout_weight="0"
+          android:layout_gravity="center_vertical"
+          android:layout_width="@dimen/team_time_width"
+          android:layout_height="wrap_content"
+          android:gravity="center"
+          android:textColor="@color/team_rank"
+          android:textSize="@dimen/team_score_size"
+          android:textStyle="bold" />
+    </LinearLayout>
+  </LinearLayout>
 </LinearLayout>

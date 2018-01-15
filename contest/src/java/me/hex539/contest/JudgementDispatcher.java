@@ -82,18 +82,18 @@ public class JudgementDispatcher {
     return true;
   }
 
-  public boolean notifyJudgement(final Judgement j) {
+  public ScoreboardProblem notifyJudgement(final Judgement j) {
     final Submission submission;
     try {
       submission = model.getSubmission(j.getSubmissionId());
     } catch (NoSuchElementException e) {
       logger.log("No such submission: " + j.getSubmissionId());
-      return false;
+      return null;
     }
 
     if (j.getJudgementTypeId() == null || "".equals(j.getJudgementTypeId())) {
       logger.log("Ignoring judgement " + j.getId() + " with no judgement type");
-      return false;
+      return null;
     }
 
     final JudgementType type;
@@ -110,7 +110,7 @@ public class JudgementDispatcher {
       logger.log("Updating judging for team " + team.getName());
     } catch (NoSuchElementException e) {
       logger.log("No such team: " + submission.getTeamId());
-      return false;
+      return null;
     }
 
     final Problem problem = model.getProblem(submission.getProblemId());
@@ -163,7 +163,7 @@ public class JudgementDispatcher {
         observers.forEach(x -> x.onTeamRankChanged(team, oldRank, newRank));
       }
     }
-    return true;
+    return attempts;
   }
 
   private ScoreboardProblem scoreProblem(
@@ -208,10 +208,13 @@ public class JudgementDispatcher {
               model.getSubmission(solvedAt.getSubmissionId()).getContestTime().getSeconds() / 60)
           .build();
     } else {
+      // Show submissions with only compiler error as -1, to be consistent with real scoreboards
+      // and to show a more reasonable fiction when resolving where pending submissions don't
+      // disappear into nothingness if they're all CE.
       penalty[0] = 0;
       return ScoreboardProblem.newBuilder()
           .setProblemId(problem.getId())
-          .setNumJudged(penaltyCount)
+          .setNumJudged(attemptsToSolve == 0 ? 0 : Math.max(1, penaltyCount))
           .setNumPending(submissions.size() - verdicts.size())
           .setSolved(false)
           .build();

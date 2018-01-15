@@ -1,16 +1,11 @@
 package me.hex539.app.view;
 
+import static android.support.v4.content.ContextCompat.getColor;
 import static android.support.v4.content.ContextCompat.getDrawable;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
+import android.graphics.drawable.AnimatedVectorDrawable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -20,8 +15,8 @@ import edu.clics.proto.ClicsProto;
 import java.util.ArrayList;
 import java.util.List;
 import me.hex539.app.R;
-import me.hex539.app.intent.IntentUtils;
-import me.hex539.contest.ScoreboardModel;
+
+import android.view.ViewGroup.LayoutParams;
 
 public class ScoreboardRowView extends LinearLayout {
 
@@ -44,14 +39,18 @@ public class ScoreboardRowView extends LinearLayout {
   private List<ScoreboardProblemView> mProblemViews = new ArrayList<>();
   private RowInfo rowInfo;
   private ClicsProto.Problem focusedProblem;
+  private boolean focusedTeam;
+  private Long rank;
+
+  private int currentBackground = -1;
 
   public ScoreboardRowView(Context context) {
     super(context);
     onCreate();
   }
 
-  public ScoreboardRowView(Context context, AttributeSet attrs, int defStyle) {
-    super(context, attrs, defStyle);
+  public ScoreboardRowView(Context context, AttributeSet attrs, int styleAttr, int styleRes) {
+    super(context, attrs, styleAttr, styleRes);
     onCreate();
   }
 
@@ -63,39 +62,94 @@ public class ScoreboardRowView extends LinearLayout {
 
   public ScoreboardRowView setRowInfo(RowInfo rowInfo) {
     this.rowInfo = rowInfo;
-    mTeamNameView.setText(rowInfo.getTeam().getName());
-    mTeamAffiliationView.setText(rowInfo.getOrganization().getName());
-
-    final ViewGroup problemRoot = findViewById(R.id.problems);
-//    if (mProblemViews.size() != rowInfo.getProblemsList().size()) {
-//    }
-    problemRoot.removeAllViews();
-    mProblemViews.clear();
-
-    final ViewGroup root = findViewById(R.id.row_root);
-    if (focusedProblem != null) {
-      root.setBackground(getDrawable(getContext(), R.color.row_background_focused));
-    } else {
-      root.setBackground(getDrawable(getContext(), R.color.row_background));
-    }
-
-    for (ClicsProto.ScoreboardProblem p : rowInfo.getRow().getProblemsList()) {
-      ScoreboardProblemView v = new ScoreboardProblemView(getContext());
-      v.setProblem(p);
-      if (focusedProblem != null && p.getProblemId().equals(focusedProblem.getId())) {
-        v.setFocused(true);
-      }
-      problemRoot.addView(v);
-      mProblemViews.add(v);
-    }
     return this;
   }
 
-  public ScoreboardRowView setFocusedProblem(ClicsProto.Problem problem) {
-    if (focusedProblem != problem) {
+  public ScoreboardRowView setFocusedProblem(ClicsProto.Team team, ClicsProto.Problem problem) {
+    if (focusedTeam != (team != null) || focusedProblem != problem) {
+      focusedTeam = (team != null);
       focusedProblem = problem;
       setRowInfo(rowInfo);
     }
     return this;
+  }
+
+  public ScoreboardRowView setRank(Long rank) {
+    this.rank = rank;
+    return this;
+  }
+
+  private void setRootBackground(int resId, boolean full) {
+    if (resId == currentBackground && !full) {
+      return;
+    }
+    currentBackground = resId;
+    final ViewGroup root = findViewById(R.id.row_root);
+    AnimatedVectorDrawable background = (AnimatedVectorDrawable) getDrawable(getContext(), resId);
+    root.setBackground(background);
+    if (!full) {
+      background.start();
+    }
+  }
+
+  private void unsetRootBackground(boolean full) {
+    currentBackground = -1;
+    final ViewGroup root = findViewById(R.id.row_root);
+    root.setBackground(getDrawable(getContext(), R.color.row_background));
+  }
+
+  public void rebuild(boolean full) {
+    mTeamNameView.setText(rowInfo.getTeam().getName());
+    mTeamAffiliationView.setText(rowInfo.getOrganization().getName());
+
+    // Update overall focus.
+    if (focusedTeam) {
+      mTeamNameView.setTextColor(getColor(getContext(), R.color.team_name_focused));
+      setRootBackground(R.drawable.row_background_focus, full);
+    } else {
+      mTeamNameView.setTextColor(getColor(getContext(), R.color.team_name));
+      if (rank != null) {
+        setRootBackground(rank % 2 == 0
+            ? R.drawable.row_background_final_even
+            : R.drawable.row_background_final_odd, full);
+      } else {
+        unsetRootBackground(full);
+      }
+    }
+
+    // Update problem list.
+    final ViewGroup problemRoot = findViewById(R.id.problems);
+    List<ClicsProto.ScoreboardProblem> scores = rowInfo.getRow().getProblemsList();
+    if (mProblemViews.size() != scores.size()) {
+      problemRoot.removeAllViews();
+      for (int i = 0; i < scores.size(); i++) {
+        ScoreboardProblemView v = new ScoreboardProblemView(getContext());
+        v.setLayoutParams(
+            new LinearLayout.LayoutParams(
+              0,
+              LayoutParams.WRAP_CONTENT,
+              1f));
+        problemRoot.addView(v);
+        mProblemViews.add(v);
+      }
+    }
+    for (int i = 0; i < scores.size(); i++) {
+      final ClicsProto.ScoreboardProblem p = scores.get(i);
+      final ScoreboardProblemView v = mProblemViews.get(i);
+      v.setProblem(p);
+      v.setFocused(focusedProblem != null && p.getProblemId().equals(focusedProblem.getId()));
+    }
+
+    // Update rank text.
+    final TextView rankView = (TextView) findViewById(R.id.team_rank);
+    if (rank != null) {
+      rankView.setText(rank.toString());
+      rankView.setVisibility(View.VISIBLE);
+    } else {
+      rankView.setVisibility(View.INVISIBLE);
+    }
+
+    ((TextView) findViewById(R.id.team_score)).setText("" + rowInfo.getRow().getScore().getNumSolved());
+    ((TextView) findViewById(R.id.team_time)).setText("" + rowInfo.getRow().getScore().getTotalTime());
   }
 }
