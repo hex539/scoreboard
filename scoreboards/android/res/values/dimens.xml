@@ -4,8 +4,8 @@
   <dimen name="team_name_size">25sp</dimen>
   <dimen name="institution_name_size">15sp</dimen>
 
-  <dimen name="problem_score_width">60dp</dimen>
-  <dimen name="problem_score_height">30dp</dimen>
+  <dimen name="problem_score_width">81dp</dimen>
+  <dimen name="problem_score_height">25dp</dimen>
   <dimen name="problem_score_label_size">20sp</dimen>
 
   <dimen name="team_rank_width">70sp</dimen>

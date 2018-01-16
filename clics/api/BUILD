@@ -12,14 +12,6 @@ DEPS = [
     "@okio//jar",
 ]
 
-android_library(
-  name = "android",
-  srcs = glob([
-    "src/java/**",
-  ]),
-  deps = DEPS,
-)
-
 java_library(
   name = "api",
   srcs = glob([

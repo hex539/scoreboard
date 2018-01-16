@@ -65,11 +65,9 @@ public class ResolverController {
 
   private final Logger logger = (DEBUG ? System.err::println : s -> {});
 
-  private boolean started = false;
   private int currentRank = -1;
 
   private final ClicsContest contest;
-  private final ScoreboardModel sourceModel;
   private final ScoreboardModelImpl model;
 
   private final JudgementDispatcher dispatcher;
@@ -94,7 +92,6 @@ public class ResolverController {
 
   public ResolverController(final ClicsContest contest, final ScoreboardModel sourceModel) {
     this.contest = ensureJudgings(contest, sourceModel);
-    this.sourceModel = sourceModel;
     this.model =
       ScoreboardModelImpl.newBuilder(contest, sourceModel)
         .withEmptyScoreboard()
@@ -104,13 +101,7 @@ public class ResolverController {
     this.dispatcher = new JudgementDispatcher(model, new Comparators.RowComparator(model));
     this.observers = dispatcher.observers;
     observers.add(this.model);
-  }
-
-  public void start() {
-    if (!started) {
-      createSubmissions();
-      started = true;
-    }
+    createSubmissions(sourceModel);
   }
 
   private static ClicsContest ensureJudgings(ClicsContest contest, ScoreboardModel model) {
@@ -169,16 +160,10 @@ public class ResolverController {
   }
 
   public boolean finished() {
-    if (!started) {
-      start();
-    }
     return pendingActions.isEmpty() && currentRank == INVALID_RANK_FINISHED;
   }
 
   public Resolution advance() {
-    if (!started) {
-      start();
-    }
     if (finished()) {
       return Resolution.FINISHED;
     }
@@ -215,11 +200,15 @@ public class ResolverController {
     }
   }
 
+  public ScoreboardModel getModel() {
+    return model;
+  }
+
   private Team getTeamAt(int rank) {
     return model.getTeam(model.getRow(rank - 1).getTeamId());
   }
 
-  private void createSubmissions() {
+  private void createSubmissions(ScoreboardModel sourceModel) {
     final boolean hasEnd = contest.getContest().hasContestDuration();
     final Timestamp endTime = !hasEnd ? null : Timestamps.add(
         Timestamp.getDefaultInstance(),

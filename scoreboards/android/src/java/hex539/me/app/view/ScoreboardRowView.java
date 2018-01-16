@@ -5,6 +5,7 @@ import static android.support.v4.content.ContextCompat.getDrawable;
 
 import android.content.Context;
 import android.graphics.drawable.AnimatedVectorDrawable;
+import android.transition.TransitionManager;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
@@ -143,6 +144,7 @@ public class ScoreboardRowView extends LinearLayout {
     // Update rank text.
     final TextView rankView = (TextView) findViewById(R.id.team_rank);
     if (rank != null) {
+      TransitionManager.beginDelayedTransition(findViewById(R.id.row_root));
       rankView.setText(rank.toString());
       rankView.setVisibility(View.VISIBLE);
     } else {

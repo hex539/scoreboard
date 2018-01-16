@@ -124,9 +124,8 @@ public class Executive {
         .build();
     ResolverController controller = new ResolverController(entireContest, reference);
 
-    ScoreboardModelImpl model = reference.toBuilder().withEmptyScoreboard().build();
+    ScoreboardModelImpl model = ScoreboardModelImpl.newBuilder(entireContest, controller.getModel()).build();
     controller.observers.add(model);
-    controller.start();
 
     final AtomicReference<Team> focusedTeam = new AtomicReference<>();
     final AtomicReference<Problem> focusedProblem = new AtomicReference<>();

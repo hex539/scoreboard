@@ -202,5 +202,5 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
           .build());
       notifyItemChanged(index, team);
     });
-  }    
+  }
 }

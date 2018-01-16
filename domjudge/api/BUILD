@@ -1,6 +1,11 @@
 package(default_visibility = ["//visibility:public"])
 
-DEPS = [
+java_library(
+  name = "api",
+  srcs = glob([
+    "src/java/**"
+  ]),
+  deps = [
     "//domjudge/proto:proto",
     "//domjudge/proto:annotations",
     "//domjudge/proto:annotations_compile_imports",
@@ -10,20 +15,5 @@ DEPS = [
     "@gson//jar",
     "@okhttp//jar",
     "@okio//jar",
-]
-
-android_library(
-  name = "android",
-  srcs = glob([
-    "src/java/**",
-  ]),
-  deps = DEPS,
-)
-
-java_library(
-  name = "api",
-  srcs = glob([
-    "src/java/**"
-  ]),
-  deps = DEPS,
+  ]
 )

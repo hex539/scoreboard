@@ -9,15 +9,15 @@
   <color name="problem_correct">#00af00</color>
   <color name="problem_pending">#7f7fff</color>
   <color name="problem_incorrect">#cf0000</color>
-  <color name="problem_unattempted">#00000000</color>
+  <color name="problem_unattempted">#000000</color>
   <color name="problem_background">#7f2f2f2f</color>
 
   <color name="problem_label">#ffffff</color>
   <color name="problem_label_shadow">#000000</color>
   <color name="problem_label_focused">#ffffff</color>
   
-  <color name="row_background">#000000</color>
+  <color name="row_background">#00000000</color>
   <color name="row_background_focused">#7f03a9f4</color>
-  <color name="row_background_final_even">#0f0f0f</color>
+  <color name="row_background_final_even">#171717</color>
   <color name="row_background_final_odd">#1f1f1f</color>
 </resources>
