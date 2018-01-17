@@ -7,9 +7,9 @@ java_binary(
     "src/java/me/hex539/console/*.java",
   ]),
   deps = [
-    "//clics/proto",
     "//contest",
     "//interop",
+    "@com_google_protobuf//:protobuf_java",
     "@jewelcli//jar",
   ],
 )

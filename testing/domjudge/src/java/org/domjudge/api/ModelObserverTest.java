@@ -47,21 +47,20 @@ public class ModelObserverTest {
 
     // Submit problem C for team 2.
     SubmitInfo s = submission(dispatcher, model, "Team 2", "C", 2).submit();
-    verify(observer).onScoreChanged(
+    verify(observer).onProblemScoreChanged(
         eq(team2),
         eq(ScoreboardProblem.newBuilder()
             .setProblemId("C")
             .setNumJudged(0)
             .setNumPending(1)
             .setSolved(false)
-            .build()),
-        any(ScoreboardScore.class));
+            .build()));
     assertThat(model.getSubmissions()).hasSize(4);
     assertThat(model.getJudgements()).hasSize(3);
 
     // Judge the problem.
     s.judge("correct");
-    verify(observer).onScoreChanged(
+    verify(observer).onProblemScoreChanged(
         eq(team2),
         eq(ScoreboardProblem.newBuilder()
             .setProblemId("C")
@@ -69,8 +68,7 @@ public class ModelObserverTest {
             .setNumPending(0)
             .setSolved(true)
             .setTime(2)
-            .build()),
-        any(ScoreboardScore.class));
+            .build()));
     assertThat(model.getJudgements()).hasSize(4);
   }
 

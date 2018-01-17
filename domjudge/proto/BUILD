@@ -1,23 +1,23 @@
-load("@org_pubref_rules_protobuf//java:rules.bzl", "java_proto_library")
+load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 package(default_visibility = ["//visibility:public"])
 
-java_proto_library(
-  name = "proto",
-  protos = ["src/domjudge-apiv3.proto"],
-  proto_deps = [":annotations"],
-  imports = [
-    "external/com_google_protobuf/src",
-    "domjudge/proto/src",
-  ],
+py_proto_library(
+  name = "python",
+  deps = [":proto"],
 )
 
 java_proto_library(
-  name = "annotations",
-  protos = ["src/annotations.proto"],
-  imports = [
-    "external/com_google_protobuf/src"
+  name = "java",
+  deps = [":proto"],
+)
+
+proto_library(
+  name = "proto",
+  srcs = glob(["src/**"]),
+  deps = [
+    "@com_google_protobuf//:descriptor_proto",
+    "@com_google_protobuf//:duration_proto",
+    "@com_google_protobuf//:timestamp_proto",
   ],
-  inputs = [
-    "@com_google_protobuf//:well_known_protos"
-  ],
+  visibility = ["//visibility:private"],
 )

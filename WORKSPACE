@@ -8,12 +8,10 @@ android_sdk_repository(
 )
 
 git_repository(
-  name = "org_pubref_rules_protobuf",
-  remote = "https://github.com/pubref/rules_protobuf",
-  tag = "v0.8.1",
+  name = 'com_google_protobuf',
+  remote = 'https://github.com/google/protobuf',
+  tag = "v3.5.1.1",
 )
-load("@org_pubref_rules_protobuf//java:rules.bzl", "java_proto_repositories")
-java_proto_repositories()
 
 maven_jar(
   name = "jewelcli",
@@ -31,13 +29,23 @@ maven_jar(
 )
 
 maven_jar(
+ name = "gson_maven",
+ artifact = "com.google.code.gson:gson:2.8.2",
+)
+
+bind(
   name = "gson",
-  artifact = "com.google.code.gson:gson:2.8.1",
+  actual = "@gson_maven//jar",
 )
 
 maven_jar(
+ name = "guava_maven",
+ artifact = "com.google.guava:guava:22.0-android",
+)
+
+bind(
   name = "guava",
-  artifact = "com.google.guava:guava:22.0-android",
+  actual = "@guava_maven//jar",
 )
 
 maven_jar(

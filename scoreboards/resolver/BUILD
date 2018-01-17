@@ -10,10 +10,7 @@ java_binary(
     "src/resources/**",
   ]),
   deps = [
-    "//clics/proto",
     "//contest",
     "//interop",
   ],
 )
-
-

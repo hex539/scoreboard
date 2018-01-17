@@ -34,7 +34,7 @@ class SubmitInfo {
             .setStartContestTime(Duration.newBuilder().setSeconds(123456).build())
             .setEndContestTime(Duration.newBuilder().setSeconds(123456).build())
             .build()))
-        .isTrue();
+        .isNotNull();
     return this;
   }
 

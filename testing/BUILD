@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 java_library(
   name = "utils",
@@ -6,7 +6,6 @@ java_library(
     "utils/src/java/**/*.java",
   ]),
   deps = [
-    "//clics/proto",
     "//contest",
   ],
 )
@@ -21,7 +20,6 @@ java_test(
   ]),
   deps = [
     ":utils",
-    "//clics/proto",
     "//contest",
     "@mockito//jar",
     "@truth//jar",
