@@ -18,13 +18,13 @@ message ClicsContest {
   repeated ScoreboardRow scoreboard = 3;
   repeated EventFeedItem event_feed = 4 [(js.serialized_name) = "event-feed"];
 
-  map<string, JudgementType> judgement_types = 5 [(js.serialized_name) = "judgement-types"];
+  map<string, JudgementType> judgement_types = 5 [(js.serialized_name) = "judgement-types", json_name = 'judgement-types'];
   map<string, Language> languages = 6;
   map<string, Problem> problems = 7;
   map<string, Group> groups = 8;
   map<string, Organization> organizations = 9;
   map<string, Team> teams = 10;
-  map<string, TeamMember> team_members = 11 [(js.serialized_name) = "team-members"];
+  map<string, TeamMember> team_members = 11 [(js.serialized_name) = "team-members", json_name = 'team-members'];
   map<string, Submission> submissions = 12;
   map<string, Judgement> judgements = 13;
   map<string, Run> runs = 14;
@@ -38,15 +38,15 @@ message ClicsContest {
 message Contest {
   string id = 1;
   string name = 2;
-  string formal_name = 3;
+  string formal_name = 3 [json_name = 'formal_name'];
 
-  google.protobuf.Timestamp start_time = 4;
-  google.protobuf.Duration contest_duration = 5 [(js.serialized_name) = "duration"];
-  google.protobuf.Duration scoreboard_freeze_duration = 6;
+  google.protobuf.Timestamp start_time = 4 [json_name = 'start_time'];
+  google.protobuf.Duration contest_duration = 5 [(js.serialized_name) = "duration", json_name = 'duration'];
+  google.protobuf.Duration scoreboard_freeze_duration = 6 [json_name = 'scoreboard_freeze_duration'];
 
-  sint64 penalty_time = 7;
-  repeated Media banners = 8 [(js.serialized_name) = "banner"];
-  repeated Media logos = 9 [(js.serialized_name) = "logo"];
+  sint64 penalty_time = 7 [json_name = 'penalty_time'];
+  repeated Media banners = 8 [(js.serialized_name) = "banner", json_name = 'banner'];
+  repeated Media logos = 9 [(js.serialized_name) = "logo", json_name = 'logos'];
 }
 
 // Endpoint: GET /contests/{}/judgement-types => JudgementType[]
@@ -76,8 +76,8 @@ message Problem {
   sint32 ordinal = 4;
   string rgb = 5;
   string color = 6;
-  double time_limit = 7;
-  uint32 test_data_count = 8;
+  double time_limit = 7 [json_name = 'time_limit'];
+  uint32 test_data_count = 8 [json_name = 'test_data_count'];
 }
 
 // Endpoint: GET /contests/{}/groups => Group[]
@@ -85,7 +85,7 @@ message Problem {
 
 message Group {
   string id = 1;
-  string icpc_id = 2;
+  string icpc_id = 2 [json_name = 'icpc_id'];
   string name = 3;
   string type = 4;
   bool hidden = 5;
@@ -96,14 +96,14 @@ message Group {
 
 message Organization {
   string id = 1;
-  string icpc_id = 2;
+  string icpc_id = 2 [json_name = 'icpc_id'];
   string name = 3;
-  string formal_name = 4;
+  string formal_name = 4 [json_name = 'formal_name'];
   string country = 5;
   string url = 6;
-  string social_media_tag = 7 [(js.serialized_name) = "twitter_hashtag"];
+  string social_media_tag = 7 [(js.serialized_name) = "twitter_hashtag", json_name = 'twitter_hashtag'];
   OrganizationLocation location = 8;
-  repeated Media logos = 9 [(js.serialized_name) = "logo"];
+  repeated Media logos = 9 [(js.serialized_name) = "logo", json_name = 'logo'];
 }
 
 message OrganizationLocation {
@@ -116,15 +116,15 @@ message OrganizationLocation {
 
 message Team {
   string id = 1;
-  string icpc_id = 2;
+  string icpc_id = 2 [json_name = 'icpc_id'];
   string name = 3;
-  string organization_id = 4;
-  repeated string group_ids = 5 [(js.serialized_name) = "group_ids"];
+  string organization_id = 4 [json_name = 'organization_id'];
+  repeated string group_ids = 5 [(js.serialized_name) = "group_ids", json_name = 'group_ids'];
   TeamLocation location = 6;
-  repeated Media photos = 7 [(js.serialized_name) = "photo"];
-  repeated Media videos = 8 [(js.serialized_name) = "video"];
-  repeated Media desktop_stream = 9 [(js.serialized_name) = "desktop"];
-  repeated Media webcam_stream = 10 [(js.serialized_name) = "webcam"];
+  repeated Media photos = 7 [(js.serialized_name) = "photo", json_name = 'photo'];
+  repeated Media videos = 8 [(js.serialized_name) = "video", json_name = 'video'];
+  repeated Media desktop_stream = 9 [(js.serialized_name) = "desktop", json_name = 'desktop'];
+  repeated Media webcam_stream = 10 [(js.serialized_name) = "webcam", json_name = 'webcam'];
 }
 
 message TeamLocation {
@@ -138,13 +138,13 @@ message TeamLocation {
 
 message TeamMember {
   string id = 1;
-  string icpc_id = 2;
-  string team_id = 3;
-  string first_name = 4;
-  string last_name = 5;
+  string icpc_id = 2 [json_name = 'icpc_id'];
+  string team_id = 3 [json_name = 'team_id'];
+  string first_name = 4 [json_name = 'first_name'];
+  string last_name = 5 [json_name = 'last_name'];
   string sex = 6;
   string role = 7;
-  repeated Media photos = 8 [(js.serialized_name) = "photo"];
+  repeated Media photos = 8 [(js.serialized_name) = "photo", json_name = 'photo'];
 }
 
 // Endpoint: /contests/{}/state => ContestState
@@ -162,14 +162,14 @@ message ContestState {
 
 message Submission {
   string id = 1;
-  string language_id = 2;
-  string problem_id = 3;
-  string team_id = 4;
+  string language_id = 2 [json_name = 'language_id'];
+  string problem_id = 3 [json_name = 'problem_id'];
+  string team_id = 4 [json_name = 'team_id'];
   google.protobuf.Timestamp time = 5;
-  google.protobuf.Duration contest_time = 6;
-  string entry_point = 7;
+  google.protobuf.Duration contest_time = 6 [json_name = 'contest_time'];
+  string entry_point = 7 [json_name = 'entry_point'];
   repeated Media files = 8;
-  repeated Media reactionVideo = 9 [(js.serialized_name) = "reaction"];
+  repeated Media reactionVideo = 9 [(js.serialized_name) = "reaction", json_name = 'reaction'];
 }
 
 // Endpoint: /contests/{}/judgements => Judgement[]
@@ -177,12 +177,12 @@ message Submission {
 
 message Judgement {
   string id = 1;
-  string submission_id = 2;
-  string judgement_type_id = 3;
-  google.protobuf.Timestamp start_time = 4;
-  google.protobuf.Duration start_contest_time = 5;
-  google.protobuf.Timestamp end_time = 6;
-  google.protobuf.Duration end_contest_time = 7;
+  string submission_id = 2 [json_name = 'submission_id'];
+  string judgement_type_id = 3 [json_name = 'judgement_type_id'];
+  google.protobuf.Timestamp start_time = 4 [json_name = 'start_time'];
+  google.protobuf.Duration start_contest_time = 5 [json_name = 'contest_time'];
+  google.protobuf.Timestamp end_time = 6 [json_name = 'end_time'];
+  google.protobuf.Duration end_contest_time = 7 [json_name = 'end_contest_time'];
   double max_run_time = 8;
 }
 
@@ -191,12 +191,12 @@ message Judgement {
 
 message Run {
   string id = 1;
-  string judgement_id = 2;
+  string judgement_id = 2 [json_name = 'judgement_id'];
   uint32 ordinal = 3;
-  string judgement_type_id = 4;
+  string judgement_type_id = 4 [json_name = 'type_id'];
   google.protobuf.Timestamp time = 5;
-  google.protobuf.Duration contest_time = 6;
-  double run_time = 7;
+  google.protobuf.Duration contest_time = 6 [json_name = 'contest_time'];
+  double run_time = 7 [json_name = 'run_time'];
 }
 
 // Endpoint: /contests/{}/clarifications => Clarification[]
@@ -204,13 +204,13 @@ message Run {
 
 message Clarification {
   string id = 1;
-  string from_team_id = 2;
-  string to_team_id = 3;
-  string reply_to_id = 4;
-  string problem_id = 5;
+  string from_team_id = 2 [json_name = 'from_team_id'];
+  string to_team_id = 3 [json_name = 'to_team_id'];
+  string reply_to_id = 4 [json_name = 'reply_to_id'];
+  string problem_id = 5 [json_name = 'problem_id'];
   string text = 6;
   google.protobuf.Timestamp time = 7;
-  google.protobuf.Duration contest_time = 8;
+  google.protobuf.Duration contest_time = 8 [json_name = 'contest_time'];
 }
 
 // Endpoint: /contests/{}/awards/ => Award[]
@@ -219,27 +219,27 @@ message Clarification {
 message Award {
   string id = 1;
   string citation = 2;
-  repeated string team_ids = 3;
+  repeated string team_ids = 3 [json_name = 'team_ids'];
 }
 
 // Endpoint: /contests/{}/scoreboard => ScoreboardRow[]
 
 message ScoreboardRow {
   uint64 rank = 1;
-  string team_id = 2;
+  string team_id = 2 [json_name = 'team_id'];
   ScoreboardScore score = 3;
   repeated ScoreboardProblem problems = 4;
 }
 
 message ScoreboardScore  {
-  uint32 num_solved = 1;
-  sint64 total_time = 2;
+  uint32 num_solved = 1 [json_name = 'num_solved'];
+  sint64 total_time = 2 [json_name = 'total_time'];
 }
 
 message ScoreboardProblem {
-  string problem_id = 1;
-  uint32 num_judged = 2;
-  uint32 num_pending = 3;
+  string problem_id = 1 [json_name = 'problem_id'];
+  uint32 num_judged = 2 [json_name = 'num_judged'];
+  uint32 num_pending = 3 [json_name = 'num_pending'];
   bool solved = 4;
   sint64 time = 5;
 }

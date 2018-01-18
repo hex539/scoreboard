@@ -68,7 +68,7 @@ class Deserializers {
                 .plusMinutes(Math.abs(Long.parseLong(elements[1])))
                 .plusSeconds(Math.abs(Long.parseLong(elements[2])));
           if (elements.length == 4) {
-            res = res.plusMillis(Math.abs(Long.parseLong(elements[3])));
+            res = res.plusNanos(Long.parseLong((elements[3] + "000000000").substring(0, 9)));
           }
 
           final boolean positive = Long.parseLong(elements[0]) >= 0;
