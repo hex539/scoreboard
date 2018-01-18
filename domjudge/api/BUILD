@@ -7,6 +7,7 @@ java_library(
   ]),
   deps = [
     "//domjudge/proto:java",
+    "//domjudge/proto:annotations_java",
     "//third_party/gson:prototype_adapter",
     "//external:gson",
     "//external:guava",

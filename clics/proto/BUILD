@@ -3,25 +3,42 @@ package(default_visibility = ["//visibility:public"])
 
 py_proto_library(
   name = "python",
-  deps = [":proto"],
+  srcs = glob(["src/**"]),
+  deps = [
+    "@com_google_protobuf//:protobuf_python",
+  ],
+  default_runtime="@com_google_protobuf//:protobuf_python",
+  protoc="@com_google_protobuf//:protoc",
 )
 
 java_proto_library(
   name = "java",
   deps = [":proto"],
-#  imports = [
-#    "external/com_google_protobuf/src",
-#    "clics/proto/src",
-#  ],
 )
+
 
 proto_library(
   name = "proto",
-  srcs = glob(["src/**"]),
+  srcs = ["src/clics_v1.proto"],
   deps = [
+    ":annotations",
     "@com_google_protobuf//:descriptor_proto",
     "@com_google_protobuf//:duration_proto",
     "@com_google_protobuf//:timestamp_proto",
+  ],
+  visibility = ["//visibility:private"],
+)
+
+java_proto_library(
+  name = "annotations_java",
+  deps = [":annotations"],
+)
+
+proto_library(
+  name = "annotations",
+  srcs = ["src/annotations.proto"],
+  deps = [
+    "@com_google_protobuf//:descriptor_proto",
   ],
   visibility = ["//visibility:private"],
 )
