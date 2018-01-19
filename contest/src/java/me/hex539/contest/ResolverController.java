@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -250,7 +251,8 @@ public class ResolverController {
   private ScoreboardProblem judgeSubmission(Submission submission) {
     Judgement judgement = judgementsForSubmissions.get(submission.getId());
     if (judgement == null) {
-      throw new Error("Submission " + submission + " has no judgement");
+      logger.log("Submission " + submission + " has no judgement");
+      return null;
     }
     return dispatcher.notifyJudgement(judgement);
   }
@@ -301,12 +303,12 @@ public class ResolverController {
   }
 
   private Resolution judgeSubmissions(final Team team, final List<Submission> attempts) {
-    boolean solved = false;
-    for (Submission attempt : attempts) {
-      if (judgeSubmission(attempt).getSolved()) {
-        solved = true;
-      }
-    }
+    final boolean solved = attempts.stream()
+        .map(this::judgeSubmission)
+        .filter(Objects::nonNull)
+        .filter(ScoreboardProblem::getSolved)
+        .findFirst()
+        .isPresent();
     if (solved) {
       final Team teamAtRankNow = getTeamAt(currentRank);
       if (teamAtRankNow != team) {
