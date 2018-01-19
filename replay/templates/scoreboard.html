@@ -1,0 +1,63 @@
+<html>
+  <head>
+    <title>Scoreboard</title>
+    <style type="text/css">
+      body {font-family: sans-serif}
+      article {margin: 0 auto; text-align: center}
+      header {font-size: 2em; padding: 1em}
+      table {margin: 0 auto;}
+      #scoreboard {border-collapse: collapse}
+      #scoreboard thead tr {border-bottom: 1px solid black}
+      #scoreboard tbody tr {border-top: 1px solid #E0E0E0}
+      #scoreboard tbody tr:hover {background: #E1F5FE}
+      #scoreboard th, #scoreboard td {padding: 0.2em}
+      .numeric {text-align: right}
+      .score {font-weight: bold}
+      td.pcell {width: 4em; height: 2.5em; text-align: center;}
+      .pcell>span {display: block; border-radius: 1px; width: 3em; padding: 0.5em; box-shadow: 0px 1px 2px #9E9E9E}
+      .solved {background: #AED581}
+      .solved.first {background: #4CAF50}
+      .pending {background: #64B5F6}
+      .failed {background: #E57373}
+    </style>
+  </head>
+  <body>
+    <article>
+      <header>{{ contest.formal_name }}</header>
+      <table id="scoreboard">
+        <thead>
+          <tr>
+            <th>Team</th>
+            <th>Solved</th>
+            <th>Time</th>{%
+for problem in problems
+            %}<th>{{ problem.label }}</th>{%
+endfor
+          %}</tr>
+        </thead>
+        <tbody>
+{% for row in scoreboard %}
+          <tr>
+            <td>{{ teams[row.team_id].name }}</td>
+            <td class="numeric score">{{ row.score.num_solved }}</th>
+            <td class="numeric">{{ row.score.total_time }}</th>{%
+for p in row.problems
+%}{%
+if p.solved
+            %}<td class="pcell"><span class="solved{% if p.solved_first %} first{% endif %}">{{ p.num_judged }}/{{ p.time }}</span></td>{%
+elif p.num_pending and p.num_pending > 0
+            %}<td class="pcell"><span class="pending">?</span></td>{%
+elif p.num_judged and p.num_judged > 0
+            %}<td class="pcell"><span class="failed">-{{ p.num_judged }}</span></td>{%
+else
+            %}<td class="pcell"></td>{%
+endif
+%}{%
+endfor
+          %}</tr>
+{% endfor %}
+        </tbody>
+      </table>
+    </article>
+  </body>
+</html>
