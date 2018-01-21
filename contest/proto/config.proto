@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package contest.config;
+option java_package = "me.hex539.contest";
+option java_outer_classname = "ContestConfig";
+
+message Source {
+  string id = 1;
+  string name = 2;
+  string base_url = 3;
+  string file_path = 4;
+
+  oneof api_specific_info {
+    ClicsApi clics_api = 6;
+    Domjudge3Api domjudge3_api = 7;
+  }
+}
+
+message ClicsApi {
+  // Some servers have endpoints /api/xyz instead of /api/contests/123/xyz
+  bool api_in_root = 2;
+}
+
+message Domjudge3Api {
+  // Nothing yet.
+}

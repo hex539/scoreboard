@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import me.hex539.contest.ContestConfig;
 import me.hex539.interop.ContestConverters;
 import org.domjudge.api.DomjudgeRest;
 import org.domjudge.proto.DomjudgeProto;
@@ -24,8 +25,8 @@ public class ContestDownloader {
   private String url;
   private String file;
   private InputStream stream;
-  private ApiTarget apiTarget = ApiTarget.clics;
-  private boolean textFormat = false;
+  private ApiTarget apiTarget;
+  private Boolean textFormat;
   private String username;
   private String password;
 
@@ -45,7 +46,7 @@ public class ContestDownloader {
   }
 
   public ContestDownloader setApi(String api) {
-    return setApi(ApiTarget.valueOf(api));
+    return setApi(api == null ? null : ApiTarget.valueOf(api));
   }
 
   public ContestDownloader setApi(ApiTarget api) {
@@ -65,6 +66,15 @@ public class ContestDownloader {
   }
 
   public ClicsProto.ClicsContest fetch() throws Exception {
+    if (apiTarget == null) {
+      if (url == null) {
+        throw new IllegalArgumentException("Must provide either a URL or an API target");
+      }
+      ContestConfig.Source source = ApiDetective.detectApi(url).get();
+      url = source.getBaseUrl();
+      apiTarget = (source.hasClicsApi() ? ApiTarget.clics : ApiTarget.domjudge3);
+    }
+
     final InputStream fileStream = (file != null ? (stream = new FileInputStream(file)) : null);
     try {
       switch (apiTarget) {

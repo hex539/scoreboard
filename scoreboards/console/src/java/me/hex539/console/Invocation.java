@@ -35,8 +35,8 @@ public @CommandLineInterface interface Invocation {
   @Option(
       shortName = "a",
       longName = "api",
-      defaultValue = "domjudge3",
-      description = "API version to use (domjudge3 or clics)")
+      defaultToNull = true,
+      description = "Filter API version to use (domjudge3 or clics, default is both)")
     String getApi();
 
   @Option(

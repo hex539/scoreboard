@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import edu.clics.proto.ClicsProto.*;
 
+import me.hex539.contest.ApiDetective;
 import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.JudgementDispatcher;
 import me.hex539.contest.ResolverController;

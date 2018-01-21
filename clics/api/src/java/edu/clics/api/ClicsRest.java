@@ -105,6 +105,7 @@ class RestClient<Self extends RestClient> {
 
 public class ClicsRest extends RestClient<ClicsRest> {
   private final GsonSingleton gson = new GsonSingleton();
+  private boolean apiInRoot = true;
 
   public ClicsRest(final String url) {
     super(url);
@@ -130,9 +131,8 @@ public class ClicsRest extends RestClient<ClicsRest> {
     return buildFullContest(contest).build();
   }
 
-  private static String getContestPath(Contest contest) {
-    final boolean DOMJUDGE_CONTEST_API_IN_ROOT = true;
-    return (DOMJUDGE_CONTEST_API_IN_ROOT ? "" : "/contests/" + contest.getId());
+  private String getContestPath(Contest contest) {
+    return (apiInRoot ? "" : "/contests/" + contest.getId());
   }
 
   private ClicsContest.Builder buildPublicContest(Contest contest) throws IOException {
