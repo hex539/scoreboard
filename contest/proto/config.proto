@@ -9,11 +9,17 @@ message Source {
   string name = 2;
   string base_url = 3;
   string file_path = 4;
+  Authentication authentication = 5;
 
   oneof api_specific_info {
     ClicsApi clics_api = 6;
     Domjudge3Api domjudge3_api = 7;
   }
+}
+
+message Authentication {
+  string http_username = 1;
+  string http_password = 2;
 }
 
 message ClicsApi {

@@ -9,6 +9,6 @@ py_binary(
     "templates",
   ],
   deps = [
-    "//clics/proto:python",
+    "//api/clics/proto:python",
   ],
 )

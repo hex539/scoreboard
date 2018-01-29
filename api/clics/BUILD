@@ -1,13 +1,14 @@
 package(default_visibility = ["//visibility:public"])
 
 java_library(
-  name = "api",
+  name = "clics",
   srcs = glob([
     "src/java/**"
   ]),
   deps = [
-    "//clics/proto:java",
-    "//clics/proto:annotations_java",
+    "//api/clics/proto:java",
+    "//api/clics/proto:annotations_java",
+    "//api/utils",
     "//third_party/gson:prototype_adapter",
     "//external:gson",
     "//external:guava",

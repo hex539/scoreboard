@@ -11,107 +11,53 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import me.hex539.api.RestClient;
 import me.hex539.contest.ContestConfig;
 import me.hex539.interop.ContestConverters;
 import org.domjudge.api.DomjudgeRest;
 import org.domjudge.proto.DomjudgeProto;
 
 public class ContestDownloader {
-  enum ApiTarget {
-    clics,
-    domjudge3;
+  private final ContestConfig.Source source;
+  private final InputStream stream;
+
+  public ContestDownloader(String url) {
+    this(ApiDetective.detectApi(url).get());
   }
 
-  private String url;
-  private String file;
-  private InputStream stream;
-  private ApiTarget apiTarget;
-  private Boolean textFormat;
-  private String username;
-  private String password;
-
-  public ContestDownloader setUrl(String url) {
-    this.url = url;
-    return this;
+  public ContestDownloader(ContestConfig.Source source) {
+    this.source = source;
+    this.stream = null;
   }
 
-  public ContestDownloader setFile(String file) {
-    this.file = file;
-    return this;
-  }
-
-  public ContestDownloader setStream(InputStream stream) {
+  public ContestDownloader(InputStream stream) {
+    this.source = null;
     this.stream = stream;
-    return this;
-  }
-
-  public ContestDownloader setApi(String api) {
-    return setApi(api == null ? null : ApiTarget.valueOf(api));
-  }
-
-  public ContestDownloader setApi(ApiTarget api) {
-    this.apiTarget = api;
-    return this;
-  }
-
-  public ContestDownloader setCredentials(String username, String password) {
-    this.username = username;
-    this.password = password;
-    return this;
-  }
-
-  public ContestDownloader setTextFormat(boolean textFormat) {
-    this.textFormat = textFormat;
-    return this;
   }
 
   public ClicsProto.ClicsContest fetch() throws Exception {
-    if (apiTarget == null) {
-      if (url == null) {
-        throw new IllegalArgumentException("Must provide either a URL or an API target");
+    if (stream != null || source != null && source.getFilePath().length() > 0) {
+      if (stream != null) {
+        return fetchClicsContestFile(stream, false);
       }
-      ContestConfig.Source source = ApiDetective.detectApi(url).get();
-      url = source.getBaseUrl();
-      apiTarget = (source.hasClicsApi() ? ApiTarget.clics : ApiTarget.domjudge3);
-    }
-
-    final InputStream fileStream = (file != null ? (stream = new FileInputStream(file)) : null);
-    try {
-      switch (apiTarget) {
-        case clics:
-          return fetchClics();
-        case domjudge3:
-          return ContestConverters.toClics(fetchDomjudge3());
-        default:
-          throw new IllegalArgumentException("No such API type: " + apiTarget);
-      }
-
-    } finally {
-      if (fileStream != null) {
-        fileStream.close();
+      try (InputStream fileStream = new FileInputStream(source.getFilePath())) {
+        return fetchClicsContestFile(fileStream, false);
       }
     }
+
+    if (source.hasClicsApi()) {
+      return getClicsRestApi().downloadAllContests().values().iterator().next();
+    }
+
+    if (source.getDomjudge3Api() != null) {
+      return ContestConverters.toClics(getRestApi().getEntireContest());
+    }
+
+    throw new IllegalArgumentException("No known API type for contest: " + source.getBaseUrl());
   }
 
-  private ClicsProto.ClicsContest fetchClics() throws Exception {
-    if (url != null) {
-      final ClicsRest rest = getClicsRestApi();
-      return rest.downloadAllContests().values().iterator().next();
-    }
-    if (stream != null) {
-      return fetchClicsContestFile(stream, textFormat);
-    }
-    throw new Error();
-  }
-
-  private DomjudgeProto.EntireContest fetchDomjudge3() throws Exception {
-    if (url != null) {
-      return getRestApi().getEntireContest();
-    }
-    if (stream != null) {
-      return fetchDomjudgeContestFile(stream, textFormat);
-    }
-    throw new Error();
+  private ClicsProto.ClicsContest fetchContest(InputStream f) throws Exception {
+    return fetchClicsContestFile(f, false);
   }
 
   private ClicsProto.ClicsContest fetchClicsContestFile(InputStream f, boolean isTextFormat)
@@ -140,31 +86,20 @@ public class ContestDownloader {
     }
   }
 
-  private ClicsRest getClicsRestApi() {
-    System.err.println("Fetching from site: " + url);
-    ClicsRest api = new ClicsRest(url);
-
-    if (username != null || password != null) {
-      if (username == null || password == null) {
-        throw new IllegalArgumentException("Need to provide both or neither of username:password");
-      }
-      api.setCredentials(username, password);
+  private <T extends RestClient> T populateRestClient(T api) {
+    if (source.hasAuthentication()) {
+      api.setCredentials(
+          source.getAuthentication().getHttpUsername(),
+          source.getAuthentication().getHttpPassword());
     }
-
     return api;
   }
 
+  private ClicsRest getClicsRestApi() {
+    return populateRestClient(new ClicsRest(source.getBaseUrl()));
+  }
+
   private DomjudgeRest getRestApi() {
-    System.err.println("Fetching from site: " + url);
-    DomjudgeRest api = new DomjudgeRest(url);
-
-    if (username != null || password != null) {
-      if (username == null || password == null) {
-        throw new IllegalArgumentException("Need to provide both or neither of username:password");
-      }
-      api.setCredentials(username, password);
-    }
-
-    return api;
+    return populateRestClient(new DomjudgeRest(source.getBaseUrl()));
   }
 }

@@ -4,7 +4,7 @@ package proto.domjudge;
 option java_package = "org.domjudge.proto";
 option java_outer_classname = "DomjudgeProto";
 
-import "domjudge/proto/src/annotations.proto";
+import "api/domjudge/proto/annotations.proto";
 
 message Affiliation {
   uint64 id = 1 [(serialized_name) = "affilid"];

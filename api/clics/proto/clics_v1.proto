@@ -8,7 +8,7 @@ option java_outer_classname = "ClicsProto";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
-import "clics/proto/src/annotations.proto";
+import "api/clics/proto/annotations.proto";
 
 // Endpoint: none. Used for storage.
 

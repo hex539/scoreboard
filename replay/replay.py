@@ -5,7 +5,7 @@ import datetime
 import isodate
 
 from argparse import ArgumentParser
-from clics.proto.src.clics_v1_pb2 import *
+from api.clics.proto.clics_v1_pb2 import *
 from flask import Flask, request, abort, render_template
 from flask_restful import Resource, Api
 from google.protobuf import text_format, json_format, descriptor

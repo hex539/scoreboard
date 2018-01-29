@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import edu.clics.proto.ClicsProto.*;
 
 import me.hex539.contest.ApiDetective;
+import me.hex539.contest.ContestConfig;
 import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.JudgementDispatcher;
 import me.hex539.contest.ResolverController;
@@ -30,14 +31,28 @@ public class Executive {
 
   public static void main(String[] args) throws Exception {
     Invocation invocation = Invocation.parseFrom(args);
-    final ContestDownloader contestFetcher = new ContestDownloader()
-        .setFile(invocation.getFile())
-        .setUrl(invocation.getUrl())
-        .setTextFormat(invocation.isTextFormat())
-        .setApi(invocation.getApi());
-    if (invocation.getUsername() != null || invocation.getPassword() != null) {
-      contestFetcher.setCredentials(invocation.getUsername(), invocation.getPassword());
+
+    final ContestConfig.Source source;
+    if (invocation.getUrl() != null) {
+      source = ApiDetective.detectApi(invocation.getUrl()).get().toBuilder()
+          .setAuthentication(invocation.getUsername() != null
+                ? ContestConfig.Authentication.newBuilder()
+                    .setHttpUsername(invocation.getUsername())
+                    .setHttpPassword(invocation.getPassword())
+                    .build()
+                : null)
+          .build();
+    } else if (invocation.getFile() != null) {
+      source = ContestConfig.Source.newBuilder()
+          .setFilePath(invocation.getFile())
+          .build();
+    } else {
+      System.err.println("Need one of --url or --path to load a contest");
+      System.exit(1);
+      return;
     }
+
+    final ContestDownloader contestFetcher = new ContestDownloader(source);
 
     List<String> actions = invocation.getActions();
     if (actions == null) {

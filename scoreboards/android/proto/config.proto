@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package scoreboards.android.config;
+option java_package = "me.hex539.app";
+option java_outer_classname = "ContestConfig";
+
+import "contest/proto/annotations.proto";
+
+message Root {
+  string last_contest = 1;
+  map<string, contest.config.ContestConfig> contests = 2;
+}

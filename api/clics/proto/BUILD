@@ -3,7 +3,7 @@ package(default_visibility = ["//visibility:public"])
 
 py_proto_library(
   name = "python",
-  srcs = glob(["src/**"]),
+  srcs = glob(["*.proto"]),
   deps = [
     "@com_google_protobuf//:protobuf_python",
   ],
@@ -16,9 +16,10 @@ java_proto_library(
   deps = [":proto"],
 )
 
+
 proto_library(
   name = "proto",
-  srcs = ["src/domjudge_apiv3.proto"],
+  srcs = ["clics_v1.proto"],
   deps = [
     ":annotations",
     "@com_google_protobuf//:descriptor_proto",
@@ -35,7 +36,7 @@ java_proto_library(
 
 proto_library(
   name = "annotations",
-  srcs = ["src/annotations.proto"],
+  srcs = ["annotations.proto"],
   deps = [
     "@com_google_protobuf//:descriptor_proto",
   ],

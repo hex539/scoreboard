@@ -6,8 +6,8 @@ java_library(
     "src/java/**"
   ]),
   deps = [
-    "//clics/proto:java",
-    "//domjudge/proto:java",
+    "//api/clics/proto:java",
+    "//api/domjudge/proto:java",
     "@com_google_protobuf//:protobuf_java",
   ],
 )

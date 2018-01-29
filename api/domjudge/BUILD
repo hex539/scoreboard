@@ -1,13 +1,14 @@
 package(default_visibility = ["//visibility:public"])
 
 java_library(
-  name = "api",
+  name = "domjudge",
   srcs = glob([
     "src/java/**",
   ]),
   deps = [
-    "//domjudge/proto:java",
-    "//domjudge/proto:annotations_java",
+    "//api/domjudge/proto:java",
+    "//api/domjudge/proto:annotations_java",
+    "//api/utils",
     "//third_party/gson:prototype_adapter",
     "//external:gson",
     "//external:guava",

@@ -48,7 +48,7 @@ public class LiveScoreboardActivity extends Activity {
     final CompletableFuture<ClicsProto.ClicsContest> entireContest =
         CompletableFuture.supplyAsync(() -> {
           try (final InputStream nwerc2017 = getAssets().open("contests/nwerc2017.pb")) {
-            return new ContestDownloader().setStream(nwerc2017).setApi("clics").fetch();
+            return new ContestDownloader(nwerc2017).fetch();
           } catch (Exception e) {
             throw new Error();
           }

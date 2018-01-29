@@ -26,7 +26,7 @@ public class ResolverHandler extends Handler {
       this.resolver = resolver.get();
       this.adapter = adapter.get();
     } catch (Exception e) {
-      throw new Error();
+      throw new Error(e);
     }
     this.resolver.observers.add(this.adapter);
   }

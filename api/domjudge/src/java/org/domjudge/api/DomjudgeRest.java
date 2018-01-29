@@ -8,6 +8,8 @@ import com.google.gson.protobuf.ProtoTypeAdapter;
 import com.google.gson.reflect.TypeToken;
 import com.google.protobuf.AbstractMessage;
 
+import me.hex539.api.RestClient;
+
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -31,29 +33,11 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okhttp3.Request;
 
-public class DomjudgeRest {
-  private final String url;
-  private final OkHttpClient client = new OkHttpClient();
+public class DomjudgeRest extends RestClient<DomjudgeRest> {
   private final GsonSingleton gson = new GsonSingleton();
 
-  private static class Auth {
-    final String username;
-    final String password;
-
-    public Auth(String username, String password) {
-      this.username = username;
-      this.password = password;
-    }
-  }
-  private Auth auth;
-
   public DomjudgeRest(final String url) {
-    this.url = url;
-  }
-
-  public DomjudgeRest setCredentials(String username, String password) {
-    auth = new Auth(username, password);
-    return this;
+    super(url);
   }
 
   @RequiresRole(any = true)
@@ -203,32 +187,6 @@ public class DomjudgeRest {
   @FunctionalInterface
   private interface ResponseHandler<T, R> {
     R apply(Optional<T> t) throws IOException;
-  }
-
-  protected <T> T requestFrom(String endpoint, ResponseHandler<? super String, T> handler)
-        throws CompletionException {
-    Request.Builder request = new Request.Builder()
-        .url(url + endpoint);
-
-    if (auth != null) {
-      request.header("Authorization", Credentials.basic(auth.username, auth.password));
-    }
-
-    try (Response response = client.newCall(request.build()).execute()) {
-      switch  (response.code()) {
-        case 200:
-          // OK
-          return handler.apply(Optional.ofNullable(response.body().string()));
-        case 403: // Forbidden (need to authenticate, older api versions)
-        case 405: // Method not allowed (need to authenticate, newer api versions)
-          return handler.apply(Optional.empty());
-        default:
-          // Not handled. Probably an invalid request.
-          throw new IOException(response.code() + ": " + response.message());
-      }
-    } catch (IOException e) {
-      throw new CompletionException(e);
-    }
   }
 
   private static class GsonSingleton {
