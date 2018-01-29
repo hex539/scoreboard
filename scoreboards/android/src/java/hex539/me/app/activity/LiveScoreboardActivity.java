@@ -8,16 +8,15 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.annotation.UiThread;
 import android.support.annotation.WorkerThread;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import edu.clics.proto.ClicsProto;
 import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 import me.hex539.app.R;
 import me.hex539.app.controller.ResolverHandler;
+import me.hex539.app.controller.ScoreboardViewController;
 import me.hex539.app.data.ScoreboardAdapter;
 import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.ResolverController;
@@ -30,20 +29,29 @@ public class LiveScoreboardActivity extends Activity {
   private Handler mUiHandler;
   private HandlerThread mResolverHandlerThread;
   private ResolverHandler mResolverHandler;
-
-  private RecyclerView mScoreboardRows;
-  private LinearLayoutManager mScoreboardLayout;
-  private ScoreboardAdapter mAdapter;
+  private ScoreboardViewController mScoreboardViewController;
 
   @Override
   public void onCreate(Bundle savedState) {
     super.onCreate(savedState);
+    setContentView(R.layout.scoreboard);
 
     mUiHandler = new Handler(Looper.getMainLooper());
-    final Handler uiHandler = mUiHandler;
-
     mResolverHandlerThread = new HandlerThread("api");
     mResolverHandlerThread.start();
+
+    loadContest();
+  }
+
+  @Override
+  public void onDestroy() {
+    mResolverHandlerThread.interrupt();
+    super.onDestroy();
+  }
+
+  @UiThread
+  private void loadContest() {
+    final Handler uiHandler = mUiHandler;
 
     final CompletableFuture<ClicsProto.ClicsContest> entireContest =
         CompletableFuture.supplyAsync(() -> {
@@ -67,37 +75,20 @@ public class LiveScoreboardActivity extends Activity {
     final CompletableFuture<ScoreboardAdapter> adapter = resolver
         .thenApplyAsync(r -> new ScoreboardAdapter(r.getModel(), uiHandler));
 
-    mResolverHandler = new ResolverHandler(mResolverHandlerThread.getLooper(), resolver, adapter);
-    mResolverHandler.post(
-        () -> runOnUiThread(() -> initUi(scoreboardModel.getNow(null), adapter.getNow(null))));
+    final Runnable initUi = () -> initUi(scoreboardModel.getNow(null), adapter.getNow(null));
 
-    setContentView(R.layout.scoreboard);
+    mResolverHandler = new ResolverHandler(mResolverHandlerThread.getLooper(), resolver, adapter);
+    mResolverHandler.post(() -> runOnUiThread(initUi));
   }
 
+  @UiThread
   private void initUi(ScoreboardModel model, ScoreboardAdapter adapter) {
-    mAdapter = adapter;
-    mAdapter.addFocusObserver(this::onTeamFocused);
+    mScoreboardViewController = new ScoreboardViewController(
+        (RecyclerView) findViewById(R.id.scoreboard_rows), adapter, model);
 
     final TextView contestName = ((TextView) findViewById(R.id.contest_name));
     contestName.setText(model.getContest().getName());
 
-    mScoreboardRows = (RecyclerView) findViewById(R.id.scoreboard_rows);
-    mScoreboardLayout = (LinearLayoutManager) (mScoreboardRows.getLayoutManager());
-    mScoreboardLayout.setStackFromEnd(true);
-    mScoreboardRows.setHasFixedSize(true);
-    mScoreboardRows.setAdapter(mAdapter);
-    mScoreboardRows.getItemAnimator().setMoveDuration(900L);
-    mScoreboardRows.setChildDrawingOrderCallback((a, b) -> a-1-b);
-    mScoreboardRows.scrollToPosition(model.getTeams().size());
-
     mResolverHandler.postAdvance();
-  }
-
-  private void onTeamFocused(ClicsProto.Team team) {
-    if (team == null) {
-      return;
-    }
-    mScoreboardLayout
-        .scrollToPositionWithOffset(mAdapter.indexOfTeam(team), mScoreboardRows.getHeight() / 2);
   }
 }
