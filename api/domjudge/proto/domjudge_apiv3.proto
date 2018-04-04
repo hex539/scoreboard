@@ -104,7 +104,7 @@ message Team {
   string nationality = 4;
   uint64 category = 5;
   string group_name = 6 [(serialized_name) = "group"];
-  sint64 affil_id = 7 [(serialized_name) = "affilId"];
+  sint64 affil_id = 7 [(serialized_name) = "affilid"];
   string affiliation = 8;
 }
 
