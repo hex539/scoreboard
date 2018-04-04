@@ -13,9 +13,15 @@ import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.Request;
 
+/**
+ * Detector for different paths and API versions of a contest on a given server.
+ * <p>
+ * TODO: fill in the best-matching contest ID and Name fields at the same time
+ *       as spidering for the contest.
+ */
 public final class ApiDetective {
   private ApiDetective() {}
-  
+
   private static final String[] DOMJUDGE_BASES = {"", "/domjudge"};
   private static final String[] APIV3_BASES = {"", "/api", "/api/v3"};
   private static final String[] CLICS_BASES = {"", "/api"};
