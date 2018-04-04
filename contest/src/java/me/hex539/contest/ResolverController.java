@@ -177,9 +177,13 @@ public class ResolverController {
       return;
     }
     if (currentRank == INVALID_RANK_STARTED) {
-      currentRank = model.getTeams().size();
-      final int rank = currentRank;
-      pendingActions.offer(() -> moveToProblem(getTeamAt(rank), null));
+      if (model.getTeams().isEmpty()) {
+        currentRank = INVALID_RANK_FINISHED;
+      } else {
+        currentRank = model.getTeams().size();
+        final int rank = currentRank;
+        pendingActions.offer(() -> moveToProblem(getTeamAt(rank), null));
+      }
       return;
     }
 
@@ -240,7 +244,8 @@ public class ResolverController {
               Timestamp.getDefaultInstance(),
               submission.getContestTime()));
       dispatcher.notifySubmission(submission);
-      if (hasFreeze && (intoFreeze.getSeconds() >= 0 || intoFreeze.getNanos() >= 0)) {
+
+      if (hasFreeze && intoFreeze.getSeconds() >= 0) {
         addPendingSubmission(submission);
       } else {
         judgeSubmission(submission);
