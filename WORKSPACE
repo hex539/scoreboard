@@ -4,7 +4,7 @@ android_sdk_repository(
   name = "androidsdk",
   path = "/usr/local/android-sdk",
   api_level = 26,
-  build_tools_version = "26.0.3",
+  build_tools_version = "27.0.3",
 )
 
 git_repository(
@@ -40,7 +40,7 @@ bind(
 
 maven_jar(
   name = "guava_maven",
-  artifact = "com.google.guava:guava:22.0-android",
+  artifact = "com.google.guava:guava:24.0-android",
 )
 
 bind(
