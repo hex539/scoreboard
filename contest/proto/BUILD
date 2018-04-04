@@ -13,5 +13,4 @@ proto_library(
     "@com_google_protobuf//:duration_proto",
     "@com_google_protobuf//:timestamp_proto",
   ],
-  visibility = ["//visibility:private"],
 )
