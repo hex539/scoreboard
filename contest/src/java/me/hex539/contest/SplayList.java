@@ -133,10 +133,7 @@ public final class SplayList<T> extends AbstractList<T> implements List<T>, Sort
 
   @Override
   public T get(int index) {
-    if (root == null) {
-      throw new NoSuchElementException();
-    }
-    if (index < 0 || index >= root.splay().size) {
+    if (root == null || index < 0 || index >= root.splay().size) {
       throw new ArrayIndexOutOfBoundsException(index);
     }
     return root.splay().get(index).key;
