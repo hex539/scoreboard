@@ -85,7 +85,7 @@ final class U {
 
     return ClicsProto.Contest.newBuilder()
         .setId("" + dom.getId())
-        .setName("" + dom.getId())
+        .setName("" + dom.getName())
         .setFormalName(dom.getName())
         .setStartTime(Timestamp.newBuilder().setSeconds(dom.getStart()).build())
         .setContestDuration(
@@ -118,7 +118,7 @@ final class U {
         .sorted((a, b) -> a.getLabel().compareTo(b.getLabel()))
         .collect(Collectors.toCollection(ArrayList::new));
     for (int i = problems.size(); i --> 0;) {
-      problems.set(i, problems.get(i).toBuilder().setOrdinal(i + 1).build());
+      problems.set(i, problems.get(i).toBuilder().setOrdinal(i).build());
     }
     return problems;
   }
@@ -129,7 +129,7 @@ final class U {
         .setLabel(dom.getLabel())
         .setName(dom.getName())
         .setOrdinal(1)
-        .setRgb(HtmlColours.nameToRgb(dom.getColor()))
+        .setRgb(Optional.ofNullable(HtmlColours.nameToRgb(dom.getColor())).orElse("#ff0000"))
         .setColor(dom.getColor())
         .build();
   }
@@ -146,7 +146,7 @@ final class U {
   public static ClicsProto.Organization toClics(DomjudgeProto.Affiliation dom) {
     return ClicsProto.Organization.newBuilder()
         .setId("" + dom.getId())
-        .setName(dom.getShortname())
+        .setName(dom.getName())
         .setFormalName(dom.getName())
         .setCountry(dom.getCountry())
         .build();
