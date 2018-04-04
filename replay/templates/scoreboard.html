@@ -8,17 +8,17 @@
       table {margin: 0 auto;}
       #scoreboard {border-collapse: collapse}
       #scoreboard thead tr {border-bottom: 1px solid black}
-      #scoreboard tbody tr {border-top: 1px solid #E0E0E0}
+      #scoreboard tbody tr {border-top: 1px solid rgba(0,0,0,0.125)}
       #scoreboard tbody tr:hover {background: #E1F5FE}
       #scoreboard th, #scoreboard td {padding: 0.2em}
       .numeric {text-align: right}
       .score {font-weight: bold}
+      .pcell>span {display: block; border-radius: 2px; width: 3em; padding: 0.5em; box-shadow: 0px 1px 3px #9E9E9E}
+      td.pcell.solved>span {background: #AED581}
+      td.pcell.solved.first>span {background: #4CAF50}
+      td.pcell.pending>span {background: #64B5F6}
+      td.pcell.failed>span {background: #E57373}
       td.pcell {width: 4em; height: 2.5em; text-align: center;}
-      .pcell>span {display: block; border-radius: 1px; width: 3em; padding: 0.5em; box-shadow: 0px 1px 2px #9E9E9E}
-      .solved {background: #AED581}
-      .solved.first {background: #4CAF50}
-      .pending {background: #64B5F6}
-      .failed {background: #E57373}
     </style>
   </head>
   <body>
@@ -38,17 +38,17 @@ endfor
         <tbody>
 {% for row in scoreboard %}
           <tr>
-            <td>{{ teams[row.team_id].name }}</td>
+            <td><a href="../contests/{{ contest.id }}/teams/{{ row.team_id }}">{{ teams[row.team_id].name }}</a></td>
             <td class="numeric score">{{ row.score.num_solved }}</th>
             <td class="numeric">{{ row.score.total_time }}</th>{%
 for p in row.problems
 %}{%
 if p.solved
-            %}<td class="pcell"><span class="solved{% if p.solved_first %} first{% endif %}">{{ p.num_judged }}/{{ p.time }}</span></td>{%
+            %}<td class="pcell solved{% if p.solved_first %} first{% endif %}"><span>{{ p.num_judged }}/{{ p.time }}</span></td>{%
 elif p.num_pending and p.num_pending > 0
-            %}<td class="pcell"><span class="pending">?</span></td>{%
+            %}<td class="pcell pending"><span>?</span></td>{%
 elif p.num_judged and p.num_judged > 0
-            %}<td class="pcell"><span class="failed">-{{ p.num_judged }}</span></td>{%
+            %}<td class="pcell failed"><span>-{{ p.num_judged }}</span></td>{%
 else
             %}<td class="pcell"></td>{%
 endif
