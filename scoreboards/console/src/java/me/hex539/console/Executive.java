@@ -34,14 +34,17 @@ public class Executive {
 
     final ContestConfig.Source source;
     if (invocation.getUrl() != null) {
-      source = ApiDetective.detectApi(invocation.getUrl()).get().toBuilder()
-          .setAuthentication(invocation.getUsername() != null
-                ? ContestConfig.Authentication.newBuilder()
-                    .setHttpUsername(invocation.getUsername())
-                    .setHttpPassword(invocation.getPassword())
-                    .build()
-                : null)
-          .build();
+      ContestConfig.Source.Builder sourceBuilder =
+          ApiDetective.detectApi(invocation.getUrl()).get()
+              .toBuilder();
+      if (invocation.getUsername() != null) {
+          sourceBuilder.setAuthentication(
+              ContestConfig.Authentication.newBuilder()
+                  .setHttpUsername(invocation.getUsername())
+                  .setHttpPassword(invocation.getPassword())
+                  .build());
+      }
+      source = sourceBuilder.build();
     } else if (invocation.getFile() != null) {
       source = ContestConfig.Source.newBuilder()
           .setFilePath(invocation.getFile())
