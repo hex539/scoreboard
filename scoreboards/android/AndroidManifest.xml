@@ -9,16 +9,33 @@
       android:label="@string/scoreboard_app"
       android:allowBackup="false"
       android:theme="@style/ScoreboardTheme">
+
+    <activity
+        android:name="me.hex539.app.activity.SettingsActivity"
+        android:icon="@drawable/app_icon"
+        android:label="@string/choose_contest"
+        android:theme="@style/SettingsTheme"
+        android:exported="false">
+    </activity>
+
     <activity
         android:name="me.hex539.app.activity.LiveScoreboardActivity"
         android:icon="@drawable/app_icon"
         android:label="@string/demo_contest"
         android:theme="@style/ScoreboardTheme"
-        android:exported="true">
+        android:exported="false">
+    </activity>
+
+    <activity-alias
+        android:icon="@drawable/app_icon"
+        android:label="@string/choose_contest"
+        android:name="me.hex539.launcher1"
+        android:targetActivity="me.hex539.app.activity.SettingsActivity">
       <intent-filter>
         <category android:name="android.intent.category.LAUNCHER" />
         <action android:name="android.intent.action.MAIN" />
       </intent-filter>
-    </activity>
+    </activity-alias>
+
   </application>
 </manifest>

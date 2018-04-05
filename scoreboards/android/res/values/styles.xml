@@ -9,4 +9,8 @@
     <!-- TODO change to @null and set backgrounds appropriately. -->
     <item name="android:windowBackground">@android:color/black</item>
   </style>
+
+  <style name="SettingsTheme" parent="@style/Theme.Leanback">
+    <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
+  </style>  
 </resources>

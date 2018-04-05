@@ -3,4 +3,11 @@
   <string name="scoreboard_app">Scoreboard Monitor</string>
   <string name="live_scoreboard_activity">Scoreboard</string>
   <string name="demo_contest">Demo Contest</string>
+  <string name="choose_contest">Choose Contest</string>
+
+  <!-- Contest list info / actions -->
+  <string name="add_contest">Add contest</string>
+  <string name="saved_contests">Saved contests</string>
+  <string name="contest_save_success">Contest saved</string>
+  <string name="contest_save_failure">Contest failed to download</string>
 </resources>
