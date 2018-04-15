@@ -68,6 +68,11 @@ maven_jar(
     artifact = "com.google.truth:truth:0.27",
 )
 
+maven_jar(
+    name = "nullable",
+    artifact = "com.google.code.findbugs:jsr305:3.0.2",
+)
+
 new_http_archive(
     name = "auto_value",
     url = "http://repo1.maven.org/maven2/com/google/auto/value/auto-value/1.4/auto-value-1.4.jar",

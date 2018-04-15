@@ -8,15 +8,13 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.annotation.UiThread;
+import android.support.annotation.WorkerThread;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.widget.TextView;
 import com.google.common.base.Preconditions;
 import edu.clics.proto.ClicsProto;
-import java.io.InputStream;
-import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -36,6 +34,7 @@ public class LiveScoreboardActivity extends Activity {
 
   public static class Extras {
     private Extras() {}
+
     public static final String CONTEST_ID = "contest-id";
   }
 
@@ -76,7 +75,7 @@ public class LiveScoreboardActivity extends Activity {
     final CompletableFuture<String> largestGroup =
         entireContest.thenApplyAsync(c -> mostPopularGroup(c).orElse(""));
 
-    final CompletableFuture<ScoreboardModel> scoreboardModel =
+    final CompletableFuture<ScoreboardModelImpl> referenceModel =
         entireContest.thenCombineAsync(
             largestGroup,
             (clicsContest, groupId) -> ScoreboardModelImpl.newBuilder(clicsContest)
@@ -84,15 +83,28 @@ public class LiveScoreboardActivity extends Activity {
                 .filterTooLateSubmissions()
                 .build());
 
-    final CompletableFuture<ResolverController> resolver =
-        entireContest.thenCombineAsync(scoreboardModel, ResolverController::new);
+    final CompletableFuture<ScoreboardModelImpl> scoreboardModel =
+        entireContest.thenCombineAsync(
+            referenceModel,
+            (clicsContest, reference) -> ScoreboardModelImpl.newBuilder(clicsContest, reference)
+                .withEmptyScoreboard()
+                .filterSubmissions(s -> false)
+                .build());
 
-    final CompletableFuture<ScoreboardAdapter> adapter = resolver
-        .thenApplyAsync(r -> new ScoreboardAdapter(r.getModel(), uiHandler));
+    final CompletableFuture<ResolverController> resolver = entireContest
+        .thenCombineAsync(referenceModel, ResolverController::new)
+        .thenCombineAsync(scoreboardModel, ResolverController::addObserver);
+
+    final CompletableFuture<ScoreboardAdapter> adapter = scoreboardModel
+        .thenApplyAsync(model -> new ScoreboardAdapter(model, uiHandler));
 
     mResolverHandler = new ResolverHandler(mResolverHandlerThread.getLooper(), resolver, adapter);
-    mResolverHandler.post(
-        () -> runOnUiThread(() -> initUi(scoreboardModel.join(), adapter.join())));
+    mResolverHandler.post(() -> onAdapterLoaded(scoreboardModel.join(), adapter.join()));
+  }
+
+  @WorkerThread
+  private void onAdapterLoaded(ScoreboardModel model, ScoreboardAdapter adapter) {
+    runOnUiThread(() -> initUi(model, adapter));
   }
 
   @UiThread

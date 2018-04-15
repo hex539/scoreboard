@@ -28,7 +28,8 @@ public class ResolverHandler extends Handler {
     } catch (Exception e) {
       throw new Error(e);
     }
-    this.resolver.observers.add(this.adapter);
+    this.resolver.addObserver(this.adapter);
+    this.resolver.advance();
   }
 
   @UiThread
@@ -39,6 +40,7 @@ public class ResolverHandler extends Handler {
   @WorkerThread
   private void advanceResolver() {
     if (resolver.finished()) {
+      this.resolver.removeObserver(this.adapter);
       return;
     }
 
@@ -54,6 +56,7 @@ public class ResolverHandler extends Handler {
         advanceDelay = 200;
         break;
     }
-    postDelayed(() -> advanceResolver(), advanceDelay /* milliseconds */);
+
+    postDelayed(this::advanceResolver, advanceDelay /* milliseconds */);
   }
 }

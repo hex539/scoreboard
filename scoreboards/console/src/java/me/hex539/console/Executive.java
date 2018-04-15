@@ -141,14 +141,17 @@ public class Executive {
         .filterGroups(g -> invocation.getGroups() == null || invocation.getGroups().equals(g.getName()))
         .filterTooLateSubmissions()
         .build();
-    ResolverController controller = new ResolverController(entireContest, reference);
+    ScoreboardModelImpl model = ScoreboardModelImpl.newBuilder(entireContest, reference)
+        .withEmptyScoreboard()
+        .filterSubmissions(s -> false)
+        .build();
 
-    ScoreboardModelImpl model = ScoreboardModelImpl.newBuilder(entireContest, controller.getModel()).build();
-    controller.observers.add(model);
+    ResolverController controller = new ResolverController(entireContest, reference);
+    controller.addObserver(model);
 
     final AtomicReference<Team> focusedTeam = new AtomicReference<>();
     final AtomicReference<Problem> focusedProblem = new AtomicReference<>();
-    controller.observers.add(new ResolverController.Observer() {
+    controller.addObserver(new ResolverController.Observer() {
       @Override
       public void onProblemFocused(Team team, Problem problem) {
         focusedTeam.set(team);
@@ -164,7 +167,7 @@ public class Executive {
           .map(row -> PrettyPrinter.formatScoreboardRow(
               model.getTeam(row.getTeamId()),
               row,
-              focusedTeam.get() != null && row.getTeamId() == focusedTeam.get().getId() 
+              focusedTeam.get() != null && row.getTeamId() == focusedTeam.get().getId()
                   ? focusedProblem.get()
                   : null))
           .forEach(System.out::println);

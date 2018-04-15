@@ -16,6 +16,8 @@ java_library(
     "@auto_value//:processor",
     "@com_google_protobuf//:protobuf_java",
     "@com_google_protobuf//:protobuf_java_util",
+    "@guava_maven//jar",
+    "@nullable//jar",
     "@okhttp//jar",
   ],
   exports = [

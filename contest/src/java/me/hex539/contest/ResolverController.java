@@ -1,32 +1,33 @@
 package me.hex539.contest;
 
+import com.google.auto.value.AutoValue;
+import com.google.common.base.Preconditions;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.Durations;
 import com.google.protobuf.util.Timestamps;
-import java.util.ArrayDeque;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import edu.clics.proto.ClicsProto.*;
 
 public class ResolverController {
-  private static final boolean DEBUG = false;
+
+  /** Number of events we'll try to stay ahead by. Zero or negative means no limit. */
+  private static final int DEFAULT_BUFFER_AHEAD = 256;
 
   /**
    * Something that shows the scoreboard resolution.
@@ -46,8 +47,10 @@ public class ResolverController {
     default void onTeamRankFinalised(Team team, int rank) {}
   }
 
-  private static final int INVALID_RANK_STARTED = -1;
-  private static final int INVALID_RANK_FINISHED = 0;
+  private final ScoreboardModel.Observer proxyObserver = ObserverCapturer.captivate(
+      new ScoreboardModel.Observer() {},
+      ScoreboardModel.Observer.class,
+      this::addScoreboardEvent);
 
   public enum Resolution {
     FAILED_PROBLEM,
@@ -56,42 +59,75 @@ public class ResolverController {
     FOCUSED_PROBLEM,
     FINALISED_RANK,
     AWARD,
+    STARTED,
     FINISHED
   }
 
-  @FunctionalInterface
-  private interface Logger {
-    void log(String s);
+  /**
+   * Another cheap reimplementation of Either to handle messages. Good candidate for replacement
+   * by protobuf+grpc later on to support working as a client/server for other scoreboard replay
+   * tools in future.
+   */
+  @AutoValue
+  abstract static class Advancer {
+    @Nullable public abstract Consumer<Observer> focus();
+    @Nullable public abstract Consumer<ScoreboardModel.Observer> scoreboard();
+    @Nullable public abstract Resolution resolution();
+
+    public static Advancer focus(Consumer<Observer> focus) {
+      return new AutoValue_ResolverController_Advancer(
+          /* focus= */ Preconditions.checkNotNull(focus),
+          /* scoreboard= */ null,
+          /* resolution= */ null);
+    }
+
+    public static Advancer scoreboard(Consumer<ScoreboardModel.Observer> scoreboard) {
+      return new AutoValue_ResolverController_Advancer(
+          /* focus= */ null,
+          /* scoreboard= */ Preconditions.checkNotNull(scoreboard),
+          /* resolution= */ null);
+    }
+
+    public static Advancer resolution(Resolution resolution) {
+      return new AutoValue_ResolverController_Advancer(
+          /* focus= */ null,
+          /* scoreboard= */ null,
+          /* resolution= */ Preconditions.checkNotNull(resolution));
+    }
   }
 
-  private final Logger logger = (DEBUG ? System.err::println : s -> {});
+  private void addFocusEvent(Consumer<Observer> focus) {
+    try {pendingActions.put(Advancer.focus(focus));} catch (InterruptedException e) {}
+  }
 
-  private int currentRank = -1;
+  private void addScoreboardEvent(Consumer<ScoreboardModel.Observer> scoreboard) {
+    try {pendingActions.put(Advancer.scoreboard(scoreboard));} catch (InterruptedException e) {}
+  }
+
+  private void addResolution(Resolution resolution) {
+    try {pendingActions.put(Advancer.resolution(resolution));} catch (InterruptedException e) {}
+  }
 
   private final ClicsContest contest;
   private final ScoreboardModelImpl model;
-
   private final JudgementDispatcher dispatcher;
-  /**
-   * Alias of {@link JudgementDispatcher#observers}. {@link Observer} members will get extra
-   * events not sent to generic observers.
-   */
-  public final Set<ScoreboardModel.Observer> observers;
+  private final Thread resolutionThread;
 
   private final Map<String, SortedMap<Integer, List<Submission>>> teamSubmissions = new HashMap<>();
   private final Map<String, Judgement> judgementsForSubmissions = new HashMap<>();
 
-  // Judging a problem can be broken down into multiple actions, for example highlighting the
-  // problem in the scoreboard and *then* revealing the result after a pause. This queue works
-  // as a buffer to allow calculating the sequence of events once eagerly and letting clients
-  // query for events one-by-one.
-  private final Queue<Supplier<Resolution>> pendingActions = new ArrayDeque<>();
+  private final LinkedBlockingQueue<Advancer> pendingActions;
+  private final Client client;
 
-  public ResolverController(final ClicsContest contest) {
+  public ResolverController(ClicsContest contest) {
     this(contest, ScoreboardModelImpl.newBuilder(contest).build());
   }
 
-  public ResolverController(final ClicsContest contest, final ScoreboardModel sourceModel) {
+  public ResolverController(ClicsContest contest, ScoreboardModel sourceModel) {
+    this(contest, sourceModel, DEFAULT_BUFFER_AHEAD);
+  }
+
+  public ResolverController(ClicsContest contest, ScoreboardModel sourceModel, int bufferAhead) {
     this.contest = ensureJudgings(contest, sourceModel);
     this.model =
       ScoreboardModelImpl.newBuilder(contest, sourceModel)
@@ -100,9 +136,29 @@ public class ResolverController {
         .build();
 
     this.dispatcher = new JudgementDispatcher(model, new Comparators.RowComparator(model));
-    this.observers = dispatcher.observers;
-    observers.add(this.model);
-    createSubmissions(sourceModel);
+    this.dispatcher.observers.add(this.model);
+    this.dispatcher.observers.add(this.proxyObserver);
+
+    this.pendingActions = bufferAhead > 0
+        ? new LinkedBlockingQueue<>(bufferAhead)
+        : new LinkedBlockingQueue<>();
+
+    this.client = new Client(pendingActions);
+    this.resolutionThread = new Thread(() -> {
+      createSubmissions(sourceModel);
+      resolveContest();
+    });
+    this.resolutionThread.start();
+  }
+
+  public ResolverController addObserver(ScoreboardModel.Observer observer) {
+    client.observers.add(observer);
+    return this;
+  }
+
+  public ResolverController removeObserver(ScoreboardModel.Observer observer) {
+    client.observers.remove(observer);
+    return this;
   }
 
   private static ClicsContest ensureJudgings(ClicsContest contest, ScoreboardModel model) {
@@ -161,51 +217,70 @@ public class ResolverController {
   }
 
   public boolean finished() {
-    return pendingActions.isEmpty() && currentRank == INVALID_RANK_FINISHED;
+    return client.finished();
   }
 
   public Resolution advance() {
-    if (finished()) {
-      return Resolution.FINISHED;
-    }
-    populatePendingActions();
-    return pendingActions.poll().get();
+    return client.advance();
   }
 
-  private void populatePendingActions() {
-    if (currentRank == INVALID_RANK_FINISHED || !pendingActions.isEmpty()) {
-      return;
+  private static class Client {
+    private final LinkedBlockingQueue<Advancer> pendingActions;
+    private Resolution lastResolution = null;
+
+    public final Set<ScoreboardModel.Observer> observers = new HashSet<>();
+
+    public Client(LinkedBlockingQueue<Advancer> pendingActions) {
+      this.pendingActions = pendingActions;
     }
-    if (currentRank == INVALID_RANK_STARTED) {
-      if (model.getTeams().isEmpty()) {
-        currentRank = INVALID_RANK_FINISHED;
-      } else {
-        currentRank = model.getTeams().size();
-        final int rank = currentRank;
-        pendingActions.offer(() -> moveToProblem(getTeamAt(rank), null));
+
+    public boolean finished() {
+      return lastResolution == Resolution.FINISHED;
+    }
+
+    public Resolution advance() {
+      if (finished()) {
+        return Resolution.FINISHED;
       }
-      return;
-    }
-
-    final Team currentTeam = getTeamAt(currentRank);
-    if (judgeNextProblem(currentTeam)) {
-      return;
-    }
-
-    pendingActions.offer(() -> finaliseRank(currentTeam, currentRank));
-
-    if (currentRank == 1) {
-      pendingActions.offer(() -> moveToProblem(null, null));
-      currentRank = INVALID_RANK_FINISHED;
-      return;
-    } else {
-      currentRank--;
-      final int rank = currentRank;
-      pendingActions.offer(() -> moveToProblem(getTeamAt(rank), null));
+      try {
+        for (Advancer next; (next = pendingActions.take()) != null;) {
+          if (next.focus() != null) {
+            for (ScoreboardModel.Observer observer : observers) {
+              if (observer instanceof Observer) {
+                next.focus().accept((Observer) observer);
+              }
+            }
+          } else if (next.scoreboard() != null) {
+            observers.forEach(next.scoreboard());
+          } else {
+            return (lastResolution = next.resolution());
+          }
+        }
+      } catch (InterruptedException e) {
+      }
+      return (lastResolution = Resolution.FINISHED);
     }
   }
 
-  public ScoreboardModel getModel() {
+  public void resolveContest() {
+    Team currentTeam = null;
+    Team prevTeam = null;
+
+    for (int currentRank = model.getTeams().size(); currentRank > 0; prevTeam = currentTeam) {
+      currentTeam = getTeamAt(currentRank);
+      if (currentTeam != prevTeam) {
+        moveToProblem(currentTeam, null);
+      }
+      if (!judgeNextProblem(currentTeam, currentRank)) {
+        finaliseRank(currentTeam, currentRank);
+        currentRank--;
+      }
+    }
+
+    moveToProblem(null, null);
+  }
+
+  private ScoreboardModel getModel() {
     return model;
   }
 
@@ -214,56 +289,47 @@ public class ResolverController {
   }
 
   private void createSubmissions(ScoreboardModel sourceModel) {
-    final boolean hasEnd = contest.getContest().hasContestDuration();
-    final Timestamp endTime = !hasEnd ? null : Timestamps.add(
-        Timestamp.getDefaultInstance(),
-        contest.getContest().getContestDuration());
+    final Timestamp endTime = contest.getContest().hasContestDuration()
+        ? Timestamps.add(Timestamp.getDefaultInstance(), contest.getContest().getContestDuration())
+        : null;
 
-    final boolean hasFreeze = contest.getContest().hasScoreboardFreezeDuration();
-    final Timestamp freezeTime = !hasFreeze ? null : Timestamps.subtract(
-        endTime,
-        contest.getContest().getScoreboardFreezeDuration());
+    final Timestamp freezeTime = contest.getContest().hasScoreboardFreezeDuration()
+        ? Timestamps.subtract(endTime, contest.getContest().getScoreboardFreezeDuration())
+        : null;
 
     for (Judgement j : contest.getJudgementsMap().values()) {
       judgementsForSubmissions.put(j.getSubmissionId(), j);
     }
 
     sourceModel.getSubmissions().forEach(submission -> {
-      final Duration afterEnd = !hasEnd ? null : Timestamps.between(
-          endTime,
-          Timestamps.add(
-              Timestamp.getDefaultInstance(),
-              submission.getContestTime()));
-      if (hasEnd && Durations.toNanos(afterEnd) >= 0) {
-        return;
+      if (endTime != null) {
+        final Duration afterEnd = Timestamps.between(
+            endTime,
+            Timestamps.add(
+                Timestamp.getDefaultInstance(),
+                submission.getContestTime()));
+        if (Durations.toNanos(afterEnd) >= 0) {
+          return;
+        }
       }
 
-      final Duration intoFreeze = !hasFreeze ? null : Timestamps.between(
-          freezeTime,
-          Timestamps.add(
-              Timestamp.getDefaultInstance(),
-              submission.getContestTime()));
-      dispatcher.notifySubmission(submission);
+      if (freezeTime != null) {
+        final Duration intoFreeze = Timestamps.between(
+            freezeTime,
+            Timestamps.add(
+                Timestamp.getDefaultInstance(),
+                submission.getContestTime()));
+        dispatcher.notifySubmission(submission);
 
-      if (hasFreeze && intoFreeze.getSeconds() >= 0) {
-        addPendingSubmission(submission);
-      } else {
-        judgeSubmission(submission);
+        if (intoFreeze.getSeconds() >= 0) {
+          addPendingSubmission(submission);
+          return;
+        }
       }
+
+      judgeSubmission(submission);
     });
-  }
-
-  private ScoreboardProblem judgeSubmission(Submission submission) {
-    Judgement judgement = judgementsForSubmissions.get(submission.getId());
-    if (judgement == null) {
-      logger.log("Submission " + submission + " has no judgement");
-      return null;
-    }
-    return dispatcher.notifyJudgement(judgement);
-  }
-
-  private Stream<Observer> getResolverObservers() {
-    return observers.stream().filter(Observer.class::isInstance).map(Observer.class::cast);
+    addResolution(Resolution.STARTED);
   }
 
   private void addPendingSubmission(final Submission submission) {
@@ -288,9 +354,7 @@ public class ResolverController {
         .add(submission);
   }
 
-  private boolean judgeNextProblem(final Team team) {
-    logger.log("judgeNextProblem " + team.getId());
-
+  private boolean judgeNextProblem(final Team team, final int currentRank) {
     if (!teamSubmissions.containsKey(team.getId())) {
       return false;
     }
@@ -301,36 +365,35 @@ public class ResolverController {
       teamSubmissions.remove(team.getId());
     }
 
-    final String problemId = attempts.get(0).getProblemId();
-    pendingActions.offer(() -> moveToProblem(team, contest.getProblemsOrThrow(problemId)));
-    pendingActions.offer(() -> judgeSubmissions(team, attempts));
+    moveToProblem(team, contest.getProblemsOrThrow(attempts.get(0).getProblemId()));
+    judgeSubmissions(team, currentRank, attempts);
     return true;
   }
 
-  private Resolution judgeSubmissions(final Team team, final List<Submission> attempts) {
-    final boolean solved = attempts.stream()
-        .map(this::judgeSubmission)
-        .filter(Objects::nonNull)
-        .filter(ScoreboardProblem::getSolved)
-        .findFirst()
-        .isPresent();
-    if (solved) {
-      final Team teamAtRankNow = getTeamAt(currentRank);
-      if (teamAtRankNow != team) {
-        pendingActions.offer(() -> moveToProblem(teamAtRankNow, null));
+  private void judgeSubmissions(Team team, int currentRank, List<Submission> attempts) {
+    boolean solved = false;
+    for (Submission s : attempts) {
+      if (judgeSubmission(s).filter(ScoreboardProblem::getSolved).isPresent()) {
+        solved = true;
       }
     }
-    return solved ? Resolution.SOLVED_PROBLEM : Resolution.FAILED_PROBLEM;
+    addResolution(solved ? Resolution.SOLVED_PROBLEM : Resolution.FAILED_PROBLEM);
   }
 
-  private Resolution finaliseRank(Team team, int rank) {
-    getResolverObservers().forEach(x -> x.onTeamRankFinalised(team, rank));
-    return Resolution.FINALISED_RANK;
+  private Optional<ScoreboardProblem> judgeSubmission(Submission submission) {
+    return Optional.ofNullable(judgementsForSubmissions.get(submission.getId()))
+        .map(dispatcher::notifyJudgement);
   }
 
-  private Resolution moveToProblem(final Team team, final Problem problem) {
-    getResolverObservers().forEach(o -> o.onProblemFocused(team, problem));
-    return problem != null
-        ? Resolution.FOCUSED_PROBLEM : team != null ? Resolution.FOCUSED_TEAM : Resolution.FINISHED;
+  private void finaliseRank(Team team, int rank) {
+    addFocusEvent(o -> o.onTeamRankFinalised(team, rank));
+    addResolution(Resolution.FINALISED_RANK);
+  }
+
+  private void moveToProblem(final Team team, final Problem problem) {
+    addFocusEvent(o -> o.onProblemFocused(team, problem));
+    addResolution(problem != null ? Resolution.FOCUSED_PROBLEM
+        : team != null ? Resolution.FOCUSED_TEAM
+        : Resolution.FINISHED);
   }
 }
