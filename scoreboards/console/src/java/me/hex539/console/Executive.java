@@ -167,6 +167,7 @@ public class Executive {
           .map(row -> PrettyPrinter.formatScoreboardRow(
               model.getTeam(row.getTeamId()),
               row,
+              focusedTeam.get() != null && row.getTeamId() == focusedTeam.get().getId(),
               focusedTeam.get() != null && row.getTeamId() == focusedTeam.get().getId()
                   ? focusedProblem.get()
                   : null))

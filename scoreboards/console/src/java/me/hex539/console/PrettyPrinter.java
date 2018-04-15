@@ -33,20 +33,30 @@ class PrettyPrinter {
   }
 
   static String formatScoreboardRow(Team team, ScoreboardRow row) {
-    return formatScoreboardRow(team, row, null);
+    return formatScoreboardRow(team, row, false, null);
   }
 
-  static String formatScoreboardRow(Team team, ScoreboardRow row, Problem highlight) {
+  static String formatScoreboardRow(
+      Team team,
+      ScoreboardRow row,
+      boolean highlightRow,
+      Problem highlightProblem) {
     StringBuilder sb = new StringBuilder(
         String.format("%-" + MAX_TEAM_NAME_LENGTH + "s\t│ %2d │ %6d ",
             team.getName(),
             Math.max(0, row.getScore().getNumSolved()),
             Math.max(0, row.getScore().getTotalTime())));
     for (ScoreboardProblem p : row.getProblemsList()) {
-      boolean hl = (highlight != null && highlight.getId().equals(p.getProblemId()));
+      boolean hl = (highlightProblem != null && highlightProblem.getId().equals(p.getProblemId()));
       sb.append("│" + (hl ? '[' : ' ') + formatAttempt(p) + (hl ? ']' : ' '));
     }
-    return sb.toString() + "│";
+    String res = sb.toString() + "│";
+    if (highlightRow) {
+      String[] parts = res.split("\t", 2);
+      parts[parts.length-1] = parts[parts.length-1].replaceAll(" ", "_");
+      res = String.join("\t", parts);
+    }
+    return res;
   }
 
   static String formatVerdictRow(
