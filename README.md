@@ -19,3 +19,10 @@ bazel run scoreboards/console -- \
 More information about how to download contests for later, as well as the other
 build targets for Android and desktop apps, are available in each of the
 directories under scoreboards/\*.
+
+The code is organised into a self-contained library and can be used without much
+in the way of boilerplate for any kind of scripting task involving contests. For
+example, the following image representing NWERC 2007 scores was generated from a
+standalone Java program:
+
+![Score progression for NWERC 2007](./docs/images/nwerc2007-progression.svg)
