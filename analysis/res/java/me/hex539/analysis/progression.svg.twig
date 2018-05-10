@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     lang="en-gb"
+     version="1.1"
+     width="1400"
+     height="{{ 32 + 12 * teams.size() }}" >
+<title>{{ contest.getName() }}</title>
+<script type="text/javascript"><![CDATA[
+  function toggle_focus(e) {
+    e.classList.contains("active_team") ?
+      e.classList.remove("active_team") :
+      e.classList.add("active_team");
+  }
+//]]>
+</script>
+<style type="text/css"><![CDATA[
+  text {font-family: Monospace;}
+
+  .team {stroke:#9e9e9e; stroke-width:1.0;}
+  .team:hover {stroke-width:3.3;}
+
+  .active_team {fill:#000088; stroke:#000088;}
+  .active_team:hover {fill:#77aaff; stroke:#77aaff;}
+
+  .team:nth-of-type(1) {fill:gold; stroke:gold;}
+  .team:nth-of-type(2) {fill:silver; stroke:silver;}
+  .team:nth-of-type(3) {fill:#cd7f32; stroke:#cd7f32;}
+
+  .team:nth-of-type(1),
+  .team:nth-of-type(2),
+  .team:nth-of-type(3),
+  .active_team {stroke-width: 3.3; font-weight: bold;}
+
+  .team:hover {fill:rgb(31,31,31); stroke:rgb(31,31,31); font-weight:bold;}
+
+  .attempts text {font-size: 66.67%;}
+  .attempts.light text {fill: black;}
+  .attempts.dark text {fill: white;}
+{% for problem in problems %}
+  .problem{{ problem.getOrdinal() }} circle {fill: {{ problem.getColor() }};}{% endfor %}
+]]>
+</style>
+{% for team in teams %}
+  <g class='team' id='team{{ loop.index }}' onclick='toggle_focus(this)'>
+    <g>
+      <title>{{ team.citation() }}</title>
+      <text x='{{ 1100 + 22 }}' y='{{ 20 + loop.index * 12 }}' dy='0.6ex' style='stroke:none'>{{ team.team.getName() }}</text>
+    </g>
+    <polyline style='fill:none' points='{%
+      for x,y in team.xToY()
+        %}{{ 20 + x * 1100.0 / contest_minutes | round(1, 'floor')}},{{ 20 + y * 12 | round(1, 'floor')}} {%
+      endfor %}'/>{%
+    for probid, x in team.solvedAt %}
+    <g class='attempts problem{{ team.model.getProblem(probid).getOrdinal() }} {{ team.model.getProblem(probid).getRgb() | lightordark }}'>
+      <circle cx='{{ 20 + x * 1100.0 / contest_minutes | round(1, 'floor') }}' cy='{{ 20 + team.xToY.get(x) * 12 | round(1, 'floor') }}' r='7' />
+      <text x='{{ 20 + x * 1100.0 / contest_minutes | round(1, 'floor') }}' y='{{ 20 + team.xToY.get(x) * 12 | round(1, 'floor') }}' dy='0.6ex' text-anchor='middle' style='stroke:none'>{{ team.model.getProblem(probid).getLabel() }}</text>
+    </g>{% endfor %}
+  </g>
+{% endfor %}
+</svg>
