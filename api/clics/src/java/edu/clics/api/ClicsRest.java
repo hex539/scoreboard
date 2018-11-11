@@ -89,9 +89,10 @@ public class ClicsRest extends RestClient<ClicsRest> {
 //        CompletableFuture.runAsync(() -> b.putAllAwards(
 //            getMapFrom(path + "/awards", Award[].class, Award::getId)),
 //            executor),
-        CompletableFuture.runAsync(() -> b.addAllScoreboard(
-            getListFrom(path + "/scoreboard", ScoreboardRow[].class)),
-            executor),
+//        TODO: scoreboard representation changed between 2018 Q1 and 2018 Q3.
+//        CompletableFuture.runAsync(() -> b.addAllScoreboard(
+//            getListFrom(path + "/scoreboard", ScoreboardRow[].class)),
+//            executor),
         CompletableFuture.runAsync(() -> b.putAllJudgementTypes(
             getMapFrom(path + "/judgement-types", JudgementType[].class, JudgementType::getId)),
             executor),
