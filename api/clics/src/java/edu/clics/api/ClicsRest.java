@@ -40,7 +40,7 @@ import okhttp3.Request;
 
 public class ClicsRest extends RestClient<ClicsRest> {
   private final GsonSingleton gson = new GsonSingleton();
-  private boolean apiInRoot = true;
+  private boolean apiInRoot = false;
 
   public ClicsRest(final String url) {
     super(url);
