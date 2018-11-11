@@ -4,6 +4,7 @@ import static com.google.common.base.CaseFormat.LOWER_UNDERSCORE;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import com.google.gson.protobuf.ProtoTypeAdapter;
 import com.google.gson.reflect.TypeToken;
 import com.google.protobuf.AbstractMessage;
@@ -81,18 +82,16 @@ public class ClicsRest extends RestClient<ClicsRest> {
         .setContest(contest);
 
     return CompletableFuture.allOf(
-//        TODO: Not implement by DOMjudge (2018-01).
-//        CompletableFuture.runAsync(() -> b.setState(
-//            getFrom(path + "/state", ContestState.class).get()),
-//            executor),
-//        TODO: Not implemented by DOMjudge (2018-01).
+        CompletableFuture.runAsync(() -> b.setState(
+            getFrom(path + "/state", ContestState.class).get()),
+            executor),
+//        TODO: Not implemented by DOMjudge (2018-11).
 //        CompletableFuture.runAsync(() -> b.putAllAwards(
 //            getMapFrom(path + "/awards", Award[].class, Award::getId)),
 //            executor),
-//        TODO: scoreboard representation changed between 2018 Q1 and 2018 Q3.
-//        CompletableFuture.runAsync(() -> b.addAllScoreboard(
-//            getListFrom(path + "/scoreboard", ScoreboardRow[].class)),
-//            executor),
+        CompletableFuture.runAsync(() -> b.addAllScoreboard(
+            requestFrom(path + "/scoreboard", this::parseScoreboard).getRowsList()),
+            executor),
         CompletableFuture.runAsync(() -> b.putAllJudgementTypes(
             getMapFrom(path + "/judgement-types", JudgementType[].class, JudgementType::getId)),
             executor),
@@ -111,7 +110,7 @@ public class ClicsRest extends RestClient<ClicsRest> {
         CompletableFuture.runAsync(() -> b.putAllTeams(
             getMapFrom(path + "/teams", Team[].class, Team::getId)),
             executor),
-//        TODO: Not implemented by DOMjudge (2018-01).
+//        TODO: Not implemented by DOMjudge (2018-11).
 //        CompletableFuture.runAsync(() -> b.putAllTeamMembers(
 //            getMapFrom(path + "/team-members", TeamMember[].class, TeamMember::getId)),
 //            executor),
@@ -152,6 +151,29 @@ public class ClicsRest extends RestClient<ClicsRest> {
 
   protected <T> Optional<T> getFrom(String endpoint, Type c) throws CompletionException {
     return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)));
+  }
+
+  /**
+   * The value returned from /scoreboard may be either a redundant Scoreboard object,
+   * or a raw list of ScoreboardRow[]. We need to be able to handle either.
+   */
+  protected Scoreboard parseScoreboard(Optional<String> body) {
+    if (body.isPresent()) {
+      final String text = body.get();
+      try {
+        return gson.get().fromJson(text, Scoreboard.class);
+      } catch (JsonParseException e1) {
+        try {
+          ScoreboardRow[] scoreboardRows = gson.get().fromJson(text, ScoreboardRow[].class);
+          return Scoreboard.newBuilder()
+              .addAllRows(Arrays.asList(scoreboardRows))
+              .build();
+        } catch (JsonParseException e2) {
+          throw new RuntimeException("Scoreboard not available", e1);
+        }
+      }
+    }
+    throw new RuntimeException("Scoreboard endpoint did not respond");
   }
 
   private static class GsonSingleton {
