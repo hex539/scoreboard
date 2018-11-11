@@ -23,6 +23,7 @@ class Comparators {
 
       int res = 0;
       if ((res = Boolean.compare(isVisible(a), isVisible(b))) != 0
+          || (res = String.CASE_INSENSITIVE_ORDER.compare(a.getName(), b.getName())) != 0
           || (res = a.getName().compareTo(b.getName())) != 0) {
         return res;
       }
