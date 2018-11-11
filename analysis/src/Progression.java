@@ -239,7 +239,11 @@ public class Progression {
         return ""
             + row.getRank()
             + suffix[Math.min(suffix.length - 1, (int) (row.getRank() % 10))]
-            + " place";
+            + " place, "
+            + row.getScore().getNumSolved()
+            + " solved, "+
+            + row.getScore().getTotalTime()
+            + " penalty";
       }
     }
   }
