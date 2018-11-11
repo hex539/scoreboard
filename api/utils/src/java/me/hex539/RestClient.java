@@ -80,6 +80,7 @@ public class RestClient<Self extends RestClient> {
             throw e;
           }
 
+        case 401: // Unauthorized (returned by CLICS v1.0)
         case 403: // Forbidden (need to authenticate, older api versions)
         case 405: // Method not allowed (need to authenticate, newer api versions)
           return handler.apply(Optional.empty());
