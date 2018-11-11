@@ -65,6 +65,12 @@ public class Activity {
   private static void draw(ClicsContest entireContest, Set<String> problemLabels) throws Exception {
     entireContest = MissingJudgements.ensureJudgements(entireContest);
 
+    String mostPopularGroup =
+        entireContest.getTeamsMap().values().stream().flatMap(t -> t.getGroupIdsList().stream())
+        .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+        .entrySet().stream().max(Map.Entry.comparingByValue())
+        .get().getKey();
+
     final Set<String> problemIds = entireContest.getProblems().values().stream()
         .filter(p -> problemLabels.contains(p.getLabel()))
         .map(Problem::getId)
@@ -72,6 +78,7 @@ public class Activity {
 
     ScoreboardModelImpl fullModel = ScoreboardModelImpl.newBuilder(entireContest)
         .filterGroups(g -> !g.getHidden())
+        .filterGroups(g -> mostPopularGroup.equals(g.getId()))
         .filterSubmissions(s -> problemIds.isEmpty() || problemIds.contains(s.getProblemId()))
         .filterTooLateSubmissions()
         .build();
