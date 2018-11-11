@@ -47,6 +47,13 @@ public @CommandLineInterface interface Invocation {
     String getGroups();
 
   @Option(
+      shortName = "b",
+      longName = "problems",
+      defaultToNull = true,
+      description = "Restrict to given comma-separated problems")
+    String getProblems();
+
+  @Option(
       shortName = "l",
       longName = "username",
       defaultToNull = true,

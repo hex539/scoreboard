@@ -1,0 +1,42 @@
+\documentclass[class=article]{standalone}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usetikzlibrary{patterns}
+\pgfplotsset{compat=1.15}
+\begin{document}
+\pgfplotstableread{
+t accept failed pending{%
+for y in accepted
+%}
+{{ loop.index-1 }} {{ y }} {{ failed[loop.index-1] }} {{ pending[loop.index-1] }}{%
+endfor
+%}
+}\attempts
+\pgfplotsset{
+	/pgfplots/bar cycle list/.style={/pgfplots/cycle list=
+  { {Red,fill=OrangeRed},%
+		{Green,fill=LimeGreen},%
+		{Blue!50!SkyBlue,fill=SkyBlue}}
+	}
+}%
+\begin{tikzpicture}
+\begin{axis}[
+  axis lines=none,
+  xmin=0,
+  xmax={{ (accepted|length) }},
+  width=20cm,
+  bar width=0.25cm,
+  height=5cm,
+  ybar stacked,
+  grid=none,
+  ticks=none]
+\addplot table[x=t,y expr={-\thisrow{failed}-0.01}] {\attempts};
+\addplot table[x=t,y expr={+\thisrow{accept}}] {\attempts};
+\addplot table[x=t,y expr={+\thisrow{pending}}] {\attempts};
+\end{axis}
+\node (A) at (5,1) {FIXME: SAMPLE DATA};
+\node (A) at (10,2) {FIXME: SAMPLE DATA};
+\end{tikzpicture}
+\end{document}
