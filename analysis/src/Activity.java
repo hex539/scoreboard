@@ -21,6 +21,10 @@ import org.jtwig.JtwigModel;
 import org.jtwig.JtwigTemplate;
 
 public class Activity {
+  private static final long MINUTES_PER_BAR = 5;
+  private static final long SECONDS_DIVIDER = 60 * MINUTES_PER_BAR;
+  private static final long MAX_SUBMISSIONS = 10;
+
   public static void main(String[] args) throws Exception {
     Invocation invocation = Invocation.parseFrom(args);
 
@@ -79,27 +83,23 @@ public class Activity {
             Function.identity(),
             (a, b) -> b));
 
-    final long groupSize = 5;
-    final long divider = 60 * groupSize;
-    final long maxSubs = 10;
-
-    final int contestSegments = (int) (fullModel.getContest().getContestDuration().getSeconds() / divider);
+    final int contestSegments = (int) (fullModel.getContest().getContestDuration().getSeconds() / SECONDS_DIVIDER);
     final long[] pending = new long[contestSegments];
     final long[] accepted = new long[contestSegments];
     final long[] failed = new long[contestSegments];
 
     for (Submission submission : fullModel.getSubmissions()) {
-      final int submissionSegment = (int) (submission.getContestTime().getSeconds() / divider);
+      final int submissionSegment = (int) (submission.getContestTime().getSeconds() / SECONDS_DIVIDER);
       final Judgement judgement = judgementsMap.get(submission.getId());
-      if (judgement == null || submission.getContestTime().getSeconds() / 60 / 5 >= 240 / 5) {
+      if (judgement == null) {
         System.err.println("No judgement: " + submission.getId());
-        pending[submissionSegment] = Math.min(pending[submissionSegment] + 1, maxSubs);
+        pending[submissionSegment] = Math.min(pending[submissionSegment] + 1, MAX_SUBMISSIONS);
       } else if (entireContest.getJudgementTypes()
           .get(judgement.getJudgementTypeId())
           .getSolved()) {
-        accepted[submissionSegment] = Math.min(accepted[submissionSegment] + 1, maxSubs);
+        accepted[submissionSegment] = Math.min(accepted[submissionSegment] + 1, MAX_SUBMISSIONS);
       } else {
-        failed[submissionSegment] = Math.min(failed[submissionSegment] + 1, maxSubs);
+        failed[submissionSegment] = Math.min(failed[submissionSegment] + 1, MAX_SUBMISSIONS);
       }
     }
 
