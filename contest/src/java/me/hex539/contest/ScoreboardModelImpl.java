@@ -186,6 +186,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
       final SplayList<ScoreboardRow> res = new SplayList<>(order);
       int rank = 1;
       for (ScoreboardRow i : rows.stream().filter(pred).collect(Collectors.toList())) {
+        i = i.toBuilder().setRank(rank).build();
         res.add(i);
         if (res.indexOf(i) != rank - 1) {
           throw new AssertionError("Scoreboard is not sorted descending by score."
