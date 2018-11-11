@@ -84,7 +84,7 @@ public class Progression {
         .collect(Collectors.toMap(
             Judgement::getSubmissionId,
             Function.identity(),
-            (a, b) -> a));
+            (a, b) -> b));
 
     for (Submission submission : fullModel.getSubmissions()) {
       try {
