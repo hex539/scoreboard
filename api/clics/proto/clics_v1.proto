@@ -222,7 +222,16 @@ message Award {
   repeated string team_ids = 3 [json_name = 'team_ids'];
 }
 
-// Endpoint: /contests/{}/scoreboard => ScoreboardRow[]
+// Endpoint: /contests/{}/scoreboard => ScoreboardRow[] (2018)
+//                                   => Scoreboard (2019)
+
+message Scoreboard {
+  string event_id = 1;
+  google.protobuf.Timestamp time = 2 [json_name = 'time'];
+  google.protobuf.Duration contest_time = 3 [json_name = 'contest_time'];
+  // ContestState state = 4;
+  repeated ScoreboardRow rows = 5;
+}
 
 message ScoreboardRow {
   uint64 rank = 1;
