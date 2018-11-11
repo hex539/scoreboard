@@ -76,7 +76,7 @@ public final class ApiDetective {
 
   private static ContestConfig.Source canaryClics(String baseUrl, boolean inRoot)
       throws CompletionException{
-    final String url = baseUrl + "/groups";
+    final String url = baseUrl + "/contests";
     try (Response response = client.newCall(new Request.Builder().url(url).build()).execute()) {
       if (response.code() == 200 && !response.isRedirect()) {
         System.err.println("Hit " + url);
