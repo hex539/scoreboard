@@ -16,18 +16,21 @@ endfor
 }\attempts
 \pgfplotsset{
 	/pgfplots/bar cycle list/.style={/pgfplots/cycle list=
-	{ {SkyBlue,fill=SkyBlue},% Pending 3
-	  {Green,fill=LimeGreen},% Accepted
-    {Red!50!OrangeRed,fill=OrangeRed},% Wrong-Answer
-    {Red!50!Red,fill=Red},% Time-Limit
-    {Red!50!Black!75,fill=Black!75},% Compile-Error / Runtime-Error
-		{Blue!50!SkyBlue,fill=SkyBlue},% Pending 1
-		{Blue!50!SkyBlue,fill=SkyBlue}}% Pending 2
+	{ {Green,fill=LimeGreen},% Accepted
+    {OrangeRed,fill=OrangeRed},% Wrong-Answer
+    {Red,fill=Red},% Time-Limit
+    {Black!75,fill=Black!75},% Compile-Error / Runtime-Error
+		{SkyBlue,fill=SkyBlue},% Pending 1
+		{SkyBlue,fill=SkyBlue},% Pending 2
+   {White,fill=White,opacity=0}}% Prevent clipping
 	}
 }%
 \begin{tikzpicture}
   \begin{axis}[
-    axis lines=none,
+    % axis lines=none,
+    axis x line=center,
+    axis y line=none,
+    clip=false,
     xmin=0,
     xmax={{ (accepted|length) }},
     width={{ 20 }}cm,
@@ -36,13 +39,13 @@ endfor
     ybar stacked,
     grid=none,
     ticks=none]
-    \addplot table[x=t,y expr={+0.01}] {\attempts};
     \addplot table[x=t,y expr={+\thisrow{accept}}] {\attempts};
     \addplot table[x=t,y expr={-\thisrow{wronganswer}}] {\attempts};
     \addplot table[x=t,y expr={-\thisrow{timelimit}}] {\attempts};
     \addplot table[x=t,y expr={-\thisrow{failed}}] {\attempts};
-    \addplot table[x=t,y expr={+\thisrow{pending}/2}] {\attempts};
-    \addplot table[x=t,y expr={-\thisrow{pending}/2}] {\attempts};
+    \addplot table[x=t,y expr={+\thisrow{pending}*1}] {\attempts};
+    \addplot table[x=t,y expr={-\thisrow{pending}*0}] {\attempts};
+    \addplot table[x=t,y expr={-5}] {\attempts};
   \end{axis}
 \end{tikzpicture}
 \end{document}

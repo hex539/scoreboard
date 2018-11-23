@@ -32,7 +32,7 @@ import org.jtwig.JtwigTemplate;
 
 public class Activity {
   private static final long SECONDS_PER_BAR = 60 * 5 / 2;
-  private static final long MAX_SUBMISSIONS = 10;
+  private static final long MAX_SUBMISSIONS = 20;
 
   public static void main(String[] args) throws Exception {
     Invocation invocation = Invocation.parseFrom(args);
@@ -236,11 +236,9 @@ public class Activity {
 
     public SubmitStats crop() {
       for (int i = 0; i < pending.length; i++) {
-        // Both directions
-        pending[i] = Math.min(pending[i], MAX_SUBMISSIONS * 2);
-
         // Positive Y
         accepted[i] = Math.min(accepted[i], MAX_SUBMISSIONS);
+        pending[i] = Math.min(pending[i], MAX_SUBMISSIONS - accepted[i]);
 
         // Negative Y
         wrongAnswer[i] = Math.min(wrongAnswer[i], MAX_SUBMISSIONS);
