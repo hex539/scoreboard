@@ -54,6 +54,12 @@ public @CommandLineInterface interface Invocation {
     String getProblems();
 
   @Option(
+      shortName = "z",
+      longName = "prefreeze",
+      description = "Show only data from before the freeze, even when the full data is available")
+    boolean getApplyFreeze();
+
+  @Option(
       shortName = "l",
       longName = "username",
       defaultToNull = true,
