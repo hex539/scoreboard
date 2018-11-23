@@ -69,19 +69,22 @@ public class Activity {
     }
 
     draw(
+        /* workingDirectory= */ new File(invocation.getActions().size() > 0
+            ? invocation.getActions().get(0)
+            : "."),
         /* entireContest= */ new ContestDownloader(source).fetch(),
         /* problemLabels= */ problemLabels,
         /* applyFreeze= */ invocation.getApplyFreeze(),
-        /* workingDirectory= */ new File(invocation.getActions().size() > 0
-            ? invocation.getActions().get(0)
-            : "."));
+        /* printSolvestats= */ invocation.getPrintSolvestats());
+
   }
 
   private static void draw(
+      File workingDirectory,
       ClicsContest entireContest,
       Set<String> problemLabels,
       boolean applyFreeze,
-      File workingDirectory) throws Exception {
+      boolean printSolveStats) throws Exception {
     entireContest = MissingJudgements.ensureJudgements(entireContest);
 
     String mostPopularGroup =
@@ -139,15 +142,24 @@ public class Activity {
 
     fullModel.getProblems().stream().parallel().forEach(problem -> {
       final File file = new File(activityDir, problem.getLabel() + ".tex");
+      final SubmitStats stats = statsByProblem.get(problem.getId()).crop();
+
       try (final OutputStream outputStream = new FileOutputStream(file)) {
-        saveActivityChart(
-            statsByProblem.get(problem.getId()).crop(),
-            template,
-            outputStream);
+        saveActivityChart(stats, template, outputStream);
       } catch (IOException e) {
         System.err.println("Error writing to: " + file.getPath());
       }
-      System.err.println("Saved file: " + file.getPath());
+
+      if (printSolveStats) {
+        System.out.printf(
+            "\\newcommand{\\solvestats%s{%d}{%d} %% +%d?\n",
+            problem.getLabel(),
+            stats.totalAttempts, // stats.teamsAttempted.size(),
+            stats.totalSolved, // stats.teamsSolved.size(),
+            stats.totalPending);// stats.teamsPending.size());
+      } else {
+        System.err.println("Saved file: " + file.getPath());
+      }
     });
   }
 
@@ -166,8 +178,13 @@ public class Activity {
   }
 
   private static class SubmitStats {
+    int totalAttempts = 0;
+    int totalSolved = 0;
+    int totalPending = 0;
+
     final Set<String> teamsAttempted = new HashSet<>();
     final Set<String> teamsSolved = new HashSet<>();
+    final Set<String> teamsPending = new HashSet<>();
 
     final long[] pending;
     final long[] accepted;
@@ -201,10 +218,16 @@ public class Activity {
 
       final int segment = (int) (submission.getContestTime().getSeconds() / SECONDS_PER_BAR);
 
-      if (!teamsSolved.contains(team.getId()) && judgement != null) {
+      if (!teamsSolved.contains(team.getId())) {
         teamsAttempted.add(team.getId());
+        totalAttempts += 1;
         if (grouping == accepted) {
           teamsSolved.add(team.getId());
+          totalSolved += 1;
+        }
+        if (grouping == pending) {
+          teamsPending.add(team.getId());
+          totalPending += 1;
         }
       }
       grouping[segment] += 1;
