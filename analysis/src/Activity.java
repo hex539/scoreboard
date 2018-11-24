@@ -206,8 +206,10 @@ public class Activity {
       final Team team = model.getTeam(submission.getTeamId());
       final JudgementType verdict =
           judgement != null
-              ? model.getJudgementType(judgement.getJudgementTypeId())
-              : null;
+              && judgement.getJudgementTypeId() != null
+              && !"".equals(judgement.getJudgementTypeId())
+                  ? model.getJudgementType(judgement.getJudgementTypeId())
+                  : null;
 
       if (verdict != null && verdict.getId().equals("CE")) {
         return this;
