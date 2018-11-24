@@ -31,7 +31,7 @@ import org.jtwig.JtwigModel;
 import org.jtwig.JtwigTemplate;
 
 public class Activity {
-  private static final long SECONDS_PER_BAR = 60 * 5 / 2;
+  private static final long SECONDS_PER_BAR = 60 * 5;
   private static final long MAX_SUBMISSIONS = 20;
 
   public static void main(String[] args) throws Exception {
@@ -208,6 +208,10 @@ public class Activity {
           judgement != null
               ? model.getJudgementType(judgement.getJudgementTypeId())
               : null;
+
+      if (verdict != null && verdict.getId().equals("CE")) {
+        return this;
+      }
 
       final long[] grouping =
           verdict == null ? pending
