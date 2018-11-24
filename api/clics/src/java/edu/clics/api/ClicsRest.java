@@ -136,7 +136,9 @@ public class ClicsRest extends RestClient<ClicsRest> {
 
   protected <T, K> Map<K, T> getMapFrom(String endpoint, Class<T[]> c, Function<T, K> m)
       throws CompletionException {
-    return getListFrom(endpoint, c).stream().collect(Collectors.toMap(m, Function.identity()));
+    return getListFrom(endpoint, c).stream()
+//        .filter(x -> m.apply(x) != null)
+        .collect(Collectors.toMap(m, Function.identity(), (a, b) -> a));
   }
 
   protected <T> List<T> getListFrom(String endpoint, Class<T[]> c) throws CompletionException {
