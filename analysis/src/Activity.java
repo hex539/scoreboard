@@ -235,8 +235,8 @@ public class Activity {
           teamsPending.add(team.getId());
           totalPending += 1;
         }
+        grouping[segment] += 1;
       }
-      grouping[segment] += 1;
       return this;
     }
 
