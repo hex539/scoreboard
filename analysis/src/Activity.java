@@ -288,6 +288,7 @@ public class Activity {
       if (grouping == timeLimit) totalTimeLimit += 1;
       if (grouping == otherFailed) totalOtherFailed += 1;
 
+      grouping[segment] += 1;
       return this;
     }
 
