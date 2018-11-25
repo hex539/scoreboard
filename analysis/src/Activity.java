@@ -12,10 +12,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import me.hex539.contest.ApiDetective;
@@ -87,6 +89,9 @@ public class Activity {
       boolean printSolveStats) throws Exception {
     entireContest = MissingJudgements.ensureJudgements(entireContest);
 
+    final boolean drawActivity = true;
+    final boolean drawLanguageStats = true;
+
     String mostPopularGroup =
         entireContest.getTeamsMap().values().stream().flatMap(t -> t.getGroupIdsList().stream())
         .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
@@ -126,41 +131,67 @@ public class Activity {
       statsByProblem.put(problemId, new SubmitStats(entireContest.getContest()));
     }
 
+    final Map<String, SubmitStats> statsByLanguage = new HashMap<>();
+    for (String languageId : entireContest.getLanguages().keySet()) {
+      statsByLanguage.put(languageId, new SubmitStats(entireContest.getContest()));
+    }
+
     for (Submission s : fullModel.getSubmissions()) {
-      statsByProblem.get(s.getProblemId()).add(s, judgementsMap.get(s.getId()), fullModel);
+      final Judgement judgement = judgementsMap.get(s.getId());
+      statsByProblem.get(s.getProblemId()).add(s, judgement, fullModel);
+      statsByLanguage.get(s.getLanguageId()).add(s, judgement, fullModel);
     }
 
     EnvironmentConfiguration configuration =
         EnvironmentConfigurationBuilder.configuration()
             .build();
-    JtwigTemplate template = JtwigTemplate.classpathTemplate(
-        "/me/hex539/analysis/activity.tex.twig",
-        configuration);
 
-    final File activityDir = new File(workingDirectory, "activity");
-    activityDir.mkdir();
+    if (drawActivity) {
+      JtwigTemplate template = JtwigTemplate.classpathTemplate(
+          "/me/hex539/analysis/activity.tex.twig",
+          configuration);
 
-    fullModel.getProblems().stream().parallel().forEach(problem -> {
-      final File file = new File(activityDir, problem.getLabel() + ".tex");
-      final SubmitStats stats = statsByProblem.get(problem.getId()).crop();
+      final File activityDir = new File(workingDirectory, "activity");
+      activityDir.mkdir();
 
+      fullModel.getProblems().stream().parallel().forEach(problem -> {
+        final File file = new File(activityDir, problem.getLabel() + ".tex");
+        final SubmitStats stats = statsByProblem.get(problem.getId()).crop();
+
+        try (final OutputStream outputStream = new FileOutputStream(file)) {
+          saveActivityChart(stats, template, outputStream);
+        } catch (IOException e) {
+          System.err.println("Error writing to: " + file.getPath());
+        }
+
+        if (printSolveStats) {
+          System.out.printf(
+              "\\newcommand{\\solvestats%s{%d}{%d} %% +%d?\n",
+              problem.getLabel(),
+              stats.totalAttempts, // stats.teamsAttempted.size(),
+              stats.totalAccepted, // stats.teamsAccepted.size(),
+              stats.totalPending);// stats.teamsPending.size());
+        } else {
+          System.err.println("Saved file: " + file.getPath());
+        }
+      });
+    }
+
+    if (drawLanguageStats) {
+      final File file = new File(workingDirectory, "language_stats.tex");
       try (final OutputStream outputStream = new FileOutputStream(file)) {
-        saveActivityChart(stats, template, outputStream);
-      } catch (IOException e) {
-        System.err.println("Error writing to: " + file.getPath());
+        saveLanguagesChart(
+            new ArrayList<>(entireContest.getLanguages().values()),
+            entireContest.getLanguages().keySet().stream().map(statsByLanguage::get).collect(Collectors.toList()),
+            JtwigTemplate.classpathTemplate(
+                "/me/hex539/analysis/language_stats.tex.twig",
+                configuration),
+            outputStream);
       }
-
-      if (printSolveStats) {
-        System.out.printf(
-            "\\newcommand{\\solvestats%s{%d}{%d} %% +%d?\n",
-            problem.getLabel(),
-            stats.totalAttempts, // stats.teamsAttempted.size(),
-            stats.totalSolved, // stats.teamsSolved.size(),
-            stats.totalPending);// stats.teamsPending.size());
-      } else {
+      if (!printSolveStats) {
         System.err.println("Saved file: " + file.getPath());
       }
-    });
+    }
   }
 
   private static void saveActivityChart(
@@ -177,13 +208,29 @@ public class Activity {
         outputStream);
   }
 
+  private static void saveLanguagesChart(
+      List<Language> languages,
+      List<SubmitStats> languageStats,
+      JtwigTemplate template,
+      OutputStream outputStream) {
+    template.render(
+        JtwigModel.newModel()
+            .with("languages", languages)
+            .with("stats", languageStats),
+        outputStream);
+  }
+
   private static class SubmitStats {
     int totalAttempts = 0;
-    int totalSolved = 0;
+    int totalAccepted = 0;
     int totalPending = 0;
 
+    int totalTimeLimit = 0;
+    int totalWrongAnswer = 0;
+    int totalOtherFailed = 0;
+
     final Set<String> teamsAttempted = new HashSet<>();
-    final Set<String> teamsSolved = new HashSet<>();
+    final Set<String> teamsAccepted = new HashSet<>();
     final Set<String> teamsPending = new HashSet<>();
 
     final long[] pending;
@@ -214,6 +261,11 @@ public class Activity {
       if (verdict != null && verdict.getId().equals("CE")) {
         return this;
       }
+      if (teamsAccepted.contains(team.getId())) {
+        return this;
+      }
+
+      final int segment = (int) (submission.getContestTime().getSeconds() / SECONDS_PER_BAR);
 
       final long[] grouping =
           verdict == null ? pending
@@ -222,21 +274,20 @@ public class Activity {
           : verdict.getId().equals("WA") ? wrongAnswer
           : otherFailed;
 
-      final int segment = (int) (submission.getContestTime().getSeconds() / SECONDS_PER_BAR);
-
-      if (!teamsSolved.contains(team.getId())) {
-        teamsAttempted.add(team.getId());
-        totalAttempts += 1;
-        if (grouping == accepted) {
-          teamsSolved.add(team.getId());
-          totalSolved += 1;
-        }
-        if (grouping == pending) {
-          teamsPending.add(team.getId());
-          totalPending += 1;
-        }
-        grouping[segment] += 1;
+      teamsAttempted.add(team.getId());
+      totalAttempts += 1;
+      if (grouping == accepted) {
+        teamsAccepted.add(team.getId());
+        totalAccepted += 1;
       }
+      if (grouping == pending) {
+        teamsPending.add(team.getId());
+        totalPending += 1;
+      }
+      if (grouping == wrongAnswer) totalWrongAnswer += 1;
+      if (grouping == timeLimit) totalTimeLimit += 1;
+      if (grouping == otherFailed) totalOtherFailed += 1;
+
       return this;
     }
 
@@ -251,6 +302,7 @@ public class Activity {
         timeLimit[i] = Math.min(timeLimit[i], MAX_SUBMISSIONS - wrongAnswer[i]);
         otherFailed[i] = Math.min(otherFailed[i], MAX_SUBMISSIONS - timeLimit[i]);
       }
+
       return this;
     }
   }
