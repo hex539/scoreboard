@@ -184,8 +184,17 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
         Predicate<ScoreboardRow> pred,
         Comparator<ScoreboardRow> order) {
       final SplayList<ScoreboardRow> res = new SplayList<>(order);
+      int firstRank = -1;
       int rank = 1;
       for (ScoreboardRow i : rows.stream().filter(pred).collect(Collectors.toList())) {
+        if (firstRank == -1) {
+          firstRank = rank;
+        } else if ((i.getRank() - firstRank) != (rank - 1)) {
+          System.err.println("Scoreboard is not sorted increasing by rank."
+              + "\nTeam " + i.getTeamId() + " has index " + (rank - 1)
+              + " but rank " + i.getRank());
+          continue;
+        }
         i = i.toBuilder().setRank(rank).build();
         res.add(i);
         if (res.indexOf(i) != rank - 1) {
