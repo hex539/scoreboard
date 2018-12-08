@@ -41,10 +41,19 @@ import okhttp3.Request;
 
 public class ClicsRest extends RestClient<ClicsRest> {
   private final GsonSingleton gson = new GsonSingleton();
-  private boolean apiInRoot = false;
+  private final boolean apiInRoot;
 
   public ClicsRest(final String url) {
+    this(url, /* apiInRoot= */ false);
+  }
+
+  public ClicsRest(final String url, final boolean apiInRoot) {
     super(url);
+    this.apiInRoot = apiInRoot;
+  }
+
+  public ClicsContest downloadFirstContest() throws Exception {
+    return downloadPublicContest(getContests().get(0));
   }
 
   public Map<String, ClicsContest> downloadAllContests() throws Exception {
@@ -68,7 +77,11 @@ public class ClicsRest extends RestClient<ClicsRest> {
   }
 
   private String getContestPath(Contest contest) {
-    return (apiInRoot ? "" : "/contests/" + contest.getId());
+    return getContestPath(contest, /* force= */ false);
+  }
+
+  private String getContestPath(Contest contest, boolean force) {
+    return (apiInRoot && !force ? "" : "/contests/" + contest.getId());
   }
 
   private ClicsContest.Builder buildPublicContest(Contest contest) throws IOException {
@@ -78,12 +91,13 @@ public class ClicsRest extends RestClient<ClicsRest> {
   private ClicsContest.Builder buildPublicContest(Contest contest, Executor executor)
       throws IOException {
     final String path = getContestPath(contest);
+    final String forcePath = getContestPath(contest, /* force= */ true);
     final ClicsContest.Builder b = ClicsContest.newBuilder()
         .setContest(contest);
 
     return CompletableFuture.allOf(
         CompletableFuture.runAsync(() -> b.setState(
-            getFrom(path + "/state", ContestState.class).get()),
+            getFrom(forcePath + "/state", ContestState.class).get()),
             executor),
 //        TODO: Not implemented by DOMjudge (2018-11).
 //        CompletableFuture.runAsync(() -> b.putAllAwards(

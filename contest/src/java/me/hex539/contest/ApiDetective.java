@@ -48,7 +48,7 @@ public final class ApiDetective {
       }
       for (String api : CLICS_BASES) {
         final String url = baseUrl + domjudge + api;
-        attempts.add(CompletableFuture.supplyAsync(() -> canaryClics(url, api.isEmpty())));
+        attempts.add(CompletableFuture.supplyAsync(() -> canaryClics(url)));
       }
     }
 
@@ -74,16 +74,25 @@ public final class ApiDetective {
     }
   }
 
-  private static ContestConfig.Source canaryClics(String baseUrl, boolean inRoot)
+  private static ContestConfig.Source canaryClics(String baseUrl)
       throws CompletionException{
     final String url = baseUrl + "/contests";
+    final String gps = baseUrl + "/groups";
     try (Response response = client.newCall(new Request.Builder().url(url).build()).execute()) {
       if (response.code() == 200 && !response.isRedirect()) {
         System.err.println("Hit " + url);
+
+        // If there is an /api/groups endpoint, we're probably using an old
+        // version of DOMjudge with endpoints in the wrong place.
+        boolean apiInRoot = false;
+        try (Response rCanary = client.newCall(new Request.Builder().url(gps).build()).execute()) {
+          apiInRoot = (rCanary.code() == 200 && !rCanary.isRedirect());
+        }
+
         return ContestConfig.Source.newBuilder()
             .setBaseUrl(baseUrl)
             .setClicsApi(ContestConfig.ClicsApi.newBuilder()
-                .setApiInRoot(inRoot)
+                .setApiInRoot(apiInRoot)
                 .build())
             .build();
       }
