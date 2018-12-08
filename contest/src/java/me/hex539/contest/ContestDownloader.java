@@ -46,7 +46,7 @@ public class ContestDownloader {
     }
 
     if (source.hasClicsApi()) {
-      return getClicsRestApi().downloadAllContests().values().iterator().next();
+      return getClicsRestApi().downloadFirstContest();
     }
 
     if (source.getDomjudge3Api() != null) {
