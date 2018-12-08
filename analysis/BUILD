@@ -6,7 +6,7 @@ java_binary(
   resources = glob(["res/**"]),
   srcs = [
     "src/Invocation.java",
-    "src/Progresion.java",
+    "src/Progression.java",
   ],
   deps = [
     "//contest",
