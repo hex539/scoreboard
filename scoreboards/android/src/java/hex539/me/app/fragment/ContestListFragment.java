@@ -46,8 +46,8 @@ public class ContestListFragment extends LeanbackSettingsFragment {
 
   public static class PrefsFragment extends LeanbackPreferenceFragment {
 
-    private PreferenceCategory addCategory;
     private PreferenceCategory savedCategory;
+    private EditTextPreference addContest;
 
     @Override
     public void onAttach(Context context) {
@@ -66,21 +66,20 @@ public class ContestListFragment extends LeanbackSettingsFragment {
       PreferenceScreen screen = getPreferenceManager().createPreferenceScreen(getActivity());
       setPreferenceScreen(screen);
 
-      addCategory = new PreferenceCategory(screen.getContext());
-      addCategory.setTitle(R.string.add_contest);
-      screen.addPreference(addCategory);
+      savedCategory = new PreferenceCategory(screen.getContext());
+      savedCategory.setTitle(R.string.saved_contests);
+      screen.addPreference(savedCategory);
 
-      EditTextPreference addContest = new EditTextPreference(screen.getContext());
+      addContest = new EditTextPreference(screen.getContext());
       addContest.setDialogLayoutResource(R.layout.edit_text_dialog);
       addContest.setPersistent(false);
       addContest.setKey("add-contest");
       addContest.setTitle(R.string.add_contest);
       addContest.setOnPreferenceChangeListener(this::onAddContestClicked);
-      addCategory.addPreference(addContest);
+    }
 
-      savedCategory = new PreferenceCategory(screen.getContext());
-      savedCategory.setTitle(R.string.saved_contests);
-      screen.addPreference(savedCategory);
+    private void addFixedPreferences() {
+      savedCategory.addPreference(addContest);
     }
 
     /**
@@ -91,6 +90,7 @@ public class ContestListFragment extends LeanbackSettingsFragment {
      */
     private final Consumer<SavedConfigs.Root> onSavedContestsUpdated = savedContests -> {
       savedCategory.removeAll();
+      addFixedPreferences();
       savedContests.getContests().values().stream()
           .sorted(Comparator.comparing(ContestConfig.Source::getName))
           .forEach(source -> {
