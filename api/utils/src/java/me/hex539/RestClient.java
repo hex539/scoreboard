@@ -1,29 +1,14 @@
 package me.hex539.api;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.protobuf.ProtoTypeAdapter;
-import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 import okhttp3.Request;
 
 public class RestClient<Self extends RestClient> {

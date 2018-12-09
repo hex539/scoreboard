@@ -18,7 +18,6 @@ import me.hex539.contest.ContestConfig;
 import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
-import me.hex539.resolver.cells.ProblemCell;
 
 public class Executive extends Application {
   @Override

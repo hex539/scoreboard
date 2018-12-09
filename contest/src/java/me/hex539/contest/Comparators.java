@@ -1,11 +1,7 @@
 package me.hex539.contest;
 
 import edu.clics.proto.ClicsProto.*;
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 class Comparators {
   public static class TeamComparator implements Comparator<Team> {

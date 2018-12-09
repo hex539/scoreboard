@@ -5,7 +5,6 @@ import android.os.Looper;
 import android.support.annotation.UiThread;
 import android.support.annotation.WorkerThread;
 import java.util.concurrent.Future;
-import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;
 import me.hex539.app.data.ScoreboardAdapter;
 

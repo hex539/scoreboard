@@ -27,11 +27,6 @@ import org.domjudge.proto.Annotations;
 import org.domjudge.proto.DomjudgeProto;
 import org.domjudge.proto.DomjudgeProto.*;
 
-import okhttp3.Credentials;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okhttp3.Request;
 
 public class DomjudgeRest extends RestClient<DomjudgeRest> {
   private final GsonSingleton gson = new GsonSingleton();

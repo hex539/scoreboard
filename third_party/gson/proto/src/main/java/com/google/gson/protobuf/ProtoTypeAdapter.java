@@ -19,7 +19,6 @@ package com.google.gson.protobuf;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.base.CaseFormat;
-import com.google.common.base.Converter;
 import com.google.common.collect.MapMaker;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
@@ -38,7 +37,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.Extension;
 import com.google.protobuf.AbstractMessage;
-import com.google.protobuf.Message;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

@@ -1,11 +1,9 @@
 package me.hex539.app.fragment;
 
-import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v14.preference.PreferenceDialogFragment;
 import android.support.v14.preference.PreferenceFragment;
 import android.support.v17.preference.LeanbackPreferenceFragment;
 import android.support.v17.preference.LeanbackSettingsFragment;

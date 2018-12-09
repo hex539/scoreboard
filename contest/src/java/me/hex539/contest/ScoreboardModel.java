@@ -3,9 +3,7 @@ package me.hex539.contest;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 import edu.clics.proto.ClicsProto.*;
 

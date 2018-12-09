@@ -8,7 +8,6 @@ import com.google.protobuf.util.Durations;
 import com.google.protobuf.util.Timestamps;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import edu.clics.proto.ClicsProto.*;
 

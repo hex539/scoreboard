@@ -26,7 +26,6 @@ import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.MissingJudgements;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.jtwig.environment.EnvironmentConfiguration;
 import org.jtwig.environment.EnvironmentConfigurationBuilder;
 import org.jtwig.JtwigModel;

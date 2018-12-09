@@ -1,15 +1,12 @@
 package me.hex539.resolver;
 
-import javafx.scene.control.TableCell;
 
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 

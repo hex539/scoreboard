@@ -6,7 +6,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
 import edu.clics.proto.ClicsProto;
-import me.hex539.app.R;
 import me.hex539.app.view.ScoreboardRowView;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;

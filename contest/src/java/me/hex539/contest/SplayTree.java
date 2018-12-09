@@ -1,14 +1,6 @@
 package me.hex539.contest;
 
-import java.util.AbstractList;
 import java.util.Comparator;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.NoSuchElementException;
-import java.util.SortedSet;
-import java.util.Spliterator;
 
 final class SplayTree<T> {
   int size = 1;

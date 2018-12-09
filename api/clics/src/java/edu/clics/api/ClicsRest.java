@@ -6,7 +6,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
 import com.google.gson.protobuf.ProtoTypeAdapter;
-import com.google.gson.reflect.TypeToken;
 import com.google.protobuf.AbstractMessage;
 import com.google.protobuf.Annotations;
 
@@ -15,16 +14,13 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,11 +29,6 @@ import edu.clics.proto.ClicsProto.*;
 
 import me.hex539.api.RestClient;
 
-import okhttp3.Credentials;
-import okhttp3.OkHttpClient;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okhttp3.Request;
 
 public class ClicsRest extends RestClient<ClicsRest> {
   private final GsonSingleton gson = new GsonSingleton();

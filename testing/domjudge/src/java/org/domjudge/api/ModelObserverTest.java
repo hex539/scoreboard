@@ -1,6 +1,5 @@
 package org.domjudge.api;
 
-import com.google.protobuf.Duration;
 import edu.clics.proto.ClicsProto.*;
 import java.util.ArrayList;
 import java.util.Collections;

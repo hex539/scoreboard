@@ -1,23 +1,11 @@
 package me.hex539.console;
 
-import com.google.protobuf.TextFormat;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import edu.clics.proto.ClicsProto.*;
 
-import me.hex539.contest.ContestDownloader;
-import me.hex539.contest.JudgementDispatcher;
-import me.hex539.contest.ResolverController;
-import me.hex539.contest.ScoreboardModel;
-import me.hex539.contest.ScoreboardModelImpl;
 
 class PrettyPrinter {
   private static final int MAX_TEAM_NAME_LENGTH = 24;

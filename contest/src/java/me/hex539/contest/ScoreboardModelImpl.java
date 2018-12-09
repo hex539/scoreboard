@@ -1,27 +1,18 @@
 package me.hex539.contest;
 
 import com.google.auto.value.AutoValue;
-import com.google.protobuf.Duration;
-import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.Durations;
-import com.google.protobuf.util.Timestamps;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.domjudge.api.DomjudgeRest;
-import org.domjudge.proto.DomjudgeProto;
 
 import edu.clics.proto.ClicsProto.*;
 
