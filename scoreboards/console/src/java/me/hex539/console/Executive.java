@@ -98,7 +98,9 @@ public class Executive {
     ClicsContest entireContest = contestFetcher.fetch();
 
     ScoreboardModelImpl fullModel = ScoreboardModelImpl.newBuilder(entireContest)
-        .filterGroups(g -> invocation.getGroups() == null || invocation.getGroups().equals(g.getName()))
+        .filterGroups(g -> invocation.getGroups() != null
+            ? invocation.getGroups().equals(g.getName())
+            : !g.getHidden())
         .filterTooLateSubmissions()
         .build();
     ScoreboardModelImpl model = fullModel.toBuilder()
@@ -135,7 +137,9 @@ public class Executive {
   private void showResolver(Invocation invocation) throws Exception {
     ClicsContest entireContest = contestFetcher.fetch();
     ScoreboardModelImpl reference = ScoreboardModelImpl.newBuilder(entireContest)
-        .filterGroups(g -> invocation.getGroups() == null || invocation.getGroups().equals(g.getName()))
+        .filterGroups(g -> invocation.getGroups() != null
+            ? invocation.getGroups().equals(g.getName())
+            : !g.getHidden())
         .filterTooLateSubmissions()
         .build();
     ScoreboardModelImpl model = ScoreboardModelImpl.newBuilder(entireContest, reference)
