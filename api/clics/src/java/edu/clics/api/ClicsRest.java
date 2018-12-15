@@ -29,7 +29,6 @@ import edu.clics.proto.ClicsProto.*;
 
 import me.hex539.api.RestClient;
 
-
 public class ClicsRest extends RestClient<ClicsRest> {
   private final GsonSingleton gson = new GsonSingleton();
   private final boolean apiInRoot;
@@ -53,6 +52,10 @@ public class ClicsRest extends RestClient<ClicsRest> {
       contests.put(contest.getId(), downloadPublicContest(contest));
     }
     return contests;
+  }
+
+  public EventFeedItem event() throws Exception {
+    return null;
   }
 
   public List<Contest> getContests() throws Exception {
@@ -161,6 +164,21 @@ public class ClicsRest extends RestClient<ClicsRest> {
   }
 
   /**
+   * Not properly implemented. Included for early testing.
+   */
+  protected EventFeedItem parseEventFeedItem(Optional<String> body) {
+    if (!body.isPresent()) {
+      throw new RuntimeException("Event feed is missing");
+    }
+    final String text = body.get();
+    try {
+      return gson.get().fromJson(text, EventFeedItem.class);
+    } catch (JsonParseException e) {
+      throw new RuntimeException("Failed to parse event feed JSON", e);
+    }
+  }
+
+  /**
    * The value returned from /scoreboard may be either a redundant Scoreboard object,
    * or a raw list of ScoreboardRow[]. We need to be able to handle either.
    */
@@ -187,10 +205,10 @@ public class ClicsRest extends RestClient<ClicsRest> {
     private Gson gson = null;
 
     public Gson get() {
-      if (gson != null) {
-        return gson;
+      if (gson == null) {
+        gson = supply();
       }
-      return (gson = supply());
+      return gson;
     }
 
     protected Gson supply() {
@@ -208,6 +226,8 @@ public class ClicsRest extends RestClient<ClicsRest> {
       gsonBuilder.registerTypeAdapter(
           com.google.protobuf.Duration.class,
           new Deserializers.DurationDeserializer());
+      gsonBuilder.registerTypeAdapterFactory(
+          new Deserializers.EventFeedItemTypeAdapterFactory());
       addMessagesFromClass(gsonBuilder, adapter, ClicsProto.class);
       return gsonBuilder.create();
     }

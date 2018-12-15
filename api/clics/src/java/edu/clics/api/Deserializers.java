@@ -1,13 +1,23 @@
 package edu.clics.api;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
+import edu.clics.proto.ClicsProto.*;
+
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -15,6 +25,49 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 
 class Deserializers {
+  static class EventFeedItemTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+      if (type.getRawType() != EventFeedItem.class) {
+        return null;
+      }
+      return (TypeAdapter<T>) new EventFeedItemTypeAdapter(
+          gson.getDelegateAdapter(this, (TypeToken<EventFeedItem>) type),
+          gson.getAdapter(JsonElement.class));
+    }
+
+    private class EventFeedItemTypeAdapter extends TypeAdapter<EventFeedItem> {
+      private final TypeAdapter<EventFeedItem> delegate;
+      private final TypeAdapter<JsonElement> elementAdapter;
+
+      public EventFeedItemTypeAdapter(
+          TypeAdapter<EventFeedItem> delegate,
+          TypeAdapter<JsonElement> elementAdapter) {
+        super();
+        this.delegate = delegate;
+        this.elementAdapter = elementAdapter;
+      }
+
+      @Override
+      public void write(JsonWriter writer, EventFeedItem value) throws IOException {
+      }
+
+      @Override
+      public EventFeedItem read(JsonReader reader) throws IOException {
+        JsonElement tree = elementAdapter.read(reader);
+        if (tree.isJsonObject()) {
+          JsonObject obj = tree.getAsJsonObject();
+          if (obj.has("type") && obj.get("type").isJsonPrimitive()) {
+            final String type = obj.get("type").getAsString();
+            obj.add(type.substring(0, type.length() - 1) + "_data", obj.get("data"));
+          }
+          tree = obj;
+        }
+        return delegate.fromJsonTree(tree);
+      }
+    }
+  }
+
   static class TimestampDeserializer implements JsonDeserializer<Timestamp> {
     @Override
     public Timestamp deserialize(JsonElement json, Type type, JsonDeserializationContext context)

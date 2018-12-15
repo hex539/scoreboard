@@ -27,6 +27,23 @@ java_test(
 )
 
 java_test(
+  name = "clics_parser",
+  size="small",
+  test_class = "edu.clics.api.RestTest",
+  srcs = glob([
+    "clics/src/java/edu/clics/api/RestTest.java",
+  ]),
+  deps = [
+    "//api/clics",
+    "//api/clics/proto:java",
+    "@com_google_protobuf//:protobuf_java",
+    "@gson_maven//jar",
+    "@mockito//jar",
+    "@truth//jar",
+  ],
+)
+
+java_test(
   name = "contest_data_structures",
   size="small",
   test_class = "me.hex539.contest.DataStructuresTest",
