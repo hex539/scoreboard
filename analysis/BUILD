@@ -9,13 +9,10 @@ java_binary(
     "src/Progression.java",
   ],
   deps = [
-    "//contest",
-    "//interop",
+    ":common",
     "//third_party/org/jtwig",
-    "@apachecommonslang//jar",
     "@com_google_protobuf//:protobuf_java",
-    "@jewelcli//jar",
-  ],
+  ]
 )
 
 java_binary(
@@ -23,15 +20,31 @@ java_binary(
   main_class = "me.hex539.analysis.Activity",
   resources = glob(["res/**"]),
   srcs = [
-    "src/Invocation.java",
     "src/Activity.java",
+    "src/Invocation.java",
+    "src/SubmitStats.java",
   ],
   deps = [
-    "//contest",
-    "//interop",
+    ":common",
     "//third_party/org/jtwig",
-    "@apachecommonslang//jar",
     "@com_google_protobuf//:protobuf_java",
-    "@jewelcli//jar",
   ],
+)
+
+COMMON_DEPS = [
+  "@jewelcli//jar",
+  "@com_google_protobuf//:protobuf_java",
+  "@apachecommonslang//jar",
+  "//contest",
+  "//interop",
+]
+
+java_library(
+  name = "common",
+  srcs = [
+    "src/Invocation.java",
+    "src/Analyser.java",
+  ],
+  deps = COMMON_DEPS,
+  exports = COMMON_DEPS,
 )

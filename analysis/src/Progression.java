@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.TreeMap;
-import me.hex539.contest.ApiDetective;
 import me.hex539.contest.ContestConfig;
 import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.JudgementDispatcher;
@@ -25,46 +24,19 @@ import org.jtwig.JtwigModel;
 import org.jtwig.JtwigTemplate;
 
 public class Progression {
+  private static Invocation invocation;
+
   public static void main(String[] args) throws Exception {
-    Invocation invocation = Invocation.parseFrom(args);
-
-    final ContestConfig.Source source;
-    if (invocation.getUrl() != null) {
-      ContestConfig.Source.Builder sourceBuilder =
-          ApiDetective.detectApi(invocation.getUrl()).get()
-              .toBuilder();
-      if (invocation.getUsername() != null) {
-          sourceBuilder.setAuthentication(
-              ContestConfig.Authentication.newBuilder()
-                  .setHttpUsername(invocation.getUsername())
-                  .setHttpPassword(invocation.getPassword())
-                  .build());
-      }
-      source = sourceBuilder.build();
-    } else if (invocation.getFile() != null) {
-      source = ContestConfig.Source.newBuilder()
-          .setFilePath(invocation.getFile())
-          .build();
-    } else {
-      System.err.println("Need one of --url or --path to load a contest");
-      System.exit(1);
-      return;
-    }
-
+    invocation = Invocation.parseFrom(args);
+    final ContestConfig.Source source = Analyser.getSource(invocation);
     draw(new ContestDownloader(source).fetch());
   }
 
   private static void draw(ClicsContest entireContest) throws Exception {
     entireContest = MissingJudgements.ensureJudgements(entireContest);
 
-    String mostPopularGroup =
-        entireContest.getTeamsMap().values().stream().flatMap(t -> t.getGroupIdsList().stream())
-        .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
-        .entrySet().stream().max(Map.Entry.comparingByValue())
-        .get().getKey();
-
     ScoreboardModelImpl fullModel = ScoreboardModelImpl.newBuilder(entireContest)
-        .filterGroups(g -> mostPopularGroup.equals(g.getId()))
+        .filterGroups(Analyser.getGroupPredicate(invocation, entireContest))
         .filterTooLateSubmissions()
         .build();
     ScoreboardModelImpl model = fullModel.toBuilder()
