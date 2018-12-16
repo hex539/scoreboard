@@ -257,48 +257,50 @@ message ScoreboardProblem {
 
 message EventFeedItem {
   string id = 1;
-  EventFeedType type = 2;
-  EventFeedOperation op = 3;
+  Type type = 2;
+  Operation operation = 3 [(js.serialized_name) = 'op', json_name = 'op'];
   google.protobuf.Timestamp time = 4;
   oneof data {
-    Contest contest_data = 10;
-    JudgementType judgement_type_data = 11;
-    Language language_data = 12;
-    Problem problem_data = 13;
-    Group group_data = 14;
-    Organization organization_data = 15;
-    Team team_data = 16;
-    TeamMember team_member_data = 17;
-    ContestState state_data = 18;
-    Submission submission_data = 19;
-    Judgement judgement_data = 20;
-    Run run_data = 21;
-    Clarification clarification_data = 22;
-    Award award_data = 23;
+    Contest contest_data = 11;
+    JudgementType judgement_type_data = 12;
+    Language language_data = 13;
+    Problem problem_data = 14;
+    Group group_data = 15;
+    Organization organization_data = 16;
+    Team team_data = 17;
+    TeamMember team_member_data = 18;
+    ContestState state_data = 19;
+    Submission submission_data = 20;
+    Judgement judgement_data = 21;
+    Run run_data = 22;
+    Clarification clarification_data = 23;
+    Award award_data = 24;
   }
-}
 
-enum EventFeedType {
-  contests = 0;
-  judgement_types = 1; // [json_name = 'judgement-types'];
-  languages = 2;
-  problems = 3;
-  groups = 4;
-  organizations = 5;
-  teams = 6;
-  team_members = 7; // [json_name = 'team-members'];
-  state = 8;
-  submissions = 9;
-  judgements = 10;
-  runs = 11;
-  clarifications = 12;
-  awards = 13;
-}
+  enum Type {
+    type_not_present = 0;
+    contests = 1;
+    judgement_types = 2; // [json_name = 'judgement-types'];
+    languages = 3;
+    problems = 4;
+    groups = 5;
+    organizations = 6;
+    teams = 7;
+    team_members = 8; // [json_name = 'team-members'];
+    state = 9;
+    submissions = 10;
+    judgements = 11;
+    runs = 12;
+    clarifications = 13;
+    awards = 14;
+  }
 
-enum EventFeedOperation {
-  create = 0;
-  update = 1;
-  delete = 2;
+  enum Operation {
+    operation_not_present = 0;
+    create = 1;
+    update = 2;
+    delete = 3;
+  }
 }
 
 // Basic types

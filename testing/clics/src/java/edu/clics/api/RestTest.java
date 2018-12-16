@@ -31,8 +31,8 @@ public class RestTest {
     final EventFeedItem event = new ClicsRest("localhost")
         .parseEventFeedItem(Optional.ofNullable(json.toString()));
     assertThat(event.getId()).isEqualTo("34111");
-    assertThat(event.getType()).isEqualTo(EventFeedType.contests);
-    assertThat(event.getOp()).isEqualTo(EventFeedOperation.delete);
+    assertThat(event.getType()).isEqualTo(EventFeedItem.Type.contests);
+    assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.delete);
     assertThat(event.getTime()).isEqualTo(
         Timestamp.newBuilder()
             .setSeconds(1544477327L)
@@ -58,8 +58,8 @@ public class RestTest {
 
     final EventFeedItem event = new ClicsRest("localhost")
         .parseEventFeedItem(Optional.ofNullable(json.toString()));
-    assertThat(event.getType()).isEqualTo(EventFeedType.groups);
-    assertThat(event.getOp()).isEqualTo(EventFeedOperation.create);
+    assertThat(event.getType()).isEqualTo(EventFeedItem.Type.groups);
+    assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.create);
     assertThat(event.getTime()).isEqualTo(
         Timestamp.newBuilder()
             .setSeconds(1544477327L)
@@ -89,8 +89,8 @@ public class RestTest {
 
     final EventFeedItem event = new ClicsRest("localhost")
         .parseEventFeedItem(Optional.ofNullable(json.toString()));
-    assertThat(event.getType()).isEqualTo(EventFeedType.teams);
-    assertThat(event.getOp()).isEqualTo(EventFeedOperation.create);
+    assertThat(event.getType()).isEqualTo(EventFeedItem.Type.teams);
+    assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.create);
 
     assertThat(event.hasGroupData()).isFalse();
     assertThat(event.hasTeamData()).isTrue();
@@ -118,8 +118,8 @@ public class RestTest {
 
     final EventFeedItem event = new ClicsRest("localhost")
         .parseEventFeedItem(Optional.ofNullable(json.toString()));
-    assertThat(event.getType()).isEqualTo(EventFeedType.judgements);
-    assertThat(event.getOp()).isEqualTo(EventFeedOperation.update);
+    assertThat(event.getType()).isEqualTo(EventFeedItem.Type.judgements);
+    assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.update);
 
     assertThat(event.hasJudgementData()).isTrue();
     assertThat(event.getJudgementData().getStartTime()).isEqualTo(
@@ -133,5 +133,29 @@ public class RestTest {
             .setNanos(593000000)
             .build());
     assertThat(event.getJudgementData().getMaxRunTime()).isWithin(1e-9).of(0.039);
+  }
+
+  @Test
+  public void writeEventFeed_createTeams_roundTrip() {
+    JsonArray groupIds = new JsonArray();
+    groupIds.add("15099");
+
+    JsonObject data = new JsonObject();
+
+    data.addProperty("id", "344");
+    data.addProperty("name", "Null");
+    data.add("group_ids", groupIds);
+
+    JsonObject json = new JsonObject();
+    json.addProperty("id", "32062");
+    json.addProperty("type", "teams");
+    json.addProperty("op", "create");
+    json.add("data", data);
+
+    final EventFeedItem event = new ClicsRest("localhost")
+        .parseEventFeedItem(Optional.ofNullable(json.toString()));
+    assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.create);
+
+    assertThat(new ClicsRest.GsonSingleton().get().toJson(event)).isEqualTo(json.toString());
   }
 }

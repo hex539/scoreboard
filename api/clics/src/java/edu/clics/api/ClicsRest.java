@@ -201,7 +201,8 @@ public class ClicsRest extends RestClient<ClicsRest> {
     throw new RuntimeException("Scoreboard endpoint did not respond");
   }
 
-  private static class GsonSingleton {
+  // VisibleForTesting
+  static class GsonSingleton {
     private Gson gson = null;
 
     public Gson get() {

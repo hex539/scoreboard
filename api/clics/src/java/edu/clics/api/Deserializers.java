@@ -50,16 +50,34 @@ class Deserializers {
 
       @Override
       public void write(JsonWriter writer, EventFeedItem value) throws IOException {
+        JsonElement tree = delegate.toJsonTree(value);
+        if (tree != null && tree.isJsonObject()) {
+          JsonObject obj = tree.getAsJsonObject();
+          if (obj.has("type") && obj.get("type").isJsonPrimitive()) {
+            final String type = obj.get("type").getAsString();
+            final String name = type.substring(0, type.length() - 1) + "_data";
+            if (obj.has(name)) {
+              obj.add("data", obj.get(name));
+              obj.remove(name);
+            }
+          }
+          tree = obj;
+        }
+        elementAdapter.write(writer, tree);
       }
 
       @Override
       public EventFeedItem read(JsonReader reader) throws IOException {
         JsonElement tree = elementAdapter.read(reader);
-        if (tree.isJsonObject()) {
+        if (tree != null && tree.isJsonObject()) {
           JsonObject obj = tree.getAsJsonObject();
           if (obj.has("type") && obj.get("type").isJsonPrimitive()) {
             final String type = obj.get("type").getAsString();
-            obj.add(type.substring(0, type.length() - 1) + "_data", obj.get("data"));
+            final String name = type.substring(0, type.length() - 1) + "_data";
+            if (obj.has("data")) {
+              obj.add(name, obj.get("data"));
+              obj.remove("data");
+            }
           }
           tree = obj;
         }
