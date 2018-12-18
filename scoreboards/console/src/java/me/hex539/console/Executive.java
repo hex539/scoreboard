@@ -2,12 +2,7 @@ package me.hex539.console;
 
 import com.google.protobuf.TextFormat;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import com.google.protobuf.util.Timestamps;
 
 import edu.clics.proto.ClicsProto.*;
 
@@ -17,6 +12,15 @@ import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.JudgementDispatcher;
 import me.hex539.contest.ResolverController;
 import me.hex539.contest.ScoreboardModelImpl;
+
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class Executive {
   private final ContestDownloader contestFetcher;
@@ -130,6 +134,22 @@ public class Executive {
 
       System.out.println(
           PrettyPrinter.formatVerdictRow(team, problem, submission, judgementType, row));
+    }
+  }
+
+  @Command(name = "events")
+  private void showEvents(Invocation invocation) throws Exception {
+    Optional<BlockingQueue<Optional<EventFeedItem>>> feed =
+        contestFetcher.eventFeed(contestFetcher.contests().get(0));
+    if (!feed.isPresent()) {
+      System.err.println("Event feed is not available.");
+      return;
+    }
+    for (Optional<EventFeedItem> item; (item = feed.get().take()).isPresent();) {
+      System.out.format("%-30s %s %s\n",
+          Timestamps.toString(item.get().getTime()),
+          item.get().getOperation().toString(),
+          item.get().getType().toString());
     }
   }
 

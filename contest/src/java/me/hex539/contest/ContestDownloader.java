@@ -4,15 +4,23 @@ import com.google.protobuf.TextFormat;
 
 import edu.clics.api.ClicsRest;
 import edu.clics.proto.ClicsProto;
+
+import me.hex539.api.RestClient;
+import me.hex539.contest.ContestConfig;
+import me.hex539.interop.ContestConverters;
+
+import org.domjudge.api.DomjudgeRest;
+import org.domjudge.proto.DomjudgeProto;
+
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import me.hex539.api.RestClient;
-import me.hex539.contest.ContestConfig;
-import me.hex539.interop.ContestConverters;
-import org.domjudge.api.DomjudgeRest;
-import org.domjudge.proto.DomjudgeProto;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.BlockingQueue;
+import java.util.stream.Collectors;
 
 public class ContestDownloader {
   private final ContestConfig.Source source;
@@ -47,10 +55,31 @@ public class ContestDownloader {
     }
 
     if (source.getDomjudge3Api() != null) {
-      return ContestConverters.toClics(getRestApi().getEntireContest());
+      return ContestConverters.toClics(getDomjudgeV3Api().getEntireContest());
     }
 
     throw new IllegalArgumentException("No known API type for contest: " + source.getBaseUrl());
+  }
+
+  public List<ClicsProto.Contest> contests() throws Exception {
+    if (source.hasClicsApi()) {
+      return getClicsRestApi().getContests();
+    }
+    if (source.hasDomjudge3Api()) {
+      return Arrays.stream(getDomjudgeV3Api().getContests())
+          .map(ContestConverters::toClics)
+          .collect(Collectors.toList());
+    }
+
+    throw new IllegalArgumentException("No known API type for contest: " + source.getBaseUrl());
+  }
+
+  public Optional<BlockingQueue<Optional<ClicsProto.EventFeedItem>>> eventFeed(
+      ClicsProto.Contest contest) throws Exception {
+    if (source.hasClicsApi()) {
+      return getClicsRestApi().eventFeed(contest);
+    }
+    throw new IllegalArgumentException("Event feed is not supported.");
   }
 
   private ClicsProto.ClicsContest fetchContest(InputStream f) throws Exception {
@@ -96,7 +125,7 @@ public class ContestDownloader {
     return populateRestClient(new ClicsRest(source.getBaseUrl()));
   }
 
-  private DomjudgeRest getRestApi() {
+  private DomjudgeRest getDomjudgeV3Api() {
     return populateRestClient(new DomjudgeRest(source.getBaseUrl()));
   }
 }

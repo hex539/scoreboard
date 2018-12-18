@@ -27,7 +27,6 @@ import org.domjudge.proto.Annotations;
 import org.domjudge.proto.DomjudgeProto;
 import org.domjudge.proto.DomjudgeProto.*;
 
-
 public class DomjudgeRest extends RestClient<DomjudgeRest> {
   private final GsonSingleton gson = new GsonSingleton();
 

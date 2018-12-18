@@ -39,6 +39,8 @@ java_test(
     "@com_google_protobuf//:protobuf_java",
     "@gson_maven//jar",
     "@mockito//jar",
+    "@okhttp//jar",
+    "@okhttp_mockwebserver//jar",
     "@truth//jar",
   ],
 )

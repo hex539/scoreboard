@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
@@ -54,10 +55,6 @@ public class ClicsRest extends RestClient<ClicsRest> {
     return contests;
   }
 
-  public EventFeedItem event() throws Exception {
-    return null;
-  }
-
   public List<Contest> getContests() throws Exception {
     return getListFrom("/contests", Contest[].class);
   }
@@ -68,6 +65,13 @@ public class ClicsRest extends RestClient<ClicsRest> {
 
   public ClicsContest downloadContest(Contest contest) throws IOException {
     return buildFullContest(contest).build();
+  }
+
+  public Optional<BlockingQueue<Optional<EventFeedItem>>> eventFeed(Contest contest)
+      throws Exception {
+    return streamFrom(
+        getContestPath(contest) + "/event-feed",
+        b -> b.map(body -> gson.get().fromJson(body, EventFeedItem.class)).get());
   }
 
   private String getContestPath(Contest contest) {
@@ -161,21 +165,6 @@ public class ClicsRest extends RestClient<ClicsRest> {
 
   protected <T> Optional<T> getFrom(String endpoint, Type c) throws CompletionException {
     return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)));
-  }
-
-  /**
-   * Not properly implemented. Included for early testing.
-   */
-  protected EventFeedItem parseEventFeedItem(Optional<String> body) {
-    if (!body.isPresent()) {
-      throw new RuntimeException("Event feed is missing");
-    }
-    final String text = body.get();
-    try {
-      return gson.get().fromJson(text, EventFeedItem.class);
-    } catch (JsonParseException e) {
-      throw new RuntimeException("Failed to parse event feed JSON", e);
-    }
   }
 
   /**

@@ -26,7 +26,12 @@ maven_jar(
 
 maven_jar(
   name = "okhttp",
-  artifact = "com.squareup.okhttp3:okhttp:3.8.1",
+  artifact = "com.squareup.okhttp3:okhttp:3.12.0",
+)
+
+maven_jar(
+  name = "okhttp_mockwebserver",
+  artifact = "com.squareup.okhttp3:mockwebserver:3.12.0",
 )
 
 maven_jar(

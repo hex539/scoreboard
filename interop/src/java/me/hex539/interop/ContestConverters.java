@@ -11,8 +11,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.domjudge.proto.DomjudgeProto;
 
-public final class ContestConverters {
+public class ContestConverters {
   private ContestConverters() {}
+  private static class U extends ContestConverters {}
 
   static <K, A, B> Map<K, B> map(List<A> a, Function<A, B> ab, Function<B, K> bk) {
     return a.stream().map(ab).collect(Collectors.toMap(bk, Function.identity()));
@@ -46,10 +47,6 @@ public final class ContestConverters {
             map(dom.getJudgingsList(), j -> U.toClics(j, dom.getContest()), ClicsProto.Judgement::getId))
         .build();
   }
-}
-
-final class U {
-  private U() {}
 
   private static final long doubleToSeconds(double x) {
     return Math.round(x - (0.5 - 1e-20));
