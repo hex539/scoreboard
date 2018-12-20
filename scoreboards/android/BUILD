@@ -18,11 +18,12 @@ android_library(
     "//scoreboards/android/proto:java",
     "//contest",
     "//external:guava",
+    "//third_party/auto:auto_value",
+    "//third_party/auto:auto_value_annotations",
     "@androidsdk//com.android.support:cardview-v7-25.3.1",
     "@androidsdk//com.android.support:leanback-v17-25.3.1",
     "@androidsdk//com.android.support:preference-leanback-v17-25.3.1",
     "@androidsdk//com.android.support:recyclerview-v7-25.3.1",
-    "@auto_value//:processor",
   ],
 )
 

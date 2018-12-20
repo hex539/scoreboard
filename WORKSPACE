@@ -1,5 +1,8 @@
 workspace(name = "scoreboard")
 
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 android_sdk_repository(
   name = "androidsdk",
   path = "/usr/local/android-sdk",
@@ -10,13 +13,13 @@ android_sdk_repository(
 git_repository(
   name = 'com_google_protobuf',
   remote = 'https://github.com/google/protobuf',
-  tag = "v3.5.1.1",
+  tag = "v3.6.1.3",
 )
 
 git_repository(
   name = "org_pubref_rules_maven",
   remote = "https://github.com/pubref/rules_maven",
-  tag = "v0.2.0",
+  commit = "25214e11ef391bd2dc08cad3a5637ceac93b0769",
 )
 
 maven_jar(
@@ -134,18 +137,31 @@ maven_jar(
   artifact = "com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2",
 )
 
-new_http_archive(
+maven_jar(
   name = "auto_value",
-  url = "http://repo1.maven.org/maven2/com/google/auto/value/auto-value/1.4/auto-value-1.4.jar",
-  build_file = "third_party/com/google/autovalue.BUILD",
+  artifact = "com.google.auto.value:auto-value:1.6.3",
+  sha1 = "8edb6675b9c09ffdcc19937428e7ef1e3d066e12",
 )
 
-new_http_archive(
+maven_jar(
+  name = "auto_value_annotations",
+  artifact = "com.google.auto.value:auto-value-annotations:1.6.3",
+  sha1 = "b88c1bb7f149f6d2cc03898359283e57b08f39cc",
+)
+
+http_archive(
   name = "six_archive",
-  build_file = "third_party/six.BUILD",
   url = "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz#md5=34eed507548117b2ab523ab14b2f8b55",
   sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
-  strip_prefix = "six-1.10.0"
+  strip_prefix = "six-1.10.0",
+  build_file_content = """
+py_library(
+    name = "six",
+    srcs = ["six.py"],
+    visibility = ["//visibility:public"],
+    srcs_version = "PY2AND3",
+)
+""",
 )
 
 bind(
