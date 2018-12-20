@@ -38,7 +38,7 @@ arg_parser.add_argument('--textformat', action='store_true')
 args = arg_parser.parse_args()
 
 path = args.path
-filter_groups = (lambda x: x in args.groups) if len(args.groups) > 0 else (lambda x: True)
+filter_groups = (lambda x: x.name in args.groups or x.id in args.groups) if len(args.groups) > 0 else (lambda x: True)
 time_since_start = isodate.parse_duration(args.offset)
 
 clics = ClicsContest()
@@ -171,7 +171,7 @@ def get_scoreboard(cid, t_now=None, incl_first=False):
 
     allowed_groups = set()
     for g in clics.groups:
-      if filter_groups(clics.groups[g].name):
+      if filter_groups(clics.groups[g]):
         allowed_groups.add(g)
     def check_groups(tid):
       for i in clics.teams[tid].group_ids:
