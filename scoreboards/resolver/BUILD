@@ -12,5 +12,16 @@ java_binary(
   deps = [
     "//contest",
     "//interop",
+    "//third_party/auto:auto_value",
+    "//third_party/auto:auto_value_annotations",
+    "@jewelcli//jar",
+    "@lwjgl//jar",
+    "@lwjgl_glfw//jar",
+    "@lwjgl_opengl//jar",
+  ],
+  runtime_deps =[
+    "@lwjgl_natives_linux//jar",
+    "@lwjgl_glfw_natives_linux//jar",
+    "@lwjgl_opengl_natives_linux//jar",
   ],
 )

@@ -149,6 +149,36 @@ maven_jar(
   sha1 = "b88c1bb7f149f6d2cc03898359283e57b08f39cc",
 )
 
+maven_jar(
+  name = "lwjgl",
+  artifact = "org.lwjgl:lwjgl:jar:3.2.1",
+)
+
+maven_jar(
+  name = "lwjgl_natives_linux",
+  artifact = "org.lwjgl:lwjgl:jar:natives-linux:3.2.1",
+)
+
+maven_jar(
+  name = "lwjgl_glfw",
+  artifact = "org.lwjgl:lwjgl-glfw:jar:3.2.1",
+)
+
+maven_jar(
+  name = "lwjgl_glfw_natives_linux",
+  artifact = "org.lwjgl:lwjgl-glfw:jar:natives-linux:3.2.1",
+)
+
+maven_jar(
+  name = "lwjgl_opengl",
+  artifact = "org.lwjgl:lwjgl-opengl:jar:3.2.1",
+)
+
+maven_jar(
+  name = "lwjgl_opengl_natives_linux",
+  artifact = "org.lwjgl:lwjgl-opengl:jar:natives-linux:3.2.1",
+)
+
 http_archive(
   name = "six_archive",
   url = "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz#md5=34eed507548117b2ab523ab14b2f8b55",
