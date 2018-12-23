@@ -160,6 +160,11 @@ maven_jar(
 )
 
 maven_jar(
+  name = "lwjgl_natives_windows",
+  artifact = "org.lwjgl:lwjgl:jar:natives-linux:3.2.1",
+)
+
+maven_jar(
   name = "lwjgl_glfw",
   artifact = "org.lwjgl:lwjgl-glfw:jar:3.2.1",
 )
@@ -170,6 +175,11 @@ maven_jar(
 )
 
 maven_jar(
+  name = "lwjgl_glfw_natives_windows",
+  artifact = "org.lwjgl:lwjgl-glfw:jar:natives-windows:3.2.1",
+)
+
+maven_jar(
   name = "lwjgl_opengl",
   artifact = "org.lwjgl:lwjgl-opengl:jar:3.2.1",
 )
@@ -177,6 +187,26 @@ maven_jar(
 maven_jar(
   name = "lwjgl_opengl_natives_linux",
   artifact = "org.lwjgl:lwjgl-opengl:jar:natives-linux:3.2.1",
+)
+
+maven_jar(
+  name = "lwjgl_opengl_natives_windows",
+  artifact = "org.lwjgl:lwjgl-opengl:jar:natives-windows:3.2.1",
+)
+
+maven_jar(
+  name = "lwjgl_stb",
+  artifact = "org.lwjgl:lwjgl-stb:jar:3.2.1",
+)
+
+maven_jar(
+  name = "lwjgl_stb_natives_linux",
+  artifact = "org.lwjgl:lwjgl-stb:jar:natives-linux:3.2.1",
+)
+
+maven_jar(
+  name = "lwjgl_stb_natives_windows",
+  artifact = "org.lwjgl:lwjgl-stb:jar:natives-windows:3.2.1",
 )
 
 http_archive(

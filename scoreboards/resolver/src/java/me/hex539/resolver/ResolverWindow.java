@@ -1,8 +1,8 @@
 package me.hex539.resolver;
 
-
+import java.util.ArrayDeque;
 import java.util.concurrent.Semaphore;
-
+import java.util.concurrent.TimeUnit;
 
 import edu.clics.proto.ClicsProto.*;
 
@@ -21,6 +21,10 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 public class ResolverWindow extends Thread {
+  private static final boolean PRINT_FPS = false;
+  private static final boolean LIMIT_FPS = true;
+  private static final long MAX_FPS = 30;
+
   private final ResolverController resolver;
   private final ScoreboardModel model;
   private final Renderer renderer;
@@ -45,6 +49,7 @@ public class ResolverWindow extends Thread {
 
     long primaryMonitor = glfwGetPrimaryMonitor();
     GLFWVidMode videoMode = glfwGetVideoMode(primaryMonitor);
+
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     final long window = glfwCreateWindow(
         videoMode.width(),
@@ -58,16 +63,39 @@ public class ResolverWindow extends Thread {
     glfwSetKeyCallback(window, this::onKeyCallback);
     renderer.setVideoMode(videoMode);
 
-    while (!glfwWindowShouldClose(window) && !exit.tryAcquire()) {
-      glClear(GL_COLOR_BUFFER_BIT);
+    ArrayDeque<Long> frames = PRINT_FPS ? new ArrayDeque<>() : null;
+    final long minFrameTime = LIMIT_FPS ? TimeUnit.SECONDS.toNanos(1) / MAX_FPS : 0L;
 
-      final long timeNow = System.nanoTime();
+    for (long lastFrameTime = 0; !glfwWindowShouldClose(window) && !exit.tryAcquire();) {
+      long timeNow = System.nanoTime();
+
+      if (PRINT_FPS) {
+        frames.add(timeNow);
+        while (frames.peekFirst() <= timeNow - TimeUnit.SECONDS.toNanos(1)) {
+          frames.pollFirst();
+        }
+        System.err.println("FPS: " + frames.size());
+      }
 
       boolean active = false;
+      glClear(GL_COLOR_BUFFER_BIT);
       active |= renderer.mainLoop(timeNow);
       active |= controller.mainLoop(timeNow);
       glfwSwapBuffers(window);
 
+      if (LIMIT_FPS) {
+        long sleepDuration = (lastFrameTime + minFrameTime) - timeNow;
+        if (sleepDuration > 0) {
+          try {
+            Thread.sleep(sleepDuration / 1000000, (int) (sleepDuration % 1000000));
+          } catch (InterruptedException e) {
+          }
+          timeNow = lastFrameTime + minFrameTime;
+        }
+      }
+      lastFrameTime = timeNow;
+
+      active = true;
       if (active) {
         glfwPollEvents();
       } else {

@@ -1,14 +1,10 @@
 package me.hex539.resolver;
 
-
 import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.util.ArrayList;
 
-
 import edu.clics.proto.ClicsProto.*;
-
-
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL.*;

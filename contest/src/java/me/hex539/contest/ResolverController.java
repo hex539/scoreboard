@@ -167,6 +167,12 @@ public class ResolverController {
     return client.advance();
   }
 
+  public void drain() {
+    while (!finished()) {
+      advance();
+    }
+  }
+
   private static class Client {
     private final LinkedBlockingQueue<Advancer> pendingActions;
     private Resolution lastResolution = null;

@@ -18,10 +18,17 @@ java_binary(
     "@lwjgl//jar",
     "@lwjgl_glfw//jar",
     "@lwjgl_opengl//jar",
+    "@lwjgl_stb//jar",
   ],
-  runtime_deps =[
+  runtime_deps = [
     "@lwjgl_natives_linux//jar",
     "@lwjgl_glfw_natives_linux//jar",
     "@lwjgl_opengl_natives_linux//jar",
+    "@lwjgl_stb_natives_linux//jar",
+  ] + [
+    "@lwjgl_natives_windows//jar",
+    "@lwjgl_glfw_natives_windows//jar",
+    "@lwjgl_opengl_natives_windows//jar",
+    "@lwjgl_stb_natives_windows//jar",
   ],
 )

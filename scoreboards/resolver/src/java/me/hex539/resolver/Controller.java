@@ -64,7 +64,7 @@ public class Controller {
   private void advance() {
     switch (resolver.advance()) {
       case FAILED_PROBLEM:
-        post(TimeUnit.MILLISECONDS.toNanos(40), this::advance);
+        post(TimeUnit.MILLISECONDS.toNanos(400), this::advance);
         break;
       case SOLVED_PROBLEM:
         post(TimeUnit.MILLISECONDS.toNanos(1400), this::advance);
