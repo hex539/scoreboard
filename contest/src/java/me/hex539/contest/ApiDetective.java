@@ -82,6 +82,11 @@ public final class ApiDetective {
       if (response.code() == 200 && !response.isRedirect()) {
         System.err.println("Hit " + url);
 
+        // Check that a required non-null field exists.
+        if (!response.body().string().contains("\"duration\"")) {
+          return null;
+        }
+
         // If there is an /api/groups endpoint, we're probably using an old
         // version of DOMjudge with endpoints in the wrong place.
         boolean apiInRoot = false;
