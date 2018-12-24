@@ -153,7 +153,7 @@ public class Renderer implements ResolverController.Observer {
     }
 
     for (int rowIndex = model.getRows().size(); rowIndex --> 0;) {
-      final ScoreboardRow row = model.getRows().get(rowIndex);
+      final ScoreboardRow row = model.getRow(rowIndex);
       final boolean teamFocused = focusedTeam != null && row.getTeamId() == focusedTeam.getId();
 
       final double effectiveRank;
@@ -256,7 +256,7 @@ public class Renderer implements ResolverController.Observer {
       glColor3d(0.4, 0.4, 0.4);
     }
     font.drawText(
-        rowX - teamLabelWidth * 0.05,
+        rowX - rowHeight * 0.5,
         rowY + cellMargin,
         (int) (cellHeight - cellMargin),
         String.format("%-3d", score.getNumSolved()));

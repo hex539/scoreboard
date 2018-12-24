@@ -23,7 +23,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 public class ResolverWindow extends Thread {
   private static final boolean PRINT_FPS = false;
   private static final boolean LIMIT_FPS = true;
-  private static final long MAX_FPS = 30;
+  private static final long MAX_FPS = 60;
 
   private final ResolverController resolver;
   private final ScoreboardModel model;
