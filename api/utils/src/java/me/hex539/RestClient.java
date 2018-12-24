@@ -76,6 +76,10 @@ public class RestClient<Self extends RestClient> {
           } else {
             break;
           }
+        case 500:
+          System.err.println(
+              "GET " + endpoint + ": " + response.code() + " (internal error)");
+          return handler.apply(Optional.empty());
       }
       // Not handled. Probably an invalid request.
       throw new IOException(
