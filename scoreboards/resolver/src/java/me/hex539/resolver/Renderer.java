@@ -242,11 +242,22 @@ public class Renderer implements ResolverController.Observer {
 
   private void drawLabel(double rowX, double rowY, Team team, boolean focused) {
     glColor3d(0.6, 0.6, 0.6);
-    font.drawText(rowX - teamLabelWidth * 0.9, rowY + cellMargin / 2.0, (int) (cellHeight * 0.25), model.getOrganization(team.getOrganizationId()).getName());
+    final String organizationId = team.getOrganizationId();
+    if (organizationId != null && !organizationId.isEmpty()) {
+        font.drawText(
+            rowX - teamLabelWidth * 0.9,
+            rowY + cellMargin / 2.0,
+            (int) (cellHeight * 0.25),
+            model.getOrganization(organizationId).getName());
+    }
     if (focused) {
       glColor3d(1.0, 1.0, 1.0);
     }
-    font.drawText(rowX - teamLabelWidth * 0.9, rowY + rowHeight / 2.0, (int) (cellHeight * 0.4), team.getName());
+    font.drawText(
+        rowX - teamLabelWidth * 0.9,
+        rowY + rowHeight / 2.0,
+        (int) (cellHeight * 0.4),
+        team.getName());
   }
 
   private void drawScore(double rowX, double rowY, ScoreboardScore score, boolean focused) {

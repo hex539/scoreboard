@@ -40,7 +40,7 @@ public class Executive {
     final ScoreboardModel reference =
         ScoreboardModelImpl.newBuilder(entireContest)
             .filterGroups(g -> groups != null
-                ? groups.contains(g.getName())
+                ? groups.contains(g.getName()) || groups.contains(g.getId())
                 : !g.getHidden())
             .filterTooLateSubmissions()
             .build();
