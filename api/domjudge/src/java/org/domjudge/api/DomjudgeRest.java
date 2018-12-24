@@ -66,7 +66,8 @@ public class DomjudgeRest extends RestClient<DomjudgeRest> {
 
   @RequiresRole(any = true)
   public JudgementType[] getJudgementTypes(Contest contest) throws CompletionException {
-    return getFrom("/judgement_types", JudgementType[].class).get();
+    return getFrom("/judgement_types", JudgementType[].class, /* tolerant= */ true)
+        .orElseGet(Fallbacks::judgementTypes);
   }
 
   @RequiresRole(anyOf = {
@@ -171,7 +172,12 @@ public class DomjudgeRest extends RestClient<DomjudgeRest> {
   }
 
   protected <T> Optional<T> getFrom(String endpoint, Class<T> c) throws CompletionException {
-    return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)));
+    return getFrom(endpoint, c, /* permissive= */ false);
+  }
+
+  protected <T> Optional<T> getFrom(String endpoint, Class<T> c, boolean permissive)
+      throws CompletionException {
+    return requestFrom(endpoint, b -> b.map(body -> gson.get().fromJson(body, c)), permissive);
   }
 
   protected <T> Optional<T> getFrom(String endpoint, Type c) throws CompletionException {

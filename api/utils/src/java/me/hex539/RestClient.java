@@ -46,7 +46,14 @@ public class RestClient<Self extends RestClient> {
   }
 
   public <T> T requestFrom(String endpoint, ResponseHandler<? super String, T> handler)
-        throws CompletionException {
+      throws CompletionException {
+    return requestFrom(endpoint, handler, /* tolerant= */ false);
+  }
+
+  public <T> T requestFrom(
+      String endpoint,
+      ResponseHandler<? super String, T> handler,
+      boolean tolerant) throws CompletionException {
     try (Response response = client.newCall(buildRequest(endpoint).build()).execute()) {
       switch  (response.code()) {
         case 200:
@@ -63,10 +70,17 @@ public class RestClient<Self extends RestClient> {
         case 403: // Forbidden (need to authenticate, older api versions)
         case 405: // Method not allowed (need to authenticate, newer api versions)
           return handler.apply(Optional.empty());
-        default: // Not handled. Probably an invalid request.
-          throw new IOException(
-              "GET " + endpoint + ": " + response.code() + ", " + response.message());
+        case 400: // Bad request (returned by DOMjudge API v2 for judgement_types)
+          if (tolerant) {
+            return handler.apply(Optional.empty());
+          } else {
+            break;
+          }
       }
+      // Not handled. Probably an invalid request.
+      throw new IOException(
+          "GET " + endpoint + ": " + response.code() + ", " + response.message());
+
     } catch (IOException e) {
       throw new CompletionException(e);
     }
