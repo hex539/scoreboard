@@ -4,6 +4,7 @@ package proto.domjudge;
 option java_package = "org.domjudge.proto";
 option java_outer_classname = "DomjudgeProto";
 
+import "google/protobuf/wrappers.proto";
 import "api/domjudge/proto/annotations.proto";
 
 message Affiliation {
@@ -17,45 +18,45 @@ message Category {
   uint64 id = 1 [(serialized_name) = "categoryid"];
   string name = 2;
   string color = 3;
-  uint64 sort_order = 4 [(serialized_name) = "sortorder"];
+  google.protobuf.UInt64Value sort_order = 4 [(serialized_name) = "sortorder"];
 }
 
 message Clarification {
   uint64 id = 1 [(serialized_name) = "clarid"];
-  sint64 submit_time = 2 [(serialized_name) = "submittime"];
-  uint64 probid = 3;
+  google.protobuf.Int64Value submit_time = 2 [(serialized_name) = "submittime"];
+  google.protobuf.UInt64Value probid = 3;
   string body = 4;
 }
 
 message Contest {
   uint64 id = 1;
-  string short_name = 2 [(serialized_name) = "shortname"];
+  string short_name = 2 [json_name = "shortname", (serialized_name) = "shortname"];
   string name = 3;
-  sint64 start = 4; // timestamp
-  sint64 freeze = 5; // timestamp
-  sint64 end = 6; // timestamp
-  uint64 length = 7; // timediff
-  sint64 unfreeze = 8; // timestamp
-  uint64 penalty = 9;
+  google.protobuf.Int64Value start = 4; // timestamp
+  google.protobuf.Int64Value freeze = 5; // timestamp
+  google.protobuf.Int64Value end = 6; // timestamp
+  google.protobuf.UInt64Value length = 7; // timediff
+  google.protobuf.Int64Value unfreeze = 8; // timestamp
+  google.protobuf.UInt64Value penalty = 9;
 }
 
 message Submission {
   uint64 id = 1;
-  uint64 team = 2;
-  uint64 problem = 3;
+  google.protobuf.UInt64Value team = 2;
+  google.protobuf.UInt64Value problem = 3;
   string language = 4;
   double time = 5; // timestamp
 }
 
 message Judging {
   uint64 id = 1;
-  uint64 submission = 2;
+  google.protobuf.UInt64Value submission = 2;
   string outcome = 3;
   double time = 4; // timestamp
 }
 
 message JudgementType {
-  sint64 id = 1;
+  google.protobuf.Int64Value id = 1;
   string label = 2;
   string name = 3;
   bool penalty = 4;
@@ -79,7 +80,7 @@ message Problem {
 
 message ScoreboardRow {
   uint64 rank = 1;
-  uint64 team = 2;
+  int64 team = 2;
   ScoreboardScore score = 3;
   repeated ScoreboardProblem problems = 4;
 }
@@ -94,26 +95,26 @@ message ScoreboardProblem {
   uint64 num_judged = 2;
   uint64 num_pending = 3;
   bool solved = 4;
-  sint64 time = 5;
+  google.protobuf.Int64Value time = 5;
 }
 
 message Team {
-  sint64 id = 1;
+  int64 id = 1;
   string name = 2;
   string members = 3;
   string nationality = 4;
-  uint64 category = 5;
+  google.protobuf.UInt64Value category = 5;
   string group_name = 6 [(serialized_name) = "group"];
-  sint64 affil_id = 7 [(serialized_name) = "affilid"];
+  google.protobuf.Int64Value affil_id = 7 [(serialized_name) = "affilid"];
   string affiliation = 8;
 }
 
 message User {
-  sint64 id = 1;
-  sint64 team_id = 2 [(serialized_name) = "teamid"];
+  google.protobuf.Int64Value id = 1;
+  google.protobuf.Int64Value team_id = 2 [json_name = "teamid", (serialized_name) = "teamid"];
   string email = 3;
   string ip = 4;
-  string last_ip = 5 [(serialized_name) = "lastip"];
+  string last_ip = 5 [json_name = "lastip", (serialized_name) = "lastip"];
   string name = 6;
   string username = 7;
 

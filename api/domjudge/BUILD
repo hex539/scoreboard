@@ -15,6 +15,7 @@ java_library(
     "//third_party/auto:auto_value_annotations",
     "//third_party/gson:prototype_adapter",
     "@com_google_protobuf//:protobuf_java",
+    "@com_google_protobuf//:protobuf_java_util",
     "@okhttp//jar",
     "@okio//jar",
   ]

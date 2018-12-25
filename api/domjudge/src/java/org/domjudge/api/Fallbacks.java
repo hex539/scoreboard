@@ -1,5 +1,6 @@
 package org.domjudge.api;
 
+import com.google.protobuf.Int64Value;
 import org.domjudge.proto.DomjudgeProto.*;
 
 final class Fallbacks {
@@ -7,19 +8,30 @@ final class Fallbacks {
 
   public static JudgementType[] judgementTypes() {
     return new JudgementType[] {
-      jtb().setId(1).setLabel("CE").setName("Compile Error").setPenalty(false).build(),
-      jtb().setId(2).setLabel("MLE").setName("Memory Limit").setPenalty(true).build(),
-      jtb().setId(3).setLabel("OLE").setName("Output Limit").setPenalty(true).build(),
-      jtb().setId(4).setLabel("RTE").setName("Runtime Error").setPenalty(true).build(),
-      jtb().setId(5).setLabel("TLE").setName("Time Limit").setPenalty(true).build(),
-      jtb().setId(6).setLabel("WA").setName("Wrong Answer").setPenalty(true).build(),
-      jtb().setId(7).setLabel("PE").setName("Presentation Error").setPenalty(true).build(),
-      jtb().setId(8).setLabel("NO").setName("No Output").setPenalty(true).build(),
-      jtb().setId(9).setLabel("AC").setName("Correct").setPenalty(false).setSolved(true).build()
+      judgementType(1, "CE", "Compile Error", false, false),
+      judgementType(2, "MLE", "Memory Limit", true, false),
+      judgementType(3, "OLE", "Output Limit", true, false),
+      judgementType(4, "RTE", "Runtime Error", true, false),
+      judgementType(5, "TLE", "Time Limit", true, false),
+      judgementType(6, "WA", "Wrong Answer", true, false),
+      judgementType(7, "PE", "Presentation Error", true, false),
+      judgementType(8, "NO", "No Output", true, false),
+      judgementType(9, "AC", "Correct", false, true)
     };
   }
 
-  private static JudgementType.Builder jtb() {
-    return JudgementType.newBuilder();
+  private static JudgementType judgementType(
+      long id,
+      String label,
+      String name,
+      boolean penalty,
+      boolean solved) {
+    return JudgementType.newBuilder()
+        .setId(Int64Value.newBuilder().setValue(id))
+        .setLabel(label)
+        .setName(name)
+        .setPenalty(penalty)
+        .setSolved(solved)
+        .build();
   }
 }

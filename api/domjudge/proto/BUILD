@@ -6,6 +6,7 @@ py_proto_library(
   srcs = glob(["*.proto"]),
   deps = [
     "@com_google_protobuf//:protobuf_python",
+    "@com_google_protobuf//:wrappers_proto",
   ],
   default_runtime="@com_google_protobuf//:protobuf_python",
   protoc="@com_google_protobuf//:protoc",
@@ -24,6 +25,7 @@ proto_library(
     "@com_google_protobuf//:descriptor_proto",
     "@com_google_protobuf//:duration_proto",
     "@com_google_protobuf//:timestamp_proto",
+    "@com_google_protobuf//:wrappers_proto",
   ],
   visibility = ["//visibility:private"],
 )

@@ -124,7 +124,7 @@ public class DomjudgeRest extends RestClient<DomjudgeRest> {
 
   @RequiresRole(any = true)
   public Optional<User> getUser() throws CompletionException {
-    return getFrom("/user", User.class).filter(u -> u.getId() != 0);
+    return getFrom("/user", User.class).filter(u -> u.hasId());
   }
 
   @RequiresRole(any = true)
@@ -189,7 +189,8 @@ public class DomjudgeRest extends RestClient<DomjudgeRest> {
     R apply(Optional<T> t) throws IOException;
   }
 
-  private static class GsonSingleton {
+  // VisibleForTesting
+  static class GsonSingleton {
     private Gson gson = null;
 
     public Gson get() {
@@ -209,6 +210,7 @@ public class DomjudgeRest extends RestClient<DomjudgeRest> {
 
       GsonBuilder gsonBuilder = new GsonBuilder();
       gsonBuilder.registerTypeAdapter(Boolean.class, new SloppyBooleanDeserializer());
+      gsonBuilder.registerTypeAdapterFactory(new Deserializers.WellKnownTypeAdapterFactory());
       addMessagesFromClass(gsonBuilder, adapter, DomjudgeProto.class);
       return gsonBuilder.create();
     }

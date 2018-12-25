@@ -73,17 +73,26 @@ public class ContestConverters {
   public static ClicsProto.Contest toClics(DomjudgeProto.Contest dom) {
     final long PENALTY_TIME = 20;
 
-    return ClicsProto.Contest.newBuilder()
+    ClicsProto.Contest.Builder bob = ClicsProto.Contest.newBuilder()
         .setId("" + dom.getId())
         .setName("" + dom.getName())
         .setFormalName(dom.getName())
-        .setStartTime(Timestamp.newBuilder().setSeconds(dom.getStart()).build())
-        .setContestDuration(
-            Duration.newBuilder().setSeconds(dom.getEnd() - dom.getStart()).build())
-        .setScoreboardFreezeDuration(
-            Duration.newBuilder().setSeconds(dom.getEnd() - dom.getFreeze()).build())
-        .setPenaltyTime(PENALTY_TIME)
-        .build();
+        .setPenaltyTime(PENALTY_TIME);
+
+    if (dom.hasStart()) {
+      bob.setStartTime(Timestamp.newBuilder().setSeconds(dom.getStart().getValue()));
+    }
+    if (dom.hasStart() && dom.hasEnd()) {
+      bob.setContestDuration(Duration.newBuilder()
+          .setSeconds(dom.getEnd().getValue() - dom.getStart().getValue())
+          .build());
+    }
+    if (dom.hasFreeze() && dom.hasEnd()) {
+      bob.setScoreboardFreezeDuration(Duration.newBuilder()
+          .setSeconds(dom.getEnd().getValue() - dom.getFreeze().getValue())
+          .build());
+    }
+    return bob.build();
   }
 
   public static ClicsProto.JudgementType toClics(DomjudgeProto.JudgementType dom) {
@@ -129,7 +138,8 @@ public class ContestConverters {
         .setId("" + dom.getId())
         .setName("" + dom.getName())
         .setType("" + dom.getName())
-        .setHidden(dom.getSortOrder() > 0) // TODO: iffy.
+        // TODO: iffy.
+        .setHidden(dom.hasSortOrder() && dom.getSortOrder().getValue() > 0)
         .build();
   }
 
@@ -143,25 +153,33 @@ public class ContestConverters {
   }
 
   public static ClicsProto.Team toClics(DomjudgeProto.Team dom) {
-    return ClicsProto.Team.newBuilder()
+    ClicsProto.Team.Builder b = ClicsProto.Team.newBuilder()
         .setId("" + dom.getId())
         .setName(dom.getName())
-        .setOrganizationId("" + dom.getAffilId())
-        .addGroupIds("" + dom.getCategory())
-        .build();
+        .setOrganizationId("" + dom.getAffilId().getValue());
+    if (dom.hasCategory()) {
+      b.addGroupIds("" + dom.getCategory().getValue());
+    }
+    return b.build();
   }
 
   public static ClicsProto.Submission toClics(
       DomjudgeProto.Submission dom,
       DomjudgeProto.Contest contest) {
-    return ClicsProto.Submission.newBuilder()
+    ClicsProto.Submission.Builder b = ClicsProto.Submission.newBuilder()
         .setId("" + dom.getId())
         .setLanguageId(dom.getLanguage())
-        .setProblemId("" + dom.getProblem())
-        .setTeamId("" + dom.getTeam())
         .setTime(doubleToTimestamp(dom.getTime()))
-        .setContestTime(doubleToDuration(dom.getTime() - contest.getStart()))
-        .build();
+        .setContestTime(doubleToDuration(contest.hasStart()
+            ? dom.getTime() - contest.getStart().getValue()
+            : dom.getTime()));
+    if (dom.hasProblem()) {
+      b.setProblemId("" + dom.getProblem().getValue());
+    }
+    if (dom.hasTeam()) {
+      b.setTeamId("" + dom.getTeam().getValue());
+    }
+    return b.build();
   }
 
   public static ClicsProto.Judgement toClics(
@@ -185,9 +203,13 @@ public class ContestConverters {
         .setSubmissionId("" + dom.getSubmission())
         .setJudgementTypeId(type)
         .setStartTime(doubleToTimestamp(dom.getTime()))
-        .setStartContestTime(doubleToDuration(dom.getTime() - contest.getStart()))
+        .setStartContestTime(doubleToDuration(contest.hasStart()
+            ? dom.getTime() - contest.getStart().getValue()
+            : dom.getTime()))
         .setEndTime(doubleToTimestamp(dom.getTime()))
-        .setEndContestTime(doubleToDuration(dom.getTime() - contest.getStart()))
+        .setEndContestTime(doubleToDuration(contest.hasStart()
+            ? dom.getTime() - contest.getStart().getValue()
+            : dom.getTime()))
         .setMaxRunTime(0)
         .build();
   }
@@ -225,12 +247,14 @@ public class ContestConverters {
   public static ClicsProto.ScoreboardProblem toClics(
       DomjudgeProto.ScoreboardProblem sp,
       Map<String, ClicsProto.Problem> problemsByLabel) {
-    return ClicsProto.ScoreboardProblem.newBuilder()
+    ClicsProto.ScoreboardProblem.Builder bob =  ClicsProto.ScoreboardProblem.newBuilder()
         .setProblemId(problemsByLabel.get(sp.getLabel()).getId())
         .setNumJudged((int) sp.getNumJudged())
         .setNumPending((int) sp.getNumPending())
-        .setSolved(sp.getSolved())
-        .setTime(sp.getTime())
-        .build();
+        .setSolved(sp.getSolved());
+    if (sp.hasTime()) {
+        bob.setTime(sp.getTime().getValue());
+    }
+    return bob.build();
   }
 }
