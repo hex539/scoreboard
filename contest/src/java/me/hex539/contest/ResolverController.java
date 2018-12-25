@@ -262,13 +262,14 @@ public class ResolverController {
         }
       }
 
+      dispatcher.notifySubmission(submission);
+
       if (freezeTime != null) {
         final Duration intoFreeze = Timestamps.between(
             freezeTime,
             Timestamps.add(
                 Timestamp.getDefaultInstance(),
                 submission.getContestTime()));
-        dispatcher.notifySubmission(submission);
 
         if (intoFreeze.getSeconds() >= 0) {
           addPendingSubmission(submission);
