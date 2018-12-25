@@ -2,10 +2,10 @@ package me.hex539.resolver;
 
 import com.google.auto.value.AutoValue;
 
-import java.util.concurrent.TimeUnit;
-import java.util.Queue;
 import java.util.ArrayDeque;
-
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
 import edu.clics.proto.ClicsProto.*;
 
@@ -244,11 +244,16 @@ public class Renderer implements ResolverController.Observer {
     glColor3d(0.6, 0.6, 0.6);
     final String organizationId = team.getOrganizationId();
     if (organizationId != null && !organizationId.isEmpty()) {
-        font.drawText(
-            rowX - teamLabelWidth * 0.9,
-            rowY + cellMargin / 2.0,
-            (int) (cellHeight * 0.25),
-            model.getOrganization(organizationId).getName());
+        try {
+          font.drawText(
+              rowX - teamLabelWidth * 0.9,
+              rowY + cellMargin / 2.0,
+              (int) (cellHeight * 0.25),
+              model.getOrganization(organizationId).getName());
+        } catch (NoSuchElementException noSuchOrganization) {
+          // Team has an organisation but it's missing... FIXME, find out why some teams have
+          // organization=0 despite no such organization existing.
+        }
     }
     if (focused) {
       glColor3d(1.0, 1.0, 1.0);
