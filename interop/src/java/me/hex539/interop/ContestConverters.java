@@ -190,12 +190,14 @@ public class ContestConverters {
       type = "CE";
     } else {
       switch ((dom.getOutcome().toLowerCase() + " ").charAt(0)) {
-        case 'n':
         case 'c': type = "AC"; break;
-        case 'p':
-        case 'w': type = "WA"; break;
+        case 'm': type = "MLE"; break;
+        case 'n': type = "NO"; break;
+        case 'o': type = "OLE"; break;
+        case 'p': type = "PE"; break;
         case 't': type = "TLE"; break;
-         default: type = "RTE"; break;
+        case 'w': type = "WA"; break;
+        default: type = "RTE"; break;
       }
     }
     return ClicsProto.Judgement.newBuilder()
