@@ -82,8 +82,8 @@ public final class ApiDetective {
       if (response.code() == 200 && !response.isRedirect()) {
         System.err.println("Hit " + url);
 
-        // Check that a required non-null field exists.
-        if (!response.body().string().contains("\"duration\"")) {
+        // Check that contests is an array, not a map.
+        if (!response.body().string().trim().startsWith("[")) {
           return null;
         }
 
