@@ -146,8 +146,8 @@ public class ContestConverters {
     return ClicsProto.Team.newBuilder()
         .setId("" + dom.getId())
         .setName(dom.getName())
-        .setOrganizationId(dom.getAffilId() == 0 ? null : "" + dom.getAffilId())
-        .addGroupIds(dom.getCategory() == 0 ? null : "" + dom.getCategory())
+        .setOrganizationId("" + dom.getAffilId())
+        .addGroupIds("" + dom.getCategory())
         .build();
   }
 
