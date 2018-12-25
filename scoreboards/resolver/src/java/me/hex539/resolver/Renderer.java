@@ -76,11 +76,12 @@ public class Renderer implements ResolverController.Observer {
       font.setVideoSize(screenWidth, screenHeight);
     }
 
-    teamLabelWidth = screenWidth / 3.0;
 
-    cellWidth = (int) ((screenWidth - teamLabelWidth - cellMargin * 4) / Math.max(4, model.getProblems().size())) * 0.9;
+    cellWidth = (int) ((screenWidth * 0.65 - cellMargin * 4) / Math.max(6, model.getProblems().size())) * 0.9;
     cellHeight = cellWidth / (1.0 + Math.sqrt(5));
     cellMargin = cellWidth / 10;
+
+    teamLabelWidth = screenWidth - (cellWidth + cellMargin) * model.getProblems().size();
 
     rowWidth = (cellWidth + cellMargin) * model.getProblems().size();
     rowHeight = cellHeight + cellMargin;
