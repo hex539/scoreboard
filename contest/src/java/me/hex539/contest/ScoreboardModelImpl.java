@@ -231,6 +231,11 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   @Override
+  public Collection<JudgementType> getJudgementTypes() {
+    return getClics().getJudgementTypes().values();
+  }
+
+  @Override
   public JudgementType getJudgementType(String id) {
     try {
       return getClics().getJudgementTypesOrThrow(id);

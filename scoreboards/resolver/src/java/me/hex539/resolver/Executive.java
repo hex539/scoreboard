@@ -1,10 +1,13 @@
 package me.hex539.resolver;
 
-
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.Predicate;
 
 import edu.clics.proto.ClicsProto.*;
 
@@ -33,28 +36,39 @@ public class Executive {
       return null;
     });
 
-    final Set<String> groups = invocation.getGroups() != null
-        ? new HashSet<>(Arrays.asList(invocation.getGroups().split(",")))
-        : null;
-    final ClicsContest entireContest = new ContestDownloader(source).fetch();
-    final ScoreboardModel reference =
-        ScoreboardModelImpl.newBuilder(entireContest)
-            .filterGroups(g -> groups != null
-                ? groups.contains(g.getName()) || groups.contains(g.getId())
-                : !g.getHidden())
+    final CompletableFuture<ByteBuffer> fontData = CompletableFuture.supplyAsync(
+        () -> FontRenderer.mapResource(FontRenderer.FONT_UNIFONT));
+
+    final CompletableFuture<ClicsContest> entireContest =
+        CompletableFuture.supplyAsync(() -> {
+          try {
+            return new ContestDownloader(source).fetch();
+          } catch (Exception e) {
+            throw new CompletionException(e);
+          }
+        });
+
+    final CompletableFuture<ScoreboardModel> reference = entireContest
+        .thenApplyAsync(ScoreboardModelImpl::newBuilder)
+        .thenApplyAsync(b -> b
             .filterTooLateSubmissions()
-            .build();
-    final ScoreboardModelImpl model =
-        ScoreboardModelImpl.newBuilder(entireContest, reference)
+            .filterGroups(getGroupFilter(invocation))
+            .build()
+            .immutable());
+
+    final CompletableFuture<ScoreboardModelImpl> model = entireContest
+        .thenCombineAsync(reference, ScoreboardModelImpl::newBuilder)
+        .thenApplyAsync(b -> b
             .withEmptyScoreboard()
             .filterSubmissions(s -> false)
-            .build();
+            .build());
 
-    ResolverController resolver = new ResolverController(entireContest, reference);
-    resolver.addObserver(model);
+    final CompletableFuture<ResolverController> resolver = entireContest
+        .thenCombineAsync(reference, ResolverController::new)
+        .thenCombineAsync(model, ResolverController::addObserver);
 
-    new ResolverWindow(resolver, model).run();
-    resolver.drain();
+    new ResolverWindow(resolver, model, fontData).run();
+    System.exit(0);
   }
 
   private static Optional<ContestConfig.Source> getSource(Invocation invocation) {
@@ -80,5 +94,14 @@ public class Executive {
       System.err.println("Need one of --url or --path to load a contest.");
       return Optional.empty();
     }
+  }
+
+  private static Predicate<Group> getGroupFilter(Invocation invocation) {
+    final Set<String> groups = invocation.getGroups() != null
+        ? new HashSet<>(Arrays.asList(invocation.getGroups().split(",")))
+        : null;
+    return groups != null
+        ? g -> groups.contains(g.getName()) || groups.contains(g.getId())
+        : g -> !g.getHidden();
   }
 }

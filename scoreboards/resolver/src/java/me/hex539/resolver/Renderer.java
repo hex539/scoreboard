@@ -2,9 +2,11 @@ package me.hex539.resolver;
 
 import com.google.auto.value.AutoValue;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import edu.clics.proto.ClicsProto.*;
@@ -54,11 +56,11 @@ public class Renderer implements ResolverController.Observer {
   private int finalisedRank;
   private boolean dirtyParticles;
 
-  public Renderer(ScoreboardModel model) {
+  public Renderer(ScoreboardModel model, CompletableFuture<? extends ByteBuffer> ttfData) {
     this.model = model;
 
     this.particles = ENABLE_PARTICLES ? new Particles() : null;
-    this.font = new FontRenderer(model);
+    this.font = new FontRenderer(model, ttfData);
 
     focusedTeam = null;
     focusedProblem = null;

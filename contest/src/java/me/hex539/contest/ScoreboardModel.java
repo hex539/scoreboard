@@ -8,7 +8,6 @@ import java.util.NoSuchElementException;
 import edu.clics.proto.ClicsProto.*;
 
 public interface ScoreboardModel extends Judge, Teams, Problems {
-
   public interface Observer {
     default void setModel(ScoreboardModel model) {}
     default void onProblemSubmitted(Team team, Submission submission) {}
@@ -44,6 +43,10 @@ public interface ScoreboardModel extends Judge, Teams, Problems {
       throw (NoSuchElementException) fromOrElseThrow;
     }
   }
+
+  default ScoreboardModel immutable() {
+    return ImmutableScoreboardModel.of(this);
+  }
 }
 
 interface Teams {
@@ -68,10 +71,14 @@ interface Teams {
 }
 
 interface Judge {
-  default  JudgementType getJudgementType(String id) {
-    throw new UnsupportedOperationException();
+  default Collection<JudgementType> getJudgementTypes() {
+    return Collections.emptySet();
   }
-  
+
+  default JudgementType getJudgementType(String id) {
+    return getJudgementTypes().stream().filter(x -> id.equals(x.getId())).findFirst().get();
+  }
+
   default List<Judgement> getJudgements() {
     return Collections.emptyList();
   }

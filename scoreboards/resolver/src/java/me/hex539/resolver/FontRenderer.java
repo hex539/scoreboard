@@ -13,6 +13,7 @@ import java.nio.IntBuffer;
 import java.nio.FloatBuffer;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
 
 import edu.clics.proto.ClicsProto.*;
 
@@ -39,6 +40,8 @@ import static org.lwjgl.stb.STBTruetype.*;
 import static org.lwjgl.system.MemoryStack.*;
 
 public class FontRenderer {
+  public static final String FONT_SYMBOLA = "/resources/fonts/Symbola.ttf";
+  public static final String FONT_UNIFONT = "/resources/fonts/unifont-11.0.03.ttf";
 
   private static final int WIDTH = 512 * 8;
   private static final int HEIGHT = 512 * 8;
@@ -67,36 +70,12 @@ public class FontRenderer {
   private double screenWidth = 1;
   private double screenHeight = 1;
 
-  private int indexOfGlyph(int codePoint) {
-    int l = 0, r = allCodePoints.size();
-    while (l + 1 < r) {
-      int x = (l + r) / 2;
-      if (allCodePoints.get(x) <= codePoint) {
-        l = x;
-      } else {
-        r = x;
-      }
+  public FontRenderer(ScoreboardModel model, CompletableFuture<? extends ByteBuffer> ttfFont) {
+    try {
+      ttfData[0] = ttfFont.get();
+    } catch (Exception e) {
+      throw new Error("Failed to load font", e);
     }
-    return l;
-  }
-
-  private static void addString(List<Integer> list, String str) {
-    for (int i = 0, to = str.length(); i < to; ) {
-      char c1 = str.charAt(i);
-      if (Character.isHighSurrogate(c1) && i + 1 < to) {
-        char c2 = str.charAt(i + 1);
-        if (Character.isLowSurrogate(c2)) {
-          list.add(Character.toCodePoint(c1, c2));
-          i += 2;
-        }
-      }
-      list.add((int) c1);
-      i += 1;
-    }
-  }
-
-  public FontRenderer(ScoreboardModel model) {
-    ttfData[0] = mapResource("/resources/fonts/unifont-11.0.03.ttf");
 
     supplyCodePoints(model, allCodePoints);
 
@@ -134,6 +113,21 @@ public class FontRenderer {
         into.add(i);
         last = i;
       }
+    }
+  }
+
+  private static void addString(List<Integer> list, String str) {
+    for (int i = 0, to = str.length(); i < to; ) {
+      char c1 = str.charAt(i);
+      if (Character.isHighSurrogate(c1) && i + 1 < to) {
+        char c2 = str.charAt(i + 1);
+        if (Character.isLowSurrogate(c2)) {
+          list.add(Character.toCodePoint(c1, c2));
+          i += 2;
+        }
+      }
+      list.add((int) c1);
+      i += 1;
     }
   }
 
@@ -274,8 +268,21 @@ public class FontRenderer {
     return 1;
   }
 
-  private ByteBuffer mapResource(String location) {
-    try (final InputStream is = getClass().getResourceAsStream(location)) {
+  private int indexOfGlyph(int codePoint) {
+    int l = 0, r = allCodePoints.size();
+    while (l + 1 < r) {
+      int x = (l + r) / 2;
+      if (allCodePoints.get(x) <= codePoint) {
+        l = x;
+      } else {
+        r = x;
+      }
+    }
+    return l;
+  }
+
+  public static ByteBuffer mapResource(String location) {
+    try (final InputStream is = FontRenderer.class.getResourceAsStream(location)) {
       if (is == null) {
         throw new Error("Resource does not exist: " + location);
       }
@@ -294,7 +301,7 @@ public class FontRenderer {
    * <p>TODO (2019): replace with is.readAllBytes() again once OpenJDK 11 is widely enough
    * used to not cause issues for people trying to quickly compile without upgrading java.
    */
-  private byte[] readAllBytes(InputStream is) throws IOException {
+  private static byte[] readAllBytes(InputStream is) throws IOException {
     final byte[] data = new byte[is.available()];
     for (int i = 0; i < data.length;) {
       int l = is.read(data, i, data.length - i);

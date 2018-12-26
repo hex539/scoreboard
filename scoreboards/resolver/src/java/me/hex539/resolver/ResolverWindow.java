@@ -1,8 +1,10 @@
 package me.hex539.resolver;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
 
 import edu.clics.proto.ClicsProto.*;
 
@@ -33,11 +35,14 @@ public class ResolverWindow extends Thread {
   private final Semaphore exit = new Semaphore(0);
   private final Semaphore advance = new Semaphore(0);
 
-  public ResolverWindow(ResolverController resolver, ScoreboardModel model) {
-    this.resolver = resolver;
-    this.model = model;
-    this.controller = new Controller(resolver);
-    this.renderer = new Renderer(model);
+  public ResolverWindow(
+      CompletableFuture<? extends ResolverController> resolver,
+      CompletableFuture<? extends ScoreboardModel> model,
+      CompletableFuture<? extends ByteBuffer> ttfData) throws Exception {
+    this.resolver = resolver.get();
+    this.model = model.get();
+    this.controller = new Controller(this.resolver);
+    this.renderer = new Renderer(this.model, ttfData);
 
     this.resolver.addObserver(this.renderer);
   }
