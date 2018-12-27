@@ -1,7 +1,6 @@
 package org.domjudge.api;
 
 import static com.google.common.truth.Truth.*;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.IOException;
 

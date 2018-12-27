@@ -7,7 +7,7 @@ final class SplayTree<T> {
   SplayTree<T> l = null;
   SplayTree<T> r = null;
   SplayTree<T> p = null;
-  public final T key;
+  public T key;
 
   public SplayTree(T key) {
     this.key = key;

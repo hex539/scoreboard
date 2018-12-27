@@ -20,6 +20,7 @@ public class JudgementDispatcher {
   }
 
   public final Set<ScoreboardModel.Observer> observers = new HashSet<>();
+  private final boolean showCompileErrors;
   private final ScoreboardModel model;
   private final Comparators.RowComparator rowComparator;
   private final Logger logger = (DEBUG ? System.err::println : s -> {});
@@ -29,13 +30,21 @@ public class JudgementDispatcher {
   private final Map<String, Map<Integer, List<Judgement>>> teamJudgements = new HashMap<>();
 
   public JudgementDispatcher(final ScoreboardModel model) {
-    this(model, new Comparators.RowComparator(model));
+    this(model, false);
   }
 
   public JudgementDispatcher(
       final ScoreboardModel model,
+      final boolean showCompileErrors) {
+    this(model, showCompileErrors, new Comparators.RowComparator(model));
+  }
+
+  public JudgementDispatcher(
+      final ScoreboardModel model,
+      final boolean showCompileErrors,
       final Comparators.RowComparator rowComparator) {
     this.model = model;
+    this.showCompileErrors = showCompileErrors;
     this.rowComparator = rowComparator;
 
     for (Submission s : model.getSubmissions()) {
@@ -77,7 +86,6 @@ public class JudgementDispatcher {
     observers.forEach(x -> {
       x.onProblemSubmitted(team, submission);
       x.onProblemScoreChanged(team, attempts);
-      x.onScoreChanged(team, score);
     });
     return true;
   }
@@ -149,12 +157,19 @@ public class JudgementDispatcher {
                 + (newPenaltyCount[0] - oldPenaltyCount[0]) * model.getContest().getPenaltyTime())
             .build();
 
-    final int oldRank = (oldScore != newScore) ? (int) computeRank(team) : 0;
+    final int oldRank;
+    if (!newScore.equals(oldScore)) {
+      oldRank = (int) computeRank(team);
+    } else {
+      oldRank = 0;
+    }
+
     observers.forEach(x -> {
       x.onSubmissionJudged(team, j);
       x.onProblemScoreChanged(team, attempts);
     });
-    if (oldScore != newScore) {
+
+    if (!newScore.equals(oldScore)) {
       observers.forEach(x -> x.onScoreChanged(team, newScore));
 
       final int newRank = (int) computeRank(team);
@@ -202,7 +217,7 @@ public class JudgementDispatcher {
       return ScoreboardProblem.newBuilder()
           .setProblemId(problem.getId())
           .setNumJudged(penaltyCount + 1)
-          .setNumPending(submissions.size() - verdicts.size())
+          .setNumPending(0)
           .setSolved(true)
           .setTime(
               model.getSubmission(solvedAt.getSubmissionId()).getContestTime().getSeconds() / 60)
@@ -214,7 +229,7 @@ public class JudgementDispatcher {
       penalty[0] = 0;
       return ScoreboardProblem.newBuilder()
           .setProblemId(problem.getId())
-          .setNumJudged(attemptsToSolve == 0 ? 0 : Math.max(1, penaltyCount))
+          .setNumJudged(attemptsToSolve == 0 ? 0 : Math.max(showCompileErrors ? 1 : 0, penaltyCount))
           .setNumPending(submissions.size() - verdicts.size())
           .setSolved(false)
           .build();

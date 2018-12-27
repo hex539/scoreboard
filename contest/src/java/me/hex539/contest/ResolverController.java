@@ -122,10 +122,14 @@ public class ResolverController {
   }
 
   public ResolverController(ClicsContest contest, ScoreboardModel sourceModel) {
-    this(contest, sourceModel, DEFAULT_BUFFER_AHEAD);
+    this(contest, sourceModel, false);
   }
 
-  public ResolverController(ClicsContest contest, ScoreboardModel sourceModel, int bufferAhead) {
+  public ResolverController(ClicsContest contest, ScoreboardModel sourceModel, boolean showCompileErrors) {
+    this(contest, sourceModel, showCompileErrors, DEFAULT_BUFFER_AHEAD);
+  }
+
+  public ResolverController(ClicsContest contest, ScoreboardModel sourceModel, boolean showCompileErrors, int bufferAhead) {
     this.contest = MissingJudgements.ensureJudgements(contest);
     this.model =
       ScoreboardModelImpl.newBuilder(contest, sourceModel)
@@ -133,7 +137,7 @@ public class ResolverController {
         .filterSubmissions(s -> false)
         .build();
 
-    this.dispatcher = new JudgementDispatcher(model, new Comparators.RowComparator(model));
+    this.dispatcher = new JudgementDispatcher(model, showCompileErrors);
     this.dispatcher.observers.add(this.model);
     this.dispatcher.observers.add(this.proxyObserver);
 

@@ -3,7 +3,7 @@ package(default_visibility = ["//visibility:private"])
 java_library(
   name = "utils",
   srcs = glob([
-    "utils/src/java/**/*.java",
+    "me/hex539/testing/utils/*.java",
   ]),
   deps = [
     "//contest",
@@ -15,8 +15,8 @@ java_test(
   size="small",
   test_class = "org.domjudge.api.ModelObserverTest",
   srcs = glob([
-    "domjudge/src/java/org/domjudge/api/ModelObserverTest.java",
-    "domjudge/src/java/org/domjudge/api/SubmitInfo.java",
+    "org/domjudge/api/ModelObserverTest.java",
+    "org/domjudge/api/SubmitInfo.java",
   ]),
   deps = [
     ":utils",
@@ -31,7 +31,7 @@ java_test(
   size="small",
   test_class = "org.domjudge.api.RestTest",
   srcs = glob([
-    "domjudge/src/java/org/domjudge/api/RestTest.java",
+    "org/domjudge/api/RestTest.java",
   ]),
   deps = [
     ":utils",
@@ -49,7 +49,7 @@ java_test(
   size="small",
   test_class = "edu.clics.api.RestTest",
   srcs = glob([
-    "clics/src/java/edu/clics/api/RestTest.java",
+    "edu/clics/api/RestTest.java",
   ]),
   deps = [
     "//api/clics",
@@ -68,10 +68,28 @@ java_test(
   size="small",
   test_class = "me.hex539.contest.DataStructuresTest",
   srcs = glob([
-    "contest/src/java/me/hex539/contest/DataStructuresTest.java",
+    "me/hex539/contest/DataStructuresTest.java",
   ]),
   deps = [
     "//contest",
+    "@mockito//jar",
+    "@truth//jar",
+  ],
+)
+
+java_test(
+  name = "contest_resolver",
+  size="small",
+  test_class = "me.hex539.contest.ResolverTest",
+  srcs = glob([
+    "me/hex539/contest/ResolverTest.java",
+  ]),
+  resources = glob([
+    "resources/**",
+  ]),
+  deps = [
+    "//contest",
+    "//api/clics/proto:java",
     "@mockito//jar",
     "@truth//jar",
   ],

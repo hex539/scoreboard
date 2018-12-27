@@ -32,7 +32,7 @@ class Comparators {
     }
   }
 
-  public static class RowComparator implements Comparator<ScoreboardRow> {
+  public static class RowComparator implements Comparator<ScoreboardRowOrBuilder> {
     private final Teams contest;
     private final TeamComparator teamComparator;
 
@@ -66,7 +66,7 @@ class Comparators {
      * possibly even its own filtered scoreboard.
      **/
     @Override
-    public int compare(ScoreboardRow row1, ScoreboardRow row2) {
+    public int compare(ScoreboardRowOrBuilder row1, ScoreboardRowOrBuilder row2) {
       final Team team1 = contest.getTeam(row1.getTeamId());
       final Team team2 = contest.getTeam(row2.getTeamId());
 
@@ -101,7 +101,7 @@ class Comparators {
       return teamComparator.compare(team1, team2);
     }
 
-    private static long[] getSolvedTimes(ScoreboardRow row) {
+    private static long[] getSolvedTimes(ScoreboardRowOrBuilder row) {
       return row.getProblemsList().stream()
           .filter(ScoreboardProblem::getSolved)
           .mapToLong(ScoreboardProblem::getTime)
