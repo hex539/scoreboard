@@ -122,7 +122,7 @@ public class ResolverController {
   }
 
   public ResolverController(ClicsContest contest, ScoreboardModel sourceModel) {
-    this(contest, sourceModel, false);
+    this(contest, sourceModel, true);
   }
 
   public ResolverController(ClicsContest contest, ScoreboardModel sourceModel, boolean showCompileErrors) {

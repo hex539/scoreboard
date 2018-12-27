@@ -30,7 +30,7 @@ public class JudgementDispatcher {
   private final Map<String, Map<Integer, List<Judgement>>> teamJudgements = new HashMap<>();
 
   public JudgementDispatcher(final ScoreboardModel model) {
-    this(model, false);
+    this(model, true);
   }
 
   public JudgementDispatcher(
