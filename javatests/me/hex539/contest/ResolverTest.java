@@ -16,6 +16,54 @@ import org.junit.Test;
 
 public class ResolverTest {
   @Test
+  public void testResolveNwerc2007() throws Exception {
+    ClicsContest entireContest =
+        new ContestDownloader(getClass().getResourceAsStream("/resources/contests/nwerc2007.pb")).fetch();
+
+    // NWERC 2007 had a penalty for compile-error, but the demoweb api fails to say so.
+    // Fix it so that our resolution matches the real one.
+    entireContest = entireContest.toBuilder()
+        .putJudgementTypes("CE", entireContest.getJudgementTypesOrThrow("CE").toBuilder()
+            .setPenalty(true)
+            .build())
+        .build();
+
+    final ScoreboardModel reference =
+        ScoreboardModelImpl.newBuilder(entireContest)
+            .filterGroups(g -> "1".equals(g.getId()))
+            .filterTooLateSubmissions()
+            .build()
+            .immutable();
+
+    final ScoreboardModelImpl model =
+        ScoreboardModelImpl.newBuilder(entireContest, reference)
+            .withEmptyScoreboard()
+            .filterSubmissions(s -> false)
+            .build();
+
+    ResolverController resolver = new ResolverController(entireContest, reference, false)
+        .addObserver(model);
+
+    assertThat(resolver.advance()).isEqualTo(Resolution.STARTED);
+    Observer observer = mock(Observer.class);
+    resolver.addObserver(observer);
+    resolver.drain();
+
+    verify(observer, never()).onProblemSubmitted(any(), any());
+    verify(observer, times(215)).onProblemScoreChanged(any(), any());
+    verify(observer, times(29)).onScoreChanged(any(), any());
+    verify(observer, times(28)).onTeamRankChanged(any(), anyInt(), anyInt());
+    verify(observer, times(51)).onTeamRankFinalised(any(), anyInt());
+
+    assertThat(model.getRows().size()).isEqualTo(51);
+    for (int i = 0; i < 51; i++) {
+      assertThat(model.getRow(i)).isEqualTo(reference.getRow(i));
+      assertThat(model.getRow(i)).isEqualTo(
+          entireContest.getScoreboard(i).toBuilder().setRank(i + 1).build());
+    }
+  }
+
+  @Test
   public void testResolveNwerc2017() throws Exception {
     final ClicsContest entireContest =
         new ContestDownloader(getClass().getResourceAsStream("/resources/contests/nwerc2017.pb")).fetch();
