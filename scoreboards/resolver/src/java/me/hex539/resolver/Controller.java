@@ -1,24 +1,12 @@
 package me.hex539.resolver;
 
-
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-
 import edu.clics.proto.ClicsProto.*;
 
 import me.hex539.contest.ResolverController;
-
-
-import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL14.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.system.MemoryUtil.*;
 
 public class Controller {
   private final ResolverController resolver;

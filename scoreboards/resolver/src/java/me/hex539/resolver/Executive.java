@@ -19,13 +19,6 @@ import me.hex539.contest.ScoreboardModelImpl;
 import me.hex539.contest.ResolverController;
 
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL14.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.system.MemoryUtil.*;
 
 public class Executive {
   public static void main(String[] args) throws Exception {

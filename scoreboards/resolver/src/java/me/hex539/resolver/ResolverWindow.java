@@ -1,5 +1,10 @@
 package me.hex539.resolver;
 
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.system.MemoryUtil.*;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.concurrent.Semaphore;
@@ -12,15 +17,6 @@ import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;
 
 import org.lwjgl.glfw.GLFWVidMode;
-
-import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.*;
-import static org.lwjgl.opengl.GL14.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.system.MemoryUtil.*;
 
 public class ResolverWindow extends Thread {
   private static final boolean PRINT_FPS = false;
