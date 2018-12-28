@@ -7,7 +7,7 @@ server implementing the CLICS API spec.
 
 ![Screenshot of the scoreboard for NWERC 2017](./docs/images/android-resolver.png)
 
-To replay the final hour of an example contest try running:
+To replay the final hour of an example contest in a console try running:
 
 ```
 bazel run scoreboards/console -- \
@@ -19,6 +19,10 @@ bazel run scoreboards/console -- \
 More information about how to download contests for later, as well as the other
 build targets for Android and desktop apps, are available in each of the
 directories under scoreboards/\*.
+
+* [Desktop client (scoreboards/resolver)](./scoreboards/resolver)
+* [Console client (scoreboards/console)](./scoreboards/console)
+* [Android client (scoreboards/android)](./scoreboards/android)
 
 The code is organised into a self-contained library and can be used without much
 in the way of boilerplate for any kind of scripting task involving contests. For
