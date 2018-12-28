@@ -23,24 +23,20 @@ public class Controller {
 
   public void onAdvance() {
     events.clear();
-    if (canAdvance.availablePermits() == 0) {
-      canAdvance.release();
-    }
+    canAdvance.release();
   }
 
   public boolean mainLoop(long timeNow) {
     boolean active = false;
-    while (true) {
-      Event event = events.peek();
-      if (event != null && event.runAt <= timeNow) {
-        events.poll().run.run();
-        active = true;
-      } else {
-        break;
+    while (canAdvance.tryAcquire()) {
+      active = true;
+      while (!advance()) {
+        continue;
       }
     }
-    while (canAdvance.tryAcquire()) {
-      advance();
+    for (Event event; (event = events.peek()) != null && event.runAt <= timeNow;) {
+      events.poll().run.run();
+      active = true;
     }
     return active || !events.isEmpty();
   }
@@ -49,27 +45,29 @@ public class Controller {
     events.offer(new Event(System.nanoTime() + runIn, run));
   }
 
-  private void advance() {
+  private boolean advance() {
     switch (resolver.advance()) {
       case FAILED_PROBLEM:
         post(TimeUnit.MILLISECONDS.toNanos(400), this::advance);
         break;
       case SOLVED_PROBLEM:
-        post(TimeUnit.MILLISECONDS.toNanos(1400), this::advance);
+        post(TimeUnit.MILLISECONDS.toNanos(800), this::advance);
         break;
       case FOCUSED_TEAM:
-        post(TimeUnit.MILLISECONDS.toNanos(0), this::advance);
+        post(TimeUnit.MILLISECONDS.toNanos(200), this::advance);
         break;
       case FOCUSED_PROBLEM:
-        post(TimeUnit.MILLISECONDS.toNanos(600), this::advance);
+        post(TimeUnit.MILLISECONDS.toNanos(1200), this::advance);
         break;
       case FINALISED_RANK:
+        return false;
       case FINISHED:
         break;
       default:
-        post(TimeUnit.MILLISECONDS.toNanos(40), this::advance);
+        post(TimeUnit.MILLISECONDS.toNanos(0), this::advance);
         break;
     }
+    return true;
   }
 
   private class Event implements Comparable<Event> {
