@@ -20,15 +20,21 @@ public class Particles {
 
   private double screenWidth = 1;
   private double screenHeight = 1;
+
   private double offsetX = 0;
   private double offsetY = 0;
+
+  /** Acceleration due to gravity, in pixels per second². */
   private double g = -1;
+
+  /** Draw radius of one particle. */
+  private double r = 1;
+
+  /** Time of last update (for mechanics calculations). */
   private long t0 = 0;
 
   public void setVideoSize(double width, double height) {
-    double factor = (height / screenHeight);
-    g = -screenHeight * 40.0;
-
+    final double factor = (width / screenWidth);
     for (Particle p : particles) {
       p.x *= factor;
       p.y *= factor;
@@ -38,6 +44,9 @@ public class Particles {
 
     screenWidth = width;
     screenHeight = height;
+
+    g = -screenWidth / 30.0;
+    r = screenWidth * (3.0 / 2.0) / 1920.0;
   }
 
   public void setOffset(double x, double y) {
@@ -45,13 +54,15 @@ public class Particles {
     offsetY = y;
   }
 
-  public void add(double x, double y, double vx, double vy, float r, float g, float b) {
+  public void add(double x, double y, double a, double vx, double vy, double va, float r, float g, float b) {
     Particle p = new Particle();
     p.expires = t0 + (long) (TimeUnit.SECONDS.toNanos(1) * (Math.random() + 0.5) * 0.4);
     p.x = x - offsetX;
     p.y = y - offsetY;
+    p.a = a;
     p.vx = vx;
     p.vy = vy;
+    p.va = va;
     p.r = r;
     p.g = g;
     p.b = b;
@@ -65,6 +76,7 @@ public class Particles {
     int n = particles.size();
     for (int i = 0; i < particles.size(); i++) {
       Particle p = particles.get(i);
+      p.a += p.va;
       p.x += p.vx * step;
       p.y += (p.vy + g / 2.0) * step;
       p.vy += g * step;
@@ -83,20 +95,40 @@ public class Particles {
   }
 
   public void draw() {
-    glBegin(GL_POINTS);
-    for (Particle i : particles) {
-      glColor3f(i.r, i.g, i.b);
-      glVertex2d(i.x + offsetX, i.y + offsetY);
+    if (particles.isEmpty()) {
+      return;
     }
-    glEnd();
+
+    if (r > 0.75) {
+      glBegin(GL_QUADS);
+      for (Particle i : particles) {
+        glColor3f(i.r, i.g, i.b);
+        final double ca = Math.cos(i.a);
+        final double sa = Math.sin(i.a);
+        glVertex2d(i.x + offsetX + r*ca + r*sa, i.y + offsetY - r*sa + r*ca);
+        glVertex2d(i.x + offsetX + r*ca - r*sa, i.y + offsetY - r*sa - r*ca);
+        glVertex2d(i.x + offsetX - r*ca - r*sa, i.y + offsetY + r*sa - r*ca);
+        glVertex2d(i.x + offsetX - r*ca + r*sa, i.y + offsetY + r*sa + r*ca);
+      }
+      glEnd();
+    } else  {
+      glBegin(GL_POINTS);
+      for (Particle i : particles) {
+        glColor3f(i.r, i.g, i.b);
+        glVertex2d(i.x + offsetX, i.y + offsetY);
+      }
+      glEnd();
+    }
   }
 
   private static class Particle {
     public long expires;
     public double x;
     public double y;
+    public double a;
     public double vx;
     public double vy;
+    public double va;
     public float r;
     public float g;
     public float b;
