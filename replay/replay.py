@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-import sys
 import datetime
 import isodate
+import json
+import sys
+import time
 
 from argparse import ArgumentParser
 from api.clics.proto.clics_v1_pb2 import *
-from flask import Flask, request, abort, render_template
+from flask import Flask, Response, request, abort, render_template
 from flask_restful import Resource, Api
 from google.protobuf import text_format, json_format, descriptor
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -34,6 +36,7 @@ arg_parser = ArgumentParser(description='Replay a contest from its API snapshot'
 arg_parser.add_argument('--path', type=str)
 arg_parser.add_argument('--groups', metavar='<group>', type=str, nargs='+', default=[])
 arg_parser.add_argument('--offset', type=str, default='PT0H0M0S')
+arg_parser.add_argument('--time_accel', type=int, default=1)
 arg_parser.add_argument('--textformat', action='store_true')
 args = arg_parser.parse_args()
 
@@ -48,11 +51,37 @@ with open(path, 'rb') as f:
   else:
     clics.ParseFromString(f.read())
 
+beginning_of_time = Timestamp(); beginning_of_time.GetCurrentTime()
+time_diff = (beginning_of_time.ToDatetime() - clics.contest.start_time.ToDatetime()) - time_since_start
+
 def time_now():
   t = Timestamp()
   t.GetCurrentTime()
+  if args.time_accel <> 1:
+    t.FromNanoseconds(0 +
+         (10**9) *              beginning_of_time.seconds            + beginning_of_time.nanos +
+        ((10**9) * (t.seconds - beginning_of_time.seconds) + t.nanos - beginning_of_time.nanos) * args.time_accel)
   return t
-time_diff = (time_now().ToDatetime() - clics.contest.start_time.ToDatetime()) - time_since_start
+
+def get_time_of(x):
+  for abs_attr in ('time', 'end_time', 'start_time'):
+    if hasattr(x, abs_attr):
+      return getattr(x, abs_attr)
+    elif type(x) is dict and abs_attr in x:
+      return x[abs_attr]
+  return None
+
+def get_nanos_of(x):
+  x = get_time_of(x)
+  if x is not None:
+    x = x.seconds * 10**9 + x.nanos
+  return x
+
+def already_happened(t_now, x):
+  t_then = get_time_of(x)
+  if t_then:
+    return t_then.seconds <= t_now.seconds
+  return True
 
 def fix_times(x):
   if hasattr(x, 'DESCRIPTOR') and x.DESCRIPTOR.full_name == 'google.protobuf.Timestamp':
@@ -74,30 +103,24 @@ def fix_times(x):
 
 fix_times(clics)
 
-def time_now():
-  t = Timestamp()
-  t.GetCurrentTime()
-  return t
-
-def already_happened(t_now, x):
-  for abs_attr in ('time', 'start_time', 'end_time'):
-    if hasattr(x, abs_attr):
-      if getattr(x, abs_attr).seconds > t_now.seconds:
-        return False
-  return True
-
 ############################
 
 app = Flask(__name__)
+app.url_map.strict_slashes = False
+
 api = Api(app)
 
 def try_sort(item):
   if hasattr(item, 'ordinal'):
     return int(item.ordinal)
+  if hasattr(item, 'end_time'):
+    return item.end_time.ToNanoseconds()
   if hasattr(item, 'start_time'):
     return item.start_time.ToNanoseconds()
   if hasattr(item, 'time'):
     return item.time.ToNanoseconds()
+  if hasattr(item, 'contest_time'):
+    return item.contest_time.ToNanoseconds()
   if hasattr(item, 'name'):
     return item.name.upper()
   if hasattr(item, 'id'):
@@ -113,7 +136,7 @@ def list_endpoint(name, l):
         t_now = time_now()
         return [
             json_format.MessageToDict(l[z]) for z in
-            sorted([y for y in l if already_happened(t_now, l[y])], key = try_sort)]
+            sorted([y for y in l if already_happened(t_now, l[y])], key = lambda y: try_sort(l[y]))]
 
   class OneOf(Resource):
     def get(self, cid, iid):
@@ -129,28 +152,22 @@ def list_endpoint(name, l):
   AllOf.__name__ += '_' + name
   OneOf.__name__ += '_' + name
 
-  api.add_resource(AllOf, '/contests/<string:cid>/%s/' % (name)) 
-  api.add_resource(OneOf, '/contests/<string:cid>/%s/<string:iid>/' % (name)) 
+  api.add_resource(AllOf, '/contests/<string:cid>/%s/' % (name))
+  api.add_resource(OneOf, '/contests/<string:cid>/%s/<string:iid>/' % (name))
 
 ############################
 
 def get_problems(t_now):
-  return [
-      json_format.MessageToDict(z) for z in
-      sorted([clics.problems[y] for y in clics.problems
-          if already_happened(t_now, clics.problems[y])], key=try_sort)]
+  return sorted([clics.problems[y] for y in clics.problems
+          if already_happened(t_now, clics.problems[y])], key=try_sort)
 
 def get_submissions(t_now):
-  return [
-      json_format.MessageToDict(z) for z in
-      sorted([clics.submissions[y] for y in clics.submissions
-          if already_happened(t_now, clics.submissions[y])], key=try_sort)]
+  return sorted([clics.submissions[y] for y in clics.submissions
+          if already_happened(t_now, clics.submissions[y])], key=try_sort)
 
 def get_judgements(t_now):
-  return [
-      json_format.MessageToDict(z) for z in
-      sorted([clics.judgements[y] for y in clics.judgements
-          if already_happened(t_now, clics.judgements[y])], key=try_sort)]
+  return sorted([clics.judgements[y] for y in clics.judgements
+          if already_happened(t_now, clics.judgements[y])], key=try_sort)
 
 def get_scoreboard(cid, t_now=None, incl_first=False):
   if clics.contest.id <> cid:
@@ -162,9 +179,9 @@ def get_scoreboard(cid, t_now=None, incl_first=False):
     first_solvers = set()
     problems_solved = set()
 
-    jugs = get_judgements(t_now)
-    subs = get_submissions(t_now)
-    probs = get_problems(t_now)
+    jugs = map(json_format.MessageToDict, get_judgements(t_now))
+    subs = map(json_format.MessageToDict, get_submissions(t_now))
+    probs = map(json_format.MessageToDict, get_problems(t_now))
     jug_map = dict()
     for jug in [x for x in jugs if 'judgement_type_id' in x]:
       jug_map[jug['submission_id']] = jug['id']
@@ -254,6 +271,43 @@ def get_scoreboard(cid, t_now=None, incl_first=False):
             p['solved_first'] = True
     return res
 
+def generate_eventfeed():
+  end_time = Timestamp()
+  end_time.FromNanoseconds(
+      clics.contest.start_time.ToNanoseconds() +
+      clics.contest.contest_duration.ToNanoseconds())
+  start_evts = []
+  evts = []
+
+  start_evts += [{'op': 'create', 'type': 'contests', 'data': clics.contest}]
+  for typ in clics.judgement_types.values():
+    start_evts += [{'op': 'create', 'type': 'judgement-types', 'data': typ}]
+  for prob in get_problems(end_time):
+    start_evts += [{'op': 'create', 'type': 'problems', 'data': prob}]
+  for group in clics.groups.values():
+    start_evts += [{'op': 'create', 'type': 'groups', 'data': group}]
+  for group in clics.organizations.values():
+    start_evts += [{'op': 'create', 'type': 'organizations', 'data': group}]
+  for team in clics.teams.values():
+    start_evts += [{'op': 'create', 'type': 'teams', 'data': team}]
+
+  for sub in get_submissions(end_time):
+    evts += [{'op': 'create', 'type': 'submissions', 'data': sub}]
+
+  for jug in get_judgements(end_time):
+    evts += [{'op': 'create', 'type': 'judgements', 'data': jug}]
+
+  evt_id = 1
+  for evt in start_evts + sorted(evts, key=lambda x: get_nanos_of(x['data'])):
+    t_now = time_now()
+    t_evt = get_time_of(evt['data'])
+    if t_evt and t_now.ToNanoseconds() < t_evt.ToNanoseconds():
+      time.sleep((t_evt.ToNanoseconds() - t_now.ToNanoseconds()) / (10.0**9) / args.time_accel)
+    evt['data'] = json_format.MessageToDict(evt['data'])
+    evt['id'] = evt_id
+    evt_id += 1
+    yield json.dumps(evt) + '\n'
+
 ############################
 
 class Contests(Resource):
@@ -277,6 +331,14 @@ class State(Resource):
       return json_format.MessageToDict(clics.state)
 api.add_resource(State, '/contests/<string:cid>/state/')
 
+class EventFeed(Resource):
+  def get(self, cid):
+    if clics.contest.id <> cid:
+      abort(404)
+    else:
+      return Response(generate_eventfeed(), mimetype = 'application/json')
+api.add_resource(EventFeed, '/contests/<string:cid>/event-feed/')
+
 class Scoreboard(Resource):
   def get(self, cid):
     return get_scoreboard(cid)
@@ -290,7 +352,7 @@ def ScoreboardHtml(cid=None):
   return render_template(
       'scoreboard.html',
       scoreboard=get_scoreboard(cid, t_now, True),
-      problems=get_problems(t_now),
+      problems=map(json_format.MessageToDict, get_problems(t_now)),
       contest=clics.contest,
       teams=clics.teams)
 
@@ -309,4 +371,4 @@ list_endpoint('awards', clics.awards)
 ############################
 
 if __name__ == '__main__':
-  app.run()
+  app.run(threaded = True)
