@@ -150,8 +150,17 @@ public class FontRenderer {
     }
     buffer.flip();
 
+    double fontSize = fontHeight * (double) (ascent - descent) / (double) ascent;
+
     STBTTPackRange.Buffer packRanges = STBTTPackRange.malloc(1);
-    packRanges.put(STBTTPackRange.malloc().set(font.height*0+32, /* start= */ 0, buffer, allCodePoints.size(), font.cdata, (byte) 0, (byte) 0));
+    packRanges.put(STBTTPackRange.malloc().set(
+        /* size= */ (float) fontSize,
+        /* start= */ 0,
+        /* buffer= */ buffer,
+        /* length= */ allCodePoints.size(),
+        /* font = */ font.cdata,
+        /* unused= */ (byte) 0,
+        /* unused= */ (byte) 0));
     packRanges.flip();
     final int fontIndex = 0;
     stbtt_PackFontRanges(context, ttfData[0], fontIndex, packRanges);
@@ -193,7 +202,7 @@ public class FontRenderer {
   }
 
   private void renderText(Font font, double startX, double startY, String text) {
-    float scale = (float) stbtt_ScaleForPixelHeight(fontInfo[0], (int) (font.height * 50));
+    glBindTexture(GL_TEXTURE_2D, font.texId);
 
     try (MemoryStack stack = stackPush()) {
       IntBuffer pCodePoint = stack.mallocInt(1);
@@ -205,8 +214,9 @@ public class FontRenderer {
 
       int lineStart = 0;
 
-      float factorX = (float) +scale;
-      float factorY = (float) -scale;
+      final float scale = 1.0f;
+      final float factorX = (float) +scale;
+      final float factorY = (float) -scale;
       float lineY = (float) startY;
 
       glBegin(GL_QUADS);

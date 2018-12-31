@@ -46,7 +46,7 @@ public class Renderer implements ResolverController.Observer {
 
   double rowWidth;
   double rowHeight;
-  long visibleRowsBelow = 5;
+  long visibleRowsBelow = 8;
 
   double minScrolledRank;
   double maxScrolledRank;
@@ -80,7 +80,7 @@ public class Renderer implements ResolverController.Observer {
     }
 
     cellWidth = (int) ((screenWidth * 0.7) / Math.max(12, model.getProblems().size())) * 0.9;
-    cellHeight = cellWidth / 2.6; // (1.0 + Math.sqrt(5));
+    cellHeight = cellWidth / 2.4; // (1.0 + Math.sqrt(5));
     cellMargin = cellWidth / 10;
 
     teamLabelWidth = screenWidth - (cellWidth + cellMargin) * model.getProblems().size();
@@ -287,7 +287,7 @@ public class Renderer implements ResolverController.Observer {
     }
     font.drawText(
         rowX - teamLabelWidth,
-        rowY + cellMargin / 2.0,
+        rowY + cellMargin * 1.5,
         (int) (cellHeight - cellMargin),
         String.format("%-2d", rank));
   }
@@ -299,8 +299,8 @@ public class Renderer implements ResolverController.Observer {
         try {
           font.drawText(
               rowX - teamLabelWidth * 0.9,
-              rowY + cellMargin / 2.0,
-              (int) (cellHeight * 0.25),
+              rowY + cellMargin,
+              (int) (rowHeight / 2.0 - cellMargin),
               model.getOrganization(organizationId).getName());
         } catch (NoSuchElementException noSuchOrganization) {
           // Team has an organisation but it's missing... FIXME, find out why some teams have
@@ -313,7 +313,7 @@ public class Renderer implements ResolverController.Observer {
     font.drawText(
         rowX - teamLabelWidth * 0.9,
         rowY + rowHeight / 2.0,
-        (int) (cellHeight * 0.4),
+        (int) (rowHeight / 2.0),
         team.getName());
   }
 
@@ -321,9 +321,9 @@ public class Renderer implements ResolverController.Observer {
     if (score.getNumSolved() != 0) {
       glColor3d(0.6, 0.6, 0.6);
       font.drawText(
-          rowX - rowHeight * 0.5 - cellHeight * 0.3,
+          rowX - rowHeight * 0.5 - cellHeight * 0.4,
           rowY + cellMargin / 2.0,
-          (int) (cellHeight * 0.25),
+          (int) (rowHeight / 2.0 - cellMargin / 2.0),
           String.format("%4d", score.getTotalTime()));
     }
     if (focused) {
@@ -334,7 +334,7 @@ public class Renderer implements ResolverController.Observer {
     font.drawText(
         rowX - rowHeight * 0.5 - cellHeight * 0.15,
         rowY + rowHeight / 2.0,
-        (int) (cellHeight * 0.4),
+        (int) (rowHeight / 2.0),
         String.format("%2d", score.getNumSolved()));
   }
 
@@ -373,7 +373,7 @@ public class Renderer implements ResolverController.Observer {
         vy += Math.random() - 0.5;
         float p = (float) Math.random();
         double h = Math.sqrt(vx*vx + vy*vy + 1e-9);
-        double l = 200 * (0.5 + 1.0/(0.5 + p) + Math.random());
+        double l = (screenWidth / 25) * (0.5 + 1.0/(0.5 + p) + Math.random());
         vx *= (l / h);
         vy *= (l / h);
         if (attempts.getSolved()) {
@@ -449,7 +449,7 @@ public class Renderer implements ResolverController.Observer {
       } else {
         glColor3f(1.0f, 1.0f, 1.0f);
       }
-      font.drawText(cellX+cellWidth/2 - cellHeight * 0.1, cellY + cellHeight * 0.3, (int) (cellHeight * 0.4), text);
+      font.drawText(cellX+cellWidth/2 - cellHeight * 0.1, cellY + cellHeight * 0.2, (int) (cellHeight * 0.6), text);
     }
   }
 
