@@ -43,8 +43,8 @@ public class FontRenderer {
   public static final String FONT_SYMBOLA = "/resources/fonts/Symbola.ttf";
   public static final String FONT_UNIFONT = "/resources/fonts/unifont-11.0.03.ttf";
 
-  private static final int WIDTH = 512 * 8;
-  private static final int HEIGHT = 512 * 8;
+  private static final int WIDTH = 2048;
+  private static final int HEIGHT = 128;
 
   private final ByteBuffer[] ttfData = new ByteBuffer[1];
   private final STBTTFontinfo[] fontInfo = new STBTTFontinfo[1];
