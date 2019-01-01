@@ -333,11 +333,7 @@ public class Renderer implements ResolverController.Observer {
           String.format("%4d", score.getTotalTime()),
           FontRenderer.Alignment.RIGHT);
     }
-    if (focused) {
-      glColor3d(1.0, 1.0, 1.0);
-    } else {
-      glColor3d(0.4, 0.4, 0.4);
-    }
+    glColor3d(1.0, 1.0, 1.0);
     font.drawText(
         rowX - rowHeight * 0.1,
         rowY + rowHeight / 2.0,
@@ -370,7 +366,7 @@ public class Renderer implements ResolverController.Observer {
       r = (207.0f / 255.0f); g = 0.0f; b = 0.0f;
       text = FontRenderer.Symbols.WRONG;
     } else {
-      r = 0.025f; g = 0.025f; b = 0.025f;
+      r = 0.05f; g = 0.05f; b = 0.05f;
       text = null;
     }
 
@@ -418,15 +414,14 @@ public class Renderer implements ResolverController.Observer {
     if (!attempted) {
       glEnable(GL_BLEND);
 
-      glBegin(GL_TRIANGLE_FAN);
-
       final double shWidth = cellHeight / 8.0;
       final double shHeight = cellHeight / 4.0;
 
+      glBegin(GL_TRIANGLE_FAN);
       glColor4f(0f, 0f, 0f, 0.7f);
       glVertex2d(cellX, cellY + cellHeight);
       glVertex2d(cellX+cellWidth, cellY + cellHeight);
-      glColor4f(0.1f, 0.1f, 0.1f, 0.6f);
+      glColor4f(r, g, b, 0.6f);
       glVertex2d(cellX+cellWidth, cellY+cellHeight-shHeight);
       glVertex2d(cellX+shWidth, cellY+cellHeight-shHeight);
       glVertex2d(cellX+shWidth, cellY);
@@ -434,7 +429,7 @@ public class Renderer implements ResolverController.Observer {
       glVertex2d(cellX, cellY);
       glEnd();
 
-      glColor4f(0.1f, 0.1f, 0.1f, 0.6f);
+      glColor4f(r, g, b, 0.6f);
       glBegin(GL_QUADS);
       glVertex2d(cellX+cellWidth, cellY+cellHeight-shHeight);
       glVertex2d(cellX+shWidth, cellY+cellHeight-shHeight);
