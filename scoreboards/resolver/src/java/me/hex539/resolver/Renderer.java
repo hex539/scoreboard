@@ -1,21 +1,5 @@
 package me.hex539.resolver;
 
-import com.google.auto.value.AutoValue;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
-import edu.clics.proto.ClicsProto.*;
-
-import me.hex539.contest.ScoreboardModel;
-import me.hex539.contest.ResolverController;
-
-import org.lwjgl.glfw.GLFWVidMode;
-
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -24,6 +8,25 @@ import static org.lwjgl.opengl.GL14.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.system.MemoryUtil.*;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.NoSuchElementException;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
+import com.google.auto.value.AutoValue;
+
+import edu.clics.proto.ClicsProto.*;
+
+import me.hex539.contest.ScoreboardModel;
+import me.hex539.contest.ResolverController;
+
+import org.lwjgl.glfw.GLFWVidMode;
 
 public class Renderer implements ResolverController.Observer {
   private static boolean ENABLE_PARTICLES = true;
@@ -46,7 +49,7 @@ public class Renderer implements ResolverController.Observer {
 
   double rowWidth;
   double rowHeight;
-  long visibleRowsBelow = 8;
+  double visibleRowsBelow = 7.4;
 
   double minScrolledRank;
   double maxScrolledRank;
@@ -80,7 +83,7 @@ public class Renderer implements ResolverController.Observer {
     }
 
     cellWidth = (int) ((screenWidth * 0.7) / Math.max(12, model.getProblems().size())) * 0.9;
-    cellHeight = cellWidth / 2.4; // (1.0 + Math.sqrt(5));
+    cellHeight = cellWidth / 2.4;
     cellMargin = cellWidth / 10;
 
     teamLabelWidth = screenWidth - (cellWidth + cellMargin) * model.getProblems().size();
@@ -88,10 +91,10 @@ public class Renderer implements ResolverController.Observer {
     rowWidth = (cellWidth + cellMargin) * model.getProblems().size();
     rowHeight = cellHeight + cellMargin;
 
-    minScrolledRank = + (1*screenHeight + 1*cellMargin) / (rowHeight + cellMargin)
+    minScrolledRank = + (1*screenHeight + cellMargin / 2.0) / (rowHeight + cellMargin)
          - visibleRowsBelow;
     maxScrolledRank = Math.max(minScrolledRank,
-        + (0*screenHeight + 2*cellMargin) / (rowHeight + cellMargin)
+        + (0*screenHeight + cellMargin / 2.0) / (rowHeight + cellMargin)
              - visibleRowsBelow + model.getRows().size());
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -109,7 +112,6 @@ public class Renderer implements ResolverController.Observer {
         final int oldRank = (focusedTeam != null ? (int) model.getRow(focusedTeam).getRank() : -1);
         final int newRank = (int) model.getRow(team).getRank();
         if (!focusAnimation.isEmpty()) {
-          moveAnimation.clear();
           focusAnimation.clear();
         }
         final long delay = TimeUnit.MILLISECONDS.toNanos(0);
@@ -132,10 +134,14 @@ public class Renderer implements ResolverController.Observer {
   @Override
   public void onTeamRankChanged(Team team, int rankFrom, int rankTo) {
     final int difference = Math.abs(rankTo - rankFrom);
-    final long delay = TimeUnit.MILLISECONDS.toNanos(600);
-    final long duration = TimeUnit.MILLISECONDS.toNanos(
-        (long) (400 * Math.sqrt(Math.min(10, Math.abs(rankTo - rankFrom)))));
-    moveAnimation.clear();
+    final long delay, duration;
+    if (moveAnimation.size() < 4) {
+      delay = TimeUnit.MILLISECONDS.toNanos(300);
+      duration = TimeUnit.MILLISECONDS.toNanos((long) (300 * Math.sqrt(Math.min(10, difference))));
+    } else {
+      delay = TimeUnit.MILLISECONDS.toNanos(0);
+      duration = TimeUnit.MILLISECONDS.toNanos((long) (150 * Math.sqrt(Math.min(10, difference))));
+    }
     moveAnimation.offer(RankAnimation.create(
         rankFrom, rankTo, System.nanoTime() + delay, duration));
   }
@@ -146,63 +152,68 @@ public class Renderer implements ResolverController.Observer {
     focusedProblem = null;
   }
 
-  private double getScrolledRank(RankAnimation anim, long timeNow) {
-    final double scrolledRank = anim != null
-        ? slerp((double) anim.fromRank(), (double) anim.toRank(), anim.progress(timeNow))
-        : (double) focusedRank;
-    return clamp(scrolledRank, minScrolledRank, maxScrolledRank);
-  }
-
   private void scrollTo(int rank) {
     if (rank != focusedRank) {
       final long duration = TimeUnit.MILLISECONDS.toNanos(200);
-      scrollAnimation.clear();
       scrollAnimation.offer(RankAnimation.create(focusedRank, rank, System.nanoTime(), duration));
       focusedRank = rank;
     }
   }
 
   public boolean mainLoop(final long timeNow) {
-    final RankAnimation scrollAnim = peekAnimation(scrollAnimation, timeNow);
-    final RankAnimation moveAnim = peekAnimation(moveAnimation, timeNow);
+    boolean animating = false;
+    animating |= (peekAnimation(scrollAnimation, timeNow) != null);
+    animating |= (peekAnimation(moveAnimation, timeNow) != null);
 
-    final double scrolledRank = getScrolledRank(scrollAnim, timeNow);
-    final double baseY = (scrolledRank + visibleRowsBelow) * (rowHeight + cellMargin);
+    double scrolledRank = (double) focusedRank;
+    for (RankAnimation anim : scrollAnimation) {
+      scrolledRank += slerp((double) (anim.fromRank() - anim.toRank()), 0.0, anim.progress(timeNow));
+    }
+    scrolledRank = clamp(scrolledRank, minScrolledRank, maxScrolledRank);
+    final double baseY = (scrolledRank + visibleRowsBelow) * (rowHeight + cellMargin) + cellMargin;
     if (particles != null) {
       particles.setOffset(0.0, baseY);
     }
+
+    List<RankAnimation> moveAnims = new ArrayList<>(moveAnimation);
+    Collections.reverse(moveAnims);
 
     for (int rowIndex = model.getRows().size(); rowIndex --> 0;) {
       final ScoreboardRow row = model.getRow(rowIndex);
       final boolean teamFocused = focusedTeam != null && row.getTeamId() == focusedTeam.getId();
 
-      final double effectiveRank;
-      if (moveAnim != null) {
-        final long fromRank =
-            row.getRank() == moveAnim.toRank()
-                ? moveAnim.fromRank()
-                : row.getRank()
-                    + (moveAnim.fromRank() < row.getRank() ? 1 : 0)
-                    - (moveAnim.toRank() < row.getRank() ? 1 : 0);
-        effectiveRank = slerp((double) fromRank, (double) row.getRank(), moveAnim.progress(timeNow));
-      } else {
-        effectiveRank = (double) row.getRank();
+      // If we have multiple animations at once, we need to unwind the history of
+      // this team's rank as we go back through the stack of changes.
+      long rankForAnim = row.getRank();
+
+      double eccentricity = 0.0;
+      for (RankAnimation anim : moveAnims) {
+        double factor = 0.0;
+        if (rankForAnim == anim.toRank()) {
+          eccentricity += slerp(anim.fromRank() - anim.toRank(), 0.0, anim.progress(timeNow));
+          rankForAnim += anim.fromRank() - anim.toRank();
+        } else if (anim.fromRank() >= rankForAnim && rankForAnim >= anim.toRank()) {
+          eccentricity += 1.0 * slerp(-1.0, 0.0, anim.progress(timeNow));
+          rankForAnim -= 1;
+        }
       }
+
+      final double effectiveRank = row.getRank() + eccentricity;
 
       final double rowX = (screenWidth - teamLabelWidth - rowWidth) / 2.0 + teamLabelWidth;
       final double rowY = baseY - effectiveRank * (rowHeight + cellMargin) - cellMargin;
 
       if (0 <= rowY + rowHeight && rowY <= screenHeight) {
-        drawRow(rowX, rowY, row, teamFocused, teamFocused ? focusedProblem: null);
+        drawRow(rowX, rowY, row, teamFocused, teamFocused ? focusedProblem: null, timeNow);
       }
     }
 
     if (particles != null && particles.update(timeNow)) {
       particles.draw();
-      return true;
+      animating = true;
     }
 
-    return scrollAnim != null || moveAnim != null;
+    return animating;
   }
 
   private void drawRow(
@@ -210,19 +221,19 @@ public class Renderer implements ResolverController.Observer {
       double rowY,
       ScoreboardRow row,
       boolean teamFocused,
-      Problem problemFocused) {
+      Problem problemFocused,
+      long timeNow) {
+
+    RankAnimation focus = peekAnimation(focusAnimation, timeNow);
 
     if (teamFocused) {
-      RankAnimation focus = peekAnimation(focusAnimation, System.nanoTime());
-      drawFocus(rowX, rowY, focus != null ? focus.progress(System.nanoTime()) : 1.0);
-    } else if (row.getRank() >= finalisedRank) {
-      drawZebra(rowX, rowY, row.getRank());
-    }
-
-    if (!teamFocused) {
-      RankAnimation focus = peekAnimation(focusAnimation, System.nanoTime());
+      drawFocus(rowX, rowY, focus != null ? focus.progress(timeNow) : 1.0);
+    } else {
+      if (row.getRank() >= finalisedRank) {
+        drawZebra(rowX, rowY, row.getRank());
+      }
       if (focus != null && focus.fromRank() == row.getRank()) {
-        drawFocus(rowX, rowY + rowHeight + cellMargin, -1+focus.progress(System.nanoTime()));
+        drawFocus(rowX, rowY + rowHeight + cellMargin, focus.progress(timeNow) - 1.0);
       }
     }
 
@@ -280,16 +291,13 @@ public class Renderer implements ResolverController.Observer {
   }
 
   private void drawRank(double rowX, double rowY, long rank, boolean focused) {
-    if (focused) {
-      glColor3d(1.0, 1.0, 1.0);
-    } else {
-      glColor3d(0.4, 0.4, 0.4);
-    }
+    glColor3d(0.4, 0.4, 0.4);
     font.drawText(
-        rowX - teamLabelWidth,
+        rowX - teamLabelWidth * 0.9 - cellMargin,
         rowY + cellMargin * 1.5,
         (int) (cellHeight - cellMargin),
-        String.format("%-2d", rank));
+        Long.toString(rank),
+        FontRenderer.Alignment.RIGHT);
   }
 
   private void drawLabel(double rowX, double rowY, Team team, boolean focused) {
@@ -307,9 +315,7 @@ public class Renderer implements ResolverController.Observer {
           // organization=0 despite no such organization existing.
         }
     }
-    if (focused) {
-      glColor3d(1.0, 1.0, 1.0);
-    }
+    glColor3d(1.0, 1.0, 1.0);
     font.drawText(
         rowX - teamLabelWidth * 0.9,
         rowY + rowHeight / 2.0,
@@ -321,10 +327,11 @@ public class Renderer implements ResolverController.Observer {
     if (score.getNumSolved() != 0) {
       glColor3d(0.6, 0.6, 0.6);
       font.drawText(
-          rowX - rowHeight * 0.5 - cellHeight * 0.4,
+          rowX - rowHeight * 0.1,
           rowY + cellMargin / 2.0,
           (int) (rowHeight / 2.0 - cellMargin / 2.0),
-          String.format("%4d", score.getTotalTime()));
+          String.format("%4d", score.getTotalTime()),
+          FontRenderer.Alignment.RIGHT);
     }
     if (focused) {
       glColor3d(1.0, 1.0, 1.0);
@@ -332,10 +339,11 @@ public class Renderer implements ResolverController.Observer {
       glColor3d(0.4, 0.4, 0.4);
     }
     font.drawText(
-        rowX - rowHeight * 0.5 - cellHeight * 0.15,
+        rowX - rowHeight * 0.1,
         rowY + rowHeight / 2.0,
         (int) (rowHeight / 2.0),
-        String.format("%2d", score.getNumSolved()));
+        String.format("%2d", score.getNumSolved()),
+        FontRenderer.Alignment.RIGHT);
   }
 
   private void drawAttempts(double cellX, double cellY, ScoreboardProblem attempts, boolean focused) {
@@ -343,16 +351,24 @@ public class Renderer implements ResolverController.Observer {
     final boolean attempted = (attempts.getNumJudged() > 0 || pending);
     final String text;
 
-    float r = 0.0f, g = 0.0f, b = 0.0f;
+    int totalAttempts = attempts.getNumJudged() + attempts.getNumPending();
+    final String subText;
+    switch (totalAttempts) {
+      case 0: subText = null; break;
+      case 1: subText = Integer.toString(totalAttempts) + " " + FontRenderer.Symbols.TRIES_ONE; break;
+      default: subText = Integer.toString(totalAttempts) + " " + FontRenderer.Symbols.TRIES_MANY; break;
+    }
+
+    final float r, g, b;
     if (attempts.getSolved()) {
-      g = (175.0f / 255.0f);
-      text = (attempts.getNumJudged() == 1 ? "+" : String.format("%d", attempts.getNumJudged() - 1));
+      r = 0.0f; b = 0.0f; g = (175.0f / 255.0f);
+      text = FontRenderer.Symbols.CORRECT;
     } else if (attempts.getNumPending() > 0) {
       r = 0.25f; g = 0.25f; b = 1.0f;
-      text = "?";
+      text = FontRenderer.Symbols.PENDING;
     } else if (attempts.getNumJudged() > 0) {
-      r = (207.0f / 255.0f);
-      text = String.format("-%d", attempts.getNumJudged());
+      r = (207.0f / 255.0f); g = 0.0f; b = 0.0f;
+      text = FontRenderer.Symbols.WRONG;
     } else {
       r = 0.025f; g = 0.025f; b = 0.025f;
       text = null;
@@ -366,19 +382,17 @@ public class Renderer implements ResolverController.Observer {
         double vx = Math.random() - 0.5;
         double vy = Math.random() - 0.5;
         double vang = (Math.random() - 0.5) * Math.PI * 10;
-        double x = cellX + (vx + 0.5) * cellWidth;
-        double y = cellY + (vy + 0.5) * cellHeight;
+        double x = cellX + (vx * 0.9 + 0.5) * cellWidth;
+        double y = cellY + (vy * 0.9 + 0.5) * cellHeight;
         double ang = Math.random() * Math.PI * 2.0;
-        vx += Math.random() - 0.5;
-        vy += Math.random() - 0.5;
+        vx += (Math.random() - 0.5) * 0.75;
+        vy += (Math.random() - 0.5) * 0.75;
         float p = (float) Math.random();
         double h = Math.sqrt(vx*vx + vy*vy + 1e-9);
         double l = (screenWidth / 25) * (0.5 + 1.0/(0.5 + p) + Math.random());
         vx *= (l / h);
         vy *= (l / h);
-        if (attempts.getSolved()) {
-          vy += cellHeight * 4;
-        }
+        vy += cellHeight * (attempts.getSolved() ? 2 : 1);
         particles.add(x, y, ang, vx, vy, vang,
           Math.min(1.0f, r+p*(r+g*(0.7152f/0.2126f))),
           Math.min(1.0f, g+p*(g+r*(0.2126f/0.7152f)+b*(0.0722f/0.7152f))),
@@ -449,7 +463,20 @@ public class Renderer implements ResolverController.Observer {
       } else {
         glColor3f(1.0f, 1.0f, 1.0f);
       }
-      font.drawText(cellX+cellWidth/2 - cellHeight * 0.1, cellY + cellHeight * 0.2, (int) (cellHeight * 0.6), text);
+      font.drawText(
+        cellX + cellWidth * 0.5,
+        cellY + cellHeight * 0.4,
+        (int) (cellHeight * 0.6),
+        text,
+        FontRenderer.Alignment.CENTRE);
+      if (subText != null) {
+        font.drawText(
+            cellX + cellWidth * 0.5,
+            cellY + cellHeight * 0.1,
+            (int) (cellHeight * 0.4),
+            subText,
+            FontRenderer.Alignment.CENTRE);
+      }
     }
   }
 

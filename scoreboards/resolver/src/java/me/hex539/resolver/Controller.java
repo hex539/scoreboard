@@ -48,10 +48,10 @@ public class Controller {
   private boolean advance() {
     switch (resolver.advance()) {
       case FAILED_PROBLEM:
-        post(TimeUnit.MILLISECONDS.toNanos(400), this::advance);
+        post(TimeUnit.MILLISECONDS.toNanos(200), this::advance);
         break;
       case SOLVED_PROBLEM:
-        post(TimeUnit.MILLISECONDS.toNanos(800), this::advance);
+        post(TimeUnit.MILLISECONDS.toNanos(1000), this::advance);
         break;
       case FOCUSED_TEAM:
         post(TimeUnit.MILLISECONDS.toNanos(200), this::advance);
