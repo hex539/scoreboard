@@ -35,8 +35,8 @@ public class ResolverWindow extends Thread {
       CompletableFuture<? extends ResolverController> resolver,
       CompletableFuture<? extends ScoreboardModel> model,
       CompletableFuture<? extends ByteBuffer> ttfData) throws Exception {
-    this.resolver = resolver.get();
     this.model = model.get();
+    this.resolver = resolver.get();
     this.controller = new Controller(this.resolver);
     this.renderer = new Renderer(this.model, ttfData);
 
@@ -69,6 +69,9 @@ public class ResolverWindow extends Thread {
 
     for (long lastFrameTime = 0; !glfwWindowShouldClose(window) && !exit.tryAcquire();) {
       long timeNow = System.nanoTime();
+      if (LIMIT_FPS) {
+        timeNow += (long) (1e9 / MAX_FPS);
+      }
 
       if (PRINT_FPS) {
         frames.add(timeNow);
