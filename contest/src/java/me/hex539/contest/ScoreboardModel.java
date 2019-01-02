@@ -98,4 +98,8 @@ interface Problems {
   default Problem getProblem(String id) throws NoSuchElementException {
     return getProblems().stream().filter(x -> id.equals(x.getId())).findFirst().get();
   }
+
+  default int getProblemIndex(String id) throws NoSuchElementException {
+    return getProblems().indexOf(getProblem(id));
+  }
 }

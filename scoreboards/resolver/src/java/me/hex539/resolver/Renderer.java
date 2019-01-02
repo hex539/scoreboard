@@ -58,7 +58,6 @@ public class Renderer implements ResolverController.Observer {
   private Problem focusedProblem;
   private int focusedRank;
   private int finalisedRank;
-  private boolean dirtyParticles;
 
   public Renderer(ScoreboardModel model, CompletableFuture<? extends ByteBuffer> ttfData) {
     this.model = model;
@@ -128,7 +127,36 @@ public class Renderer implements ResolverController.Observer {
 
   @Override
   public void onProblemScoreChanged(Team team, ScoreboardProblem attempts) {
-    dirtyParticles = true;
+    if (attempts.getNumJudged() != 0 && attempts.getNumPending() == 0) {
+      final double cellX = getCellX(getRowX(), model.getProblemIndex(attempts.getProblemId()));
+      final double cellY = getCellY(getRowY(getBaseY(), focusedRank));
+
+      final short[] rgb = getColour(attempts);
+      float r = rgb[0] / 255.0f;
+      float g = rgb[1] / 255.0f;
+      float b = rgb[2] / 255.0f;
+
+      for (int i = 0; i < 2000; i++) {
+        double vx = Math.random() - 0.5;
+        double vy = Math.random() - 0.5;
+        double vang = (Math.random() - 0.5) * Math.PI * 10;
+        double x = cellX + (vx * 0.9 + 0.5) * cellWidth;
+        double y = cellY + (vy * 0.9 + 0.5) * cellHeight;
+        double ang = Math.random() * Math.PI * 2.0;
+        vx += (Math.random() - 0.5) * 0.75;
+        vy += (Math.random() - 0.5) * 0.75;
+        float p = (float) Math.random();
+        double h = Math.sqrt(vx*vx + vy*vy + 1e-9);
+        double l = (screenWidth / 25) * (0.5 + 1.0/(0.5 + p) + Math.random());
+        vx *= (l / h);
+        vy *= (l / h);
+        vy += cellHeight * (attempts.getSolved() ? 2 : 1);
+        particles.add(x, y, ang, vx, vy, vang,
+          Math.min(1.0f, r+p*(r+g*(0.7152f/0.2126f))),
+          Math.min(1.0f, g+p*(g+r*(0.2126f/0.7152f)+b*(0.0722f/0.7152f))),
+          Math.min(1.0f, b+p*(b+g*(0.7152f/0.2126f))));
+      }
+    }
   }
 
   @Override
@@ -165,12 +193,7 @@ public class Renderer implements ResolverController.Observer {
     animating |= (peekAnimation(scrollAnimation, timeNow) != null);
     animating |= (peekAnimation(moveAnimation, timeNow) != null);
 
-    double scrolledRank = (double) focusedRank;
-    for (RankAnimation anim : scrollAnimation) {
-      scrolledRank += slerp((double) (anim.fromRank() - anim.toRank()), 0.0, anim.progress(timeNow));
-    }
-    scrolledRank = clamp(scrolledRank, minScrolledRank, maxScrolledRank);
-    final double baseY = (scrolledRank + visibleRowsBelow) * (rowHeight + cellMargin) + cellMargin;
+    final double baseY = getBaseY();
     if (particles != null) {
       particles.setOffset(0.0, baseY);
     }
@@ -200,8 +223,8 @@ public class Renderer implements ResolverController.Observer {
 
       final double effectiveRank = row.getRank() + eccentricity;
 
-      final double rowX = (screenWidth - teamLabelWidth - rowWidth) / 2.0 + teamLabelWidth;
-      final double rowY = baseY - effectiveRank * (rowHeight + cellMargin) - cellMargin;
+      final double rowX = getRowX();
+      final double rowY = getRowY(baseY, effectiveRank);
 
       if (0 <= rowY + rowHeight && rowY <= screenHeight) {
         drawRow(rowX, rowY, row, teamFocused, teamFocused ? focusedProblem: null, timeNow);
@@ -214,6 +237,31 @@ public class Renderer implements ResolverController.Observer {
     }
 
     return animating;
+  }
+
+  private double getBaseY() {
+    double scrolledRank = (double) focusedRank;
+    for (RankAnimation anim : scrollAnimation) {
+      scrolledRank += slerp((double) (anim.fromRank() - anim.toRank()), 0.0, anim.progress(System.nanoTime()));
+    }
+    scrolledRank = clamp(scrolledRank, minScrolledRank, maxScrolledRank);
+    return (scrolledRank + visibleRowsBelow) * (rowHeight + cellMargin) + cellMargin;
+  }
+
+  private double getRowX() {
+    return (screenWidth - teamLabelWidth - rowWidth) / 2.0 + teamLabelWidth;
+  }
+
+  private double getRowY(double baseY, double effectiveRank){
+    return baseY - effectiveRank * (rowHeight + cellMargin) - cellMargin;
+  }
+
+  private double getCellX(double rowX, int position) {
+    return rowX + (cellWidth + cellMargin) * position;
+  }
+
+  private double getCellY(double rowY) {
+    return rowY + cellMargin / 2.0;
   }
 
   private void drawRow(
@@ -245,8 +293,8 @@ public class Renderer implements ResolverController.Observer {
 
     int i = 0;
     for (ScoreboardProblem attempts : row.getProblemsList()) {
-      final double cellX = rowX + (cellWidth + cellMargin) * i;
-      final double cellY = rowY + cellMargin / 2.0;
+      final double cellX = getCellX(rowX, i);
+      final double cellY = getCellY(rowY);
       final boolean focused =
           problemFocused != null && problemFocused.getId().equals(attempts.getProblemId());
       drawAttempts(cellX, cellY, attempts, focused);
@@ -342,6 +390,13 @@ public class Renderer implements ResolverController.Observer {
         FontRenderer.Alignment.RIGHT);
   }
 
+  private static short[] getColour(ScoreboardProblem attempts) {
+    if (attempts.getSolved()) return new short[] {0, 175, 0};
+    if (attempts.getNumPending() > 0) return new short[] {63, 63, 255};
+    if (attempts.getNumJudged() > 0) return new short[] {207, 0, 0};
+    return new short[] {12, 12, 12};
+  }
+
   private void drawAttempts(double cellX, double cellY, ScoreboardProblem attempts, boolean focused) {
     final boolean pending = (attempts.getNumPending() > 0);
     final boolean attempted = (attempts.getNumJudged() > 0 || pending);
@@ -355,51 +410,23 @@ public class Renderer implements ResolverController.Observer {
       default: subText = Integer.toString(totalAttempts) + " " + FontRenderer.Symbols.TRIES_MANY; break;
     }
 
-    final float r, g, b;
+    final short[] rgb = getColour(attempts);
+    float r = rgb[0] / 255.0f;
+    float g = rgb[1] / 255.0f;
+    float b = rgb[2] / 255.0f;
     if (attempts.getSolved()) {
-      r = 0.0f; b = 0.0f; g = (175.0f / 255.0f);
       text = FontRenderer.Symbols.CORRECT;
     } else if (attempts.getNumPending() > 0) {
-      r = 0.25f; g = 0.25f; b = 1.0f;
       text = FontRenderer.Symbols.PENDING;
     } else if (attempts.getNumJudged() > 0) {
-      r = (207.0f / 255.0f); g = 0.0f; b = 0.0f;
       text = FontRenderer.Symbols.WRONG;
     } else {
-      r = 0.05f; g = 0.05f; b = 0.05f;
       text = null;
-    }
-
-    // TODO: minor race condition because of firing from inside UI code which
-    // does not make any guarantees about running at the right time. Trigger
-    // this directly inside the state change.
-    if (focused && !pending && particles != null && dirtyParticles) {
-      for (int i = 0; i < 2000; i++) {
-        double vx = Math.random() - 0.5;
-        double vy = Math.random() - 0.5;
-        double vang = (Math.random() - 0.5) * Math.PI * 10;
-        double x = cellX + (vx * 0.9 + 0.5) * cellWidth;
-        double y = cellY + (vy * 0.9 + 0.5) * cellHeight;
-        double ang = Math.random() * Math.PI * 2.0;
-        vx += (Math.random() - 0.5) * 0.75;
-        vy += (Math.random() - 0.5) * 0.75;
-        float p = (float) Math.random();
-        double h = Math.sqrt(vx*vx + vy*vy + 1e-9);
-        double l = (screenWidth / 25) * (0.5 + 1.0/(0.5 + p) + Math.random());
-        vx *= (l / h);
-        vy *= (l / h);
-        vy += cellHeight * (attempts.getSolved() ? 2 : 1);
-        particles.add(x, y, ang, vx, vy, vang,
-          Math.min(1.0f, r+p*(r+g*(0.7152f/0.2126f))),
-          Math.min(1.0f, g+p*(g+r*(0.2126f/0.7152f)+b*(0.0722f/0.7152f))),
-          Math.min(1.0f, b+p*(b+g*(0.7152f/0.2126f))));
-      }
-      dirtyParticles = false;
     }
 
     if (focused) {
       if (pending) {
-        glColor3f(r, g, b);
+        glColor3ub((byte) rgb[0], (byte) rgb[1], (byte) rgb[2]);
       } else {
         glColor3f(1.0f, 1.0f, 1.0f);
       }
