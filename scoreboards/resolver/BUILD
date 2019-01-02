@@ -6,10 +6,8 @@ java_binary(
   srcs = glob([
     "src/java/**/*.java",
   ]),
-  resources = glob([
-    "src/resources/**",
-  ]),
   deps = [
+    ":resources",
     "//contest",
     "//interop",
     "//third_party/auto:auto_value",
@@ -31,4 +29,11 @@ java_binary(
     "@lwjgl_opengl_natives_windows//jar",
     "@lwjgl_stb_natives_windows//jar",
   ],
+)
+
+java_library(
+  name = "resources",
+  resources = glob([
+    "src/resources/**",
+  ]),
 )
