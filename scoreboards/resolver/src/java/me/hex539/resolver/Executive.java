@@ -17,6 +17,7 @@ import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
 import me.hex539.contest.ResolverController;
+import me.hex539.resolver.draw.FontRenderer;
 
 import static org.lwjgl.glfw.GLFW.*;
 

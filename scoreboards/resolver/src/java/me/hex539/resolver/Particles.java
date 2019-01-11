@@ -91,11 +91,11 @@ public class Particles {
         i--;
       }
     }
-    return !particles.isEmpty();
+    return exist();
   }
 
   public void draw() {
-    if (particles.isEmpty()) {
+    if (!exist()) {
       return;
     }
 
@@ -119,6 +119,10 @@ public class Particles {
       }
       glEnd();
     }
+  }
+
+  public boolean exist() {
+    return !particles.isEmpty();
   }
 
   private static class Particle {
