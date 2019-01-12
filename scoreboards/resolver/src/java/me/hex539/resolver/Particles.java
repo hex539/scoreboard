@@ -1,19 +1,19 @@
 package me.hex539.resolver;
 
-import java.util.concurrent.TimeUnit;
-import java.util.List;
-import java.util.ArrayList;
-
-import edu.clics.proto.ClicsProto.*;
-
-import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL14.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.system.MemoryUtil.*;
+
+import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.ArrayList;
+
+import edu.clics.proto.ClicsProto.*;
+
+import me.hex539.resolver.layout.Layout;
 
 public class Particles {
   private final List<Particle> particles = new ArrayList<>();
@@ -52,6 +52,38 @@ public class Particles {
   public void setOffset(double x, double y) {
     offsetX = x;
     offsetY = y;
+  }
+
+  private static final float RF = 0.2126f;
+  private static final float GF = 0.7152f;
+  private static final float BF = 0.7152f;
+
+  public void launchFrom(
+      final Layout source,
+      final int quantity,
+      final short[] rgb,
+      final boolean powered) {
+    for (int i = 0; i < quantity; i++) {
+      double vx = Math.random() - 0.5;
+      double vy = Math.random() - 0.5;
+      double vang = (Math.random() - 0.5) * Math.PI * 10;
+      double x = source.x + (vx * 0.9 + 0.5) * source.width;
+      double y = source.y + (vy * 0.9 + 0.5) * source.height;
+      double ang = Math.random() * Math.PI * 2.0;
+      vx += (Math.random() - 0.5) * 0.75;
+      vy += (Math.random() - 0.5) * 0.75;
+      float p = (float) Math.random();
+      double h = Math.sqrt(vx*vx + vy*vy + 1e-9);
+      double l = (screenWidth / 25) * (0.5 + 1.0/(0.5 + p) + Math.random());
+      vx *= (l / h);
+      vy *= (l / h);
+      vy += source.height * (powered ? 2 : 1);
+
+      add(x, y, ang, vx, vy, vang,
+        Math.min(1.0f, (rgb[0]+p*(rgb[0]       + rgb[1]*GF/RF)) / 255.0f),
+        Math.min(1.0f, (rgb[1]+p*(rgb[0]*RF/GF + rgb[1]        + rgb[2]*BF/GF)) / 255.0f),
+        Math.min(1.0f, (rgb[2]+p*(               rgb[1]*GF/BF  + rgb[2])) / 255.0f));
+    }
   }
 
   public void add(double x, double y, double a, double vx, double vy, double va, float r, float g, float b) {

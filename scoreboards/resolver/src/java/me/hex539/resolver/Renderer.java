@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -45,9 +46,9 @@ public class Renderer implements ResolverController.Observer {
   private final Particles particles;
   private final FontRenderer font;
 
-  double cellWidth;
-  double cellHeight;
-  double cellMargin;
+  float cellWidth;
+  float cellHeight;
+  float cellMargin;
 
   double teamLabelWidth;
 
@@ -80,15 +81,19 @@ public class Renderer implements ResolverController.Observer {
       final Layout.Group rowLayout = new Layout.Group(ENABLE_WIREFRAME
           ? DebugDraw::wireframe
           : l -> drawRow(l, model.getRow(team)));
+      final Layout.Group scoreLayout = new Layout.Group(ENABLE_WIREFRAME
+          ? DebugDraw::wireframe
+          : null);
       for (ScoreboardProblem attempts : row.getProblemsList()) {
         final Problem problem = model.getProblem(attempts.getProblemId());
         final Layout cellLayout = new Layout(ENABLE_WIREFRAME
             ? DebugDraw::wireframe
             : l -> drawAttempts(l, team, model.getAttempts(team, problem)));
-        rowLayout.children.add(cellLayout);
+        scoreLayout.children.add(cellLayout);
       }
-      rowLayouts.put(teamId, rowLayout);
+      rowLayout.children.add(scoreLayout);
       rootLayout.children.add(rowLayout);
+      rowLayouts.put(teamId, rowLayout);
     }
 
     focusedTeam = null;
@@ -111,8 +116,8 @@ public class Renderer implements ResolverController.Observer {
       font.setVideoSize(screen.width, screen.height);
     }
 
-    cellWidth = (int) ((screen.width * 0.7) / Math.max(12, model.getProblems().size())) * 0.9;
-    cellHeight = cellWidth / 2.4;
+    cellWidth = (int) ((screen.width * 0.7) / Math.max(12, model.getProblems().size())) * 0.9f;
+    cellHeight = cellWidth / 2.4f;
     cellMargin = cellWidth / 10;
 
     teamLabelWidth = screen.width - (cellWidth + cellMargin) * model.getProblems().size();
@@ -128,9 +133,9 @@ public class Renderer implements ResolverController.Observer {
 
     for (Layout.Group rowLayout : rowLayouts.values()) {
       int position = 0;
-      for (Layout cellLayout : rowLayout.children) {
+      for (Layout cellLayout : rowLayout.children().get(0).children()) {
         cellLayout.relX = (float) ((cellWidth + cellMargin) * position);
-        cellLayout.relY = (float) (cellMargin / 2.0);
+        cellLayout.relY = 0.0f;
         cellLayout.width = (float) cellWidth;
         cellLayout.height = (float) cellHeight;
         ++position;
@@ -169,34 +174,14 @@ public class Renderer implements ResolverController.Observer {
   @Override
   public void onProblemScoreChanged(Team team, ScoreboardProblem attempts) {
     if (attempts.getNumJudged() != 0 && attempts.getNumPending() == 0) {
-      final Layout.Group rowLayout = rowLayouts.get(team.getId());
-      final Layout cellLayout = rowLayout.children.get(model.getProblemIndex(attempts.getProblemId()));
-
-      final short[] rgb = AttemptColour.of(attempts);
-      float r = rgb[0] / 255.0f;
-      float g = rgb[1] / 255.0f;
-      float b = rgb[2] / 255.0f;
-
-      for (int i = 0; i < 2000; i++) {
-        double vx = Math.random() - 0.5;
-        double vy = Math.random() - 0.5;
-        double vang = (Math.random() - 0.5) * Math.PI * 10;
-        double x = cellLayout.x + (vx * 0.9 + 0.5) * cellWidth;
-        double y = cellLayout.y + (vy * 0.9 + 0.5) * cellHeight;
-        double ang = Math.random() * Math.PI * 2.0;
-        vx += (Math.random() - 0.5) * 0.75;
-        vy += (Math.random() - 0.5) * 0.75;
-        float p = (float) Math.random();
-        double h = Math.sqrt(vx*vx + vy*vy + 1e-9);
-        double l = (screen.width / 25) * (0.5 + 1.0/(0.5 + p) + Math.random());
-        vx *= (l / h);
-        vy *= (l / h);
-        vy += cellHeight * (attempts.getSolved() ? 2 : 1);
-        particles.add(x, y, ang, vx, vy, vang,
-          Math.min(1.0f, r+p*(r+g*(0.7152f/0.2126f))),
-          Math.min(1.0f, g+p*(g+r*(0.2126f/0.7152f)+b*(0.0722f/0.7152f))),
-          Math.min(1.0f, b+p*(b+g*(0.7152f/0.2126f))));
-      }
+      Optional.ofNullable(rowLayouts.get(team.getId()))
+          .map(x -> x.children().get(0))
+          .map(x -> x.children().get(model.getProblemIndex(attempts.getProblemId())))
+          .ifPresent(cellLayout -> particles.launchFrom(
+              cellLayout,
+              2000,
+              AttemptColour.of(attempts),
+              attempts.getSolved()));
     }
   }
 
@@ -274,10 +259,16 @@ public class Renderer implements ResolverController.Observer {
       }
 
       final Layout rowLayout = rowLayouts.get(row.getTeamId());
-      rowLayout.relX = (float) (teamLabelWidth + (screen.width - teamLabelWidth - rowWidth) / 2.0);
-      rowLayout.relY = (float) (screen.y - effectiveRank * (rowHeight + cellMargin) - cellMargin);
-      rowLayout.width = (float) rowWidth;
-      rowLayout.height = (float) rowHeight;
+      rowLayout.relX = 0.0f;
+      rowLayout.relY = (float) (screen.y - effectiveRank * (rowHeight + cellMargin) - cellMargin) - cellMargin / 2.0f;
+      rowLayout.width = (float) screen.width;
+      rowLayout.height = (float) rowHeight + cellMargin;
+
+      final Layout scoreLayout = rowLayout.children().get(0);
+      scoreLayout.relX = (float) (teamLabelWidth + (screen.width - teamLabelWidth - rowWidth) / 1.0f);
+      scoreLayout.relY = (float) cellMargin;
+      scoreLayout.width = (float) rowWidth;
+      scoreLayout.height = (float) rowHeight;
     }
     rootLayout.layout();
 
@@ -305,13 +296,15 @@ public class Renderer implements ResolverController.Observer {
     RankAnimation focus = peekAnimation(focusAnimation, timeNow);
 
     if (teamFocused) {
-      drawFocus(rowX, rowY, focus != null ? focus.progress(timeNow) : 1.0);
+      drawFocus(layout, focus != null ? focus.progress(timeNow) : 1.0);
     } else {
       if (row.getRank() >= finalisedRank) {
-        drawZebra(rowX, rowY, row.getRank());
+        drawZebra(layout, row.getRank());
       }
       if (focus != null && focus.fromRank() == row.getRank()) {
-        drawFocus(rowX, rowY + rowHeight + cellMargin, focus.progress(timeNow) - 1.0);
+        layout.relY += rowHeight + cellMargin;
+        drawFocus(layout, focus.progress(timeNow) - 1.0);
+        layout.relY -= rowHeight + cellMargin;
       }
     }
 
@@ -333,36 +326,29 @@ public class Renderer implements ResolverController.Observer {
     return null;
   }
 
-  private void drawFocus(double rowX, double rowY, double progress) {
-    final double y = rowY - cellMargin / 2;
-    final double h = (rowHeight + cellMargin) * progress;
-
+  private void drawFocus(Layout layout, double progress) {
+    final float h = (float) ((rowHeight + cellMargin) * progress);
     glColor3d(0.0, 0.33, 0.48);
-    glBegin(GL_QUADS);
-    glVertex2d(0, y);
-    glVertex2d(screen.width, y);
-    glVertex2d(screen.width, y + h);
-    glVertex2d(0, y + h);
-    glEnd();
+
+    if (progress > 0.0) {
+      new Layout(this::glQuad).covering(layout).adjust(0.0f, 0.0f, 0.0f, h - layout.height).draw();
+    } else {
+      new Layout(this::glQuad).covering(layout).adjust(0.0f, layout.height + h, 0.0f, -h - layout.height).draw();
+    }
   }
 
-  private void drawZebra(double rowX, double rowY, long rank) {
+  private void drawZebra(Layout layout, long rank) {
     final float intensity = (rank % 2 == 1 ? 0.05f: 0.1f);
     final float r = 0.2f, g = 0.2f, b = 0.2f;
     glColor3f(-intensity + r, -intensity + g, -intensity + b);
-    glBegin(GL_QUADS);
-    glVertex2d(0,rowY - cellMargin / 2);
-    glVertex2d(screen.width, rowY - cellMargin / 2);
-    glVertex2d(screen.width, rowY+rowHeight + cellMargin / 2);
-    glVertex2d(0,rowY+rowHeight + cellMargin / 2);
-    glEnd();
+    new Layout(this::glQuad).covering(layout).draw();
   }
 
   private void drawRank(double rowX, double rowY, long rank, boolean focused) {
     glColor3d(0.4, 0.4, 0.4);
     font.drawText(
-        rowX - teamLabelWidth * 0.9 - cellMargin,
-        rowY + cellMargin * 1.5,
+        rowX + teamLabelWidth * 0.1 - cellMargin,
+        rowY + cellMargin * 2,
         (int) (cellHeight - cellMargin),
         Long.toString(rank),
         FontRenderer.Alignment.RIGHT);
@@ -374,7 +360,7 @@ public class Renderer implements ResolverController.Observer {
     if (organizationId != null && !organizationId.isEmpty()) {
         try {
           font.drawText(
-              rowX - teamLabelWidth * 0.9,
+              rowX + teamLabelWidth * 0.1,
               rowY + cellMargin,
               (int) (rowHeight / 2.0 - cellMargin),
               model.getOrganization(organizationId).getName());
@@ -385,9 +371,9 @@ public class Renderer implements ResolverController.Observer {
     }
     glColor3d(1.0, 1.0, 1.0);
     font.drawText(
-        rowX - teamLabelWidth * 0.9,
+        rowX + teamLabelWidth * 0.1,
         rowY + rowHeight / 2.0,
-        (int) (rowHeight / 2.0),
+        (int) ((rowHeight + cellMargin) / 2.0),
         team.getName());
   }
 
@@ -395,17 +381,17 @@ public class Renderer implements ResolverController.Observer {
     if (score.getNumSolved() != 0) {
       glColor3d(0.6, 0.6, 0.6);
       font.drawText(
-          rowX - rowHeight * 0.1,
-          rowY + cellMargin / 2.0,
-          (int) (rowHeight / 2.0 - cellMargin / 2.0),
+          rowX + teamLabelWidth - rowHeight * 0.1,
+          rowY + cellMargin,
+          (int) (rowHeight / 2.0 - cellMargin),
           String.format("%4d", score.getTotalTime()),
           FontRenderer.Alignment.RIGHT);
     }
     glColor3d(1.0, 1.0, 1.0);
     font.drawText(
-        rowX - rowHeight * 0.1,
+        rowX + teamLabelWidth - rowHeight * 0.1,
         rowY + rowHeight / 2.0,
-        (int) (rowHeight / 2.0),
+        (int) ((rowHeight + cellMargin) / 2.0),
         String.format("%2d", score.getNumSolved()),
         FontRenderer.Alignment.RIGHT);
   }
@@ -451,19 +437,14 @@ public class Renderer implements ResolverController.Observer {
       } else {
         glColor3ub((byte) AttemptColour.JUDGING[0], (byte) AttemptColour.JUDGING[1], (byte) AttemptColour.JUDGING[2]);
       }
-      glBegin(GL_QUADS);
-      glVertex2d(cellX-cellMargin/4,cellY-cellMargin/4);
-      glVertex2d(cellX+cellWidth+cellMargin/4,cellY-cellMargin/4);
-      glVertex2d(cellX+cellWidth+cellMargin/4,cellY+cellHeight+cellMargin/4);
-      glVertex2d(cellX-cellMargin/4,cellY+cellHeight+cellMargin/4);
-      glEnd();
+      new Layout(this::glQuad).covering(cellLayout).adjust(-cellMargin/4.0f, -cellMargin/4.0f, +cellMargin/2.0f, +cellMargin/2.0f).draw();
     }
 
     if (!attempted) {
       glEnable(GL_BLEND);
 
-      final double shWidth = cellHeight / 8.0;
-      final double shHeight = cellHeight / 4.0;
+      final float shWidth = (float) (cellHeight / 8.0);
+      final float shHeight = (float) (cellHeight / 4.0);
 
       glBegin(GL_TRIANGLE_FAN);
       glColor4f(0f, 0f, 0f, 0.7f);
@@ -478,12 +459,7 @@ public class Renderer implements ResolverController.Observer {
       glEnd();
 
       glColor4f(r, g, b, 0.6f);
-      glBegin(GL_QUADS);
-      glVertex2d(cellX+cellWidth, cellY+cellHeight-shHeight);
-      glVertex2d(cellX+shWidth, cellY+cellHeight-shHeight);
-      glVertex2d(cellX+shWidth, cellY);
-      glVertex2d(cellX+cellWidth, cellY);
-      glEnd();
+      new Layout(this::glQuad).covering(cellLayout).adjust(shWidth, 0, -shWidth, -shHeight).draw();
 
       glDisable(GL_BLEND);
     } else {
@@ -492,12 +468,7 @@ public class Renderer implements ResolverController.Observer {
       } else {
         glColor3f(r, g, b);
       }
-      glBegin(GL_QUADS);
-      glVertex2d(cellX,cellY);
-      glVertex2d(cellX+cellWidth,cellY);
-      glVertex2d(cellX+cellWidth,cellY+cellHeight);
-      glVertex2d(cellX,cellY+cellHeight);
-      glEnd();
+      new Layout(this::glQuad).covering(cellLayout).draw();
     }
 
     if (text != null) {
@@ -522,6 +493,16 @@ public class Renderer implements ResolverController.Observer {
       }
     }
   }
+
+  private void glQuad(Layout layout) {
+    glBegin(GL_QUADS);
+    glVertex2d(layout.x, layout.y);
+    glVertex2d(layout.x + layout.width, layout.y);
+    glVertex2d(layout.x + layout.width, layout.y + layout.height);
+    glVertex2d(layout.x, layout.y + layout.height);
+    glEnd();
+  }
+
 
   private static double clamp(double x, double a, double b) {
     if (x < a) return a;

@@ -13,7 +13,7 @@ public final class DebugDraw {
   private DebugDraw() {}
 
   public static void wireframe(Layout layout) {
-    float m = 5.0f;
+    float m = 2.0f;
 
     glColor3f(1.0f, 1.0f, 1.0f);
     glBegin(GL_LINES);
