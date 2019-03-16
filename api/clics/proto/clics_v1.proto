@@ -277,16 +277,26 @@ message EventFeedItem {
     Award award_data = 24;
   }
 
+  // TODO: https://github.com/protocolbuffers/protobuf/issues/4328
+  //
+  // Issue text:
+  //   Fields can be renamed, even when using JSON format, by setting json_name and
+  //   ensuring that it never changes. This allows the field's name to change without
+  //   impacting how it is serialized to/de-serialized from JSON.
+  //
+  //   Since enum values are also identified by name in the JSON format, they should
+  //   have analogous feature: a json_name pseudo-option, allowing the enum value's
+  //   actual name to change while its JSON encoding remains the same.
   enum Type {
     type_not_present = 0;
     contests = 1;
-    judgement_types = 2; // [json_name = 'judgement-types'];
+    judgement_types = 2 [(js.serialized_value) = "judgement-types"];
     languages = 3;
     problems = 4;
     groups = 5;
     organizations = 6;
     teams = 7;
-    team_members = 8; // [json_name = 'team-members'];
+    team_members = 8 [(js.serialized_value) = 'team-members'];
     state = 9;
     submissions = 10;
     judgements = 11;
