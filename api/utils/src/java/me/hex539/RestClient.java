@@ -109,7 +109,8 @@ public class RestClient<Self extends RestClient> {
                 }
               }
             } catch (Exception e) {
-              System.err.println("Failed midway through streaming response body\n" + e);
+              System.err.println("Failed midway through streaming response body");
+              e.printStackTrace();
             } finally {
               results.offer(Optional.empty());
               response.close();
