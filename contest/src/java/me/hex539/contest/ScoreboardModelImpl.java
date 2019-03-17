@@ -327,7 +327,11 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   private ScoreboardRow.Builder getRowInternal(Team team) throws NoSuchElementException {
-    return Optional.ofNullable(getTeamRowMap().get(team.getId())).get();
+    try {
+      return Optional.ofNullable(getTeamRowMap().get(team.getId())).get();
+    } catch (NoSuchElementException e) {
+      throw new NoSuchElementException("Team \"" + team.getId() + "\" does not exist.");
+    }
   }
 
   @Override
