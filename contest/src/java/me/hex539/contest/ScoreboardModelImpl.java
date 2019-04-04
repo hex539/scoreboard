@@ -210,18 +210,22 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   private static List<ScoreboardRow.Builder> createEmptyScoreboard(Teams tm, Problems pm) {
     List<ScoreboardRow.Builder> emptyRows = new ArrayList<>();
     tm.getTeams().stream().sorted(new Comparators.TeamComparator(tm)).forEach(t -> {
-      emptyRows.add(ScoreboardRow.newBuilder()
-          .setRank(emptyRows.size() + 1)
-          .setTeamId(t.getId())
-          .setScore(ScoreboardScore.newBuilder()
-              .setNumSolved(0)
-              .setTotalTime(0)
-              .build())
-          .addAllProblems(pm.getProblems().stream()
-              .map(p -> ScoreboardProblem.newBuilder().setProblemId(p.getId()).build())
-              .collect(toList())));
+      emptyRows.add(createEmptyScoreboardRow(emptyRows.size() + 1, t, pm));
     });
     return emptyRows;
+  }
+
+  private static ScoreboardRow.Builder createEmptyScoreboardRow(long rank, Team team, Problems pm) {
+    return ScoreboardRow.newBuilder()
+        .setRank(rank)
+        .setTeamId(team.getId())
+        .setScore(ScoreboardScore.newBuilder()
+            .setNumSolved(0)
+            .setTotalTime(0)
+            .build())
+        .addAllProblems(pm.getProblems().stream()
+            .map(p -> ScoreboardProblem.newBuilder().setProblemId(p.getId()).build())
+            .collect(toList()));
   }
 
   @Override
