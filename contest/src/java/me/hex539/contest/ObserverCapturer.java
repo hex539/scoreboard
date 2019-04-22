@@ -17,8 +17,8 @@ import java.util.function.Consumer;
  * protobuf-based platform agnostic RPC library that can talk to itself in the same process, across
  * threads, without making useless HTTP connections to itself, that would be perfectly suitable as
  * a replacement but I have yet to find one (binder is out of the question due to its strange
- * special case for in-process communication; it may be possible to build a custom transport for gRPC
- * but that would involve a lot more code than this approach).
+ * special case for in-process communication; it may be possible to build a custom transport for
+ * gRPC but that would involve a lot more code than this approach).
  * <p>
  * Patches to replace this nasty reflection-based workaround welcome.
  */

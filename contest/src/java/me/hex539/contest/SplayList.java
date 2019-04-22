@@ -134,7 +134,8 @@ public final class SplayList<T> extends AbstractList<T> implements List<T>, Sort
     if (root == null || index < 0 || index >= root.splay().size) {
       throw new ArrayIndexOutOfBoundsException(index);
     }
-    return root.splay().get(index).key;
+    root = root.splay().get(index);
+    return root.key;
   }
 
   @Override

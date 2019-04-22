@@ -21,12 +21,7 @@ public class ModelObserverTest {
     ScoreboardModel.Observer observer = mock(ScoreboardModel.Observer.class);
 
     ScoreboardModelImpl model = ScoreboardModelImpl.newBuilder(
-        ClicsContest.newBuilder()
-          .putJudgementTypes("correct", JudgementType.newBuilder()
-              .setName("Correct")
-              .setSolved(true)
-              .build())
-          .build(),
+        ClicsContest.newBuilder().build(),
         new MockScoreboardModel.Builder()
             .setProblems(     "A", "B", "C")
             .addRow("Team 1", "+", " ", "+")
@@ -41,8 +36,8 @@ public class ModelObserverTest {
     final Team team2 = model.getTeam("Team 2");
 
     // Initially we'll have the submissions+judgements from the mock.
-    assertThat(model.getSubmissions()).hasSize(3);
-    assertThat(model.getJudgements()).hasSize(3);
+    assertThat(model.getJudgeModel().getSubmissions()).hasSize(3);
+    assertThat(model.getJudgeModel().getJudgements()).hasSize(3);
 
     // Submit problem C for team 2.
     SubmitInfo s = submission(dispatcher, model, "Team 2", "C", 2).submit();
@@ -54,8 +49,8 @@ public class ModelObserverTest {
             .setNumPending(1)
             .setSolved(false)
             .build()));
-    assertThat(model.getSubmissions()).hasSize(4);
-    assertThat(model.getJudgements()).hasSize(3);
+    assertThat(model.getJudgeModel().getSubmissions()).hasSize(4);
+    assertThat(model.getJudgeModel().getJudgements()).hasSize(3);
 
     // Judge the problem.
     s.judge("correct");
@@ -68,7 +63,7 @@ public class ModelObserverTest {
             .setSolved(true)
             .setTime(2)
             .build()));
-    assertThat(model.getJudgements()).hasSize(4);
+    assertThat(model.getJudgeModel().getJudgements()).hasSize(4);
   }
 
   @Test
@@ -76,12 +71,7 @@ public class ModelObserverTest {
     ScoreboardModel.Observer observer = mock(ScoreboardModel.Observer.class);
 
     ScoreboardModelImpl model = ScoreboardModelImpl.newBuilder(
-        ClicsContest.newBuilder()
-          .putJudgementTypes("correct", JudgementType.newBuilder()
-              .setName("Correct")
-              .setSolved(true)
-              .build())
-          .build(),
+        ClicsContest.newBuilder().build(),
         new MockScoreboardModel.Builder()
             .setProblems(     "A", "B", "C")
             .addRow("Team 1", " ", "+", " ")
@@ -93,11 +83,16 @@ public class ModelObserverTest {
             .build()).build();
     JudgementDispatcher dispatcher = new JudgementDispatcher(model);
 
+    for (ScoreboardRow row : model.getRows()) {
+      System.err.println("  " + row.getTeamId() + ":\n    " + row.getScore());
+    }
+
     dispatcher.observers.add(model);
     dispatcher.observers.add(observer);
 
     final Team team5 = model.getTeam("Team 5");
     submission(dispatcher, model, "Team 5", "A", 101).submit().judge("correct");
+
     verify(observer).onTeamRankChanged(eq(team5), eq(5), eq(2));
     assertThat(getRankList(model))
         .containsExactly("Team 1", "Team 5", "Team 2", "Team 3", "Team 4", "Team 6")
@@ -115,16 +110,7 @@ public class ModelObserverTest {
     ScoreboardModel.Observer observer = mock(ScoreboardModel.Observer.class);
 
     ScoreboardModelImpl model = ScoreboardModelImpl.newBuilder(
-        ClicsContest.newBuilder()
-          .putJudgementTypes("correct", JudgementType.newBuilder()
-              .setName("Correct")
-              .setSolved(true)
-              .build())
-          .putJudgementTypes("incorrect", JudgementType.newBuilder()
-              .setName("Incorrect")
-              .setSolved(false)
-              .build())
-          .build(),
+        ClicsContest.newBuilder().build(),
         new MockScoreboardModel.Builder()
             .setProblems(     "A", "B", "C")
             .addRow("Team 1", "+", "+", "+")

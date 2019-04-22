@@ -3,15 +3,13 @@ package me.hex539.contest;
 import static com.google.common.truth.Truth.*;
 import static org.mockito.Mockito.*;
 
-import java.util.concurrent.TimeUnit;
-
 import com.google.protobuf.util.Durations;
-
 import edu.clics.proto.ClicsProto.*;
-
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import me.hex539.contest.ResolverController.Observer;
 import me.hex539.contest.ResolverController.Resolution;
-
 import org.junit.Test;
 
 public class ResolverTest {
@@ -147,6 +145,8 @@ public class ResolverTest {
   public void testResolveLargeNumberOfTeams() throws Exception {
     final int n = 10_000;
 
+    Instant startBuild = Instant.now();
+
     final ClicsContest.Builder ccBuilder = ClicsContest.newBuilder()
         .setContest(Contest.newBuilder()
             .setContestDuration(Durations.fromMillis(TimeUnit.HOURS.toMillis(2)))
@@ -178,14 +178,28 @@ public class ResolverTest {
           .build());
     }
     final ClicsContest entireContest = ccBuilder.build();
-    ScoreboardModel reference = ScoreboardModelImpl.newBuilder(entireContest).build().immutable();
+
+    Instant startModel = Instant.now();
+    ScoreboardModel reference = ScoreboardModelImpl.newBuilder(entireContest).build();
+    Instant startImmutable = Instant.now();
+    reference = reference.immutable();
     assertThat(reference.getTeams().size()).isEqualTo(n);
-    
+
+    Instant startResolve = Instant.now();
+
     ResolverController resolver = new ResolverController(entireContest, reference);
     assertThat(resolver.advance()).isEqualTo(Resolution.STARTED);
     Observer observer = mock(Observer.class);
     resolver.addObserver(observer);
     resolver.drain();
+
+    Instant finishResolve = Instant.now();
+
+    System.err.println("");
+    System.err.println("Time to build CLICS:  " + Duration.between(startBuild, startModel));
+    System.err.println("Time to build model:  " + Duration.between(startModel, startImmutable));
+    System.err.println("Time to finish model: " + Duration.between(startImmutable, startResolve));
+    System.err.println("Time to resolve:      " + Duration.between(startResolve, finishResolve));
 
     verify(observer, times(2 * n)).onTeamRankChanged(any(), anyInt(), eq(1));
   }

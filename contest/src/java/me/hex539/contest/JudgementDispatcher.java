@@ -10,9 +10,11 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import edu.clics.proto.ClicsProto.*;
+import me.hex539.contest.model.Judge;
 
 public class JudgementDispatcher {
   private static final boolean DEBUG = false;
+  private static final boolean VERBOSE = false;
 
   @FunctionalInterface
   private interface Logger {
@@ -22,12 +24,15 @@ public class JudgementDispatcher {
   public final Set<ScoreboardModel.Observer> observers = new HashSet<>();
   private final boolean showCompileErrors;
   private final ScoreboardModel model;
+  private final Judge judge;
   private final Comparators.RowComparator rowComparator;
-  private final Logger logger = (DEBUG ? System.err::println : s -> {});
+
+  private final Logger warn = (DEBUG ? System.err::println : s -> {});
+  private final Logger info = (VERBOSE ? System.err::println : s -> {});
 
   private final Map<String, Integer> submissionOrder = new HashMap<>();
-  private final Map<String, Map<Integer, List<Submission>>> teamSubmissions = new HashMap<>();
-  private final Map<String, Map<Integer, List<Judgement>>> teamJudgements = new HashMap<>();
+  private final Map<String, Map<String, List<Submission>>> teamSubmissions = new HashMap<>();
+  private final Map<String, Map<String, List<Judgement>>> teamJudgements = new HashMap<>();
 
   public JudgementDispatcher(final ScoreboardModel model) {
     this(model, true);
@@ -44,105 +49,95 @@ public class JudgementDispatcher {
       final boolean showCompileErrors,
       final Comparators.RowComparator rowComparator) {
     this.model = model;
+    this.judge = model.getJudgeModel();
     this.showCompileErrors = showCompileErrors;
     this.rowComparator = rowComparator;
 
-    for (Submission s : model.getSubmissions()) {
+    for (Submission s : judge.getSubmissions()) {
       submissionOrder.put(s.getId(), submissionOrder.size());
       Team team = model.getTeam(s.getTeamId());
       Problem problem = model.getProblem(s.getProblemId());
       getSubmissions(team, problem).add(s);
     }
-    for (Judgement j : model.getJudgements()) {
-      Submission s = model.getSubmission(j.getSubmissionId());
+    for (Judgement j : judge.getJudgements()) {
+      Submission s = judge.getSubmission(j.getSubmissionId());
       Team team = model.getTeam(s.getTeamId());
       Problem problem = model.getProblem(s.getProblemId());
+      getJudgements(team, problem).removeIf(x -> x.getSubmissionId().equals(j.getSubmissionId()));
       getJudgements(team, problem).add(j);
     }
   }
 
   public boolean notifySubmission(final Submission submission) {
     if (submissionOrder.putIfAbsent(submission.getId(), submissionOrder.size()) != null) {
-      logger.log("Submission " + submission.getId() + " already exists");
+      warn.log("Submission " + submission.getId() + " already exists");
       return false;
     }
 
     final Team team;
+    final Problem problem;
     try {
       team = model.getTeam(submission.getTeamId());
-      logger.log("Adding submission for team " + team.getName());
+      problem = model.getProblem(submission.getProblemId());
     } catch (NoSuchElementException e) {
-      logger.log("No such team: " + submission.getTeamId());
       return false;
     }
-    final Problem problem = model.getProblem(submission.getProblemId());
     getSubmissions(team, problem).add(submission);
 
     final ScoreboardProblem attempts = scoreProblem(
         problem,
         getJudgements(team, problem),
         getSubmissions(team, problem));
-    final ScoreboardScore score = model.getScore(team);
-    observers.forEach(x -> {
+    for (ScoreboardModel.Observer x : observers) {
       x.onProblemSubmitted(team, submission);
       x.onProblemScoreChanged(team, attempts);
-    });
+    }
     return true;
   }
 
   public ScoreboardProblem notifyJudgement(final Judgement j) {
-    final Submission submission;
-    try {
-      submission = model.getSubmission(j.getSubmissionId());
-    } catch (NoSuchElementException e) {
-      logger.log("No such submission: " + j.getSubmissionId());
-      return null;
-    }
-
     if (j.getJudgementTypeId() == null || "".equals(j.getJudgementTypeId())) {
-      logger.log("Ignoring judgement " + j.getId() + " with no judgement type");
+      warn.log("Ignoring judgement " + j.getId() + " with no judgement type");
       return null;
     }
+    final JudgementType type = judge.getJudgementType(j.getJudgementTypeId());
 
-    final JudgementType type;
-    try {
-      type = model.getJudgementType(j.getJudgementTypeId());
-    } catch (NoSuchElementException e) {
-      logger.log("No such judgement type: '" + j.getJudgementTypeId() + "'");
-      throw new Error("Unknown judgement type: '" + j.getJudgementTypeId() + "'");
-    }
-
+    final Submission submission;
     final Team team;
+    final Problem problem;
     try {
+      submission = judge.getSubmission(j.getSubmissionId());
       team = model.getTeam(submission.getTeamId());
-      logger.log("Updating judging for team " + team.getName());
+      problem = model.getProblem(submission.getProblemId());
     } catch (NoSuchElementException e) {
-      logger.log("No such team: " + submission.getTeamId());
       return null;
     }
-
-    final Problem problem = model.getProblem(submission.getProblemId());
-
-    int numPending = model.getAttempts(team, problem).getNumPending() - 1;
-    int numJudged = model.getAttempts(team, problem).getNumJudged();
 
     final List<Submission> submissions = getSubmissions(team, problem);
     final List<Judgement> verdicts = getJudgements(team, problem);
 
     long[] oldPenaltyCount = {0};
-    final ScoreboardProblem oldAttempts = scoreProblem(problem, verdicts, submissions, oldPenaltyCount);
+    final ScoreboardProblem oldAttempts =
+        scoreProblem(problem, verdicts, submissions, oldPenaltyCount);
 
     // Insert the new submission.
-    // TODO: detect whether the rejudge changed the result.
-    final boolean rejudge =
-        verdicts.removeIf(x -> x.getSubmissionId().equals(j.getSubmissionId()));
-    verdicts.add(j);
+    boolean rejudge = false;
+    for (int i = 0; i < verdicts.size(); i++) {
+      if (verdicts.get(i).getSubmissionId().equals(j.getSubmissionId())) {
+        verdicts.set(i, j);
+        rejudge = true;
+      }
+    }
+    if (!rejudge) {
+      verdicts.add(j);
+    }
     Collections.sort(verdicts, (a, b) -> Integer.compare(
         submissionOrder.get(a.getSubmissionId()),
         submissionOrder.get(b.getSubmissionId())));
 
     long[] newPenaltyCount = {0};
-    final ScoreboardProblem attempts = scoreProblem(problem, verdicts, submissions, newPenaltyCount);
+    final ScoreboardProblem attempts =
+        scoreProblem(problem, verdicts, submissions, newPenaltyCount);
 
     final ScoreboardScore oldScore = model.getScore(team);
     final ScoreboardScore newScore = attempts.equals(model.getAttempts(team, problem))
@@ -174,7 +169,7 @@ public class JudgementDispatcher {
 
       final int newRank = (int) computeRank(team);
       if (oldRank != newRank) {
-        logger.log("Team rank " + oldRank + " -> " + newRank + " for " + team.getName());
+        info.log("Team rank " + oldRank + " -> " + newRank + " for " + team.getName());
         observers.forEach(x -> x.onTeamRankChanged(team, oldRank, newRank));
       }
     }
@@ -201,7 +196,7 @@ public class JudgementDispatcher {
     Judgement solvedAt = null;
 
     for (Judgement j : verdicts) {
-      JudgementType t = model.getJudgementType(j.getJudgementTypeId());
+      JudgementType t = judge.getJudgementType(j.getJudgementTypeId());
       attemptsToSolve++;
       if (t.getPenalty()) {
         penaltyCount++;
@@ -220,7 +215,7 @@ public class JudgementDispatcher {
           .setNumPending(0)
           .setSolved(true)
           .setTime(
-              model.getSubmission(solvedAt.getSubmissionId()).getContestTime().getSeconds() / 60)
+              judge.getSubmission(solvedAt.getSubmissionId()).getContestTime().getSeconds() / 60)
           .build();
     } else {
       // Show submissions with only compiler error as -1, to be consistent with real scoreboards
@@ -229,7 +224,9 @@ public class JudgementDispatcher {
       penalty[0] = 0;
       return ScoreboardProblem.newBuilder()
           .setProblemId(problem.getId())
-          .setNumJudged(attemptsToSolve == 0 ? 0 : Math.max(showCompileErrors ? 1 : 0, penaltyCount))
+          .setNumJudged(attemptsToSolve == 0
+              ? 0
+              : Math.max(showCompileErrors ? 1 : 0, penaltyCount))
           .setNumPending(submissions.size() - verdicts.size())
           .setSolved(false)
           .build();
@@ -248,12 +245,12 @@ public class JudgementDispatcher {
   private List<Submission> getSubmissions(Team team, Problem problem) {
     return teamSubmissions
         .computeIfAbsent(team.getId(), k -> new HashMap<>())
-        .computeIfAbsent(problem.getOrdinal(), k -> new ArrayList<>());
+        .computeIfAbsent(problem.getId(), k -> new ArrayList<>());
   }
 
   private List<Judgement> getJudgements(Team team, Problem problem) {
     return teamJudgements
         .computeIfAbsent(team.getId(), k -> new HashMap<>())
-        .computeIfAbsent(problem.getOrdinal(), k -> new ArrayList<>());
+        .computeIfAbsent(problem.getId(), k -> new ArrayList<>());
   }
 }

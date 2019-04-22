@@ -36,7 +36,8 @@ public class Executive {
     final ContestConfig.Source source;
     if (invocation.getUrl() != null) {
       ContestConfig.Source.Builder sourceBuilder =
-          ApiDetective.detectApi(invocation.getUrl()).get()
+          ApiDetective.detectApi(invocation.getUrl())
+              .orElseThrow(() -> new Error("No contests found"))
               .toBuilder();
       if (invocation.getUsername() != null) {
           sourceBuilder.setAuthentication(
@@ -114,7 +115,7 @@ public class Executive {
     JudgementDispatcher dispatcher = new JudgementDispatcher(model);
     dispatcher.observers.add(model);
 
-    for (Judgement judgement : fullModel.getJudgements()) {
+    for (Judgement judgement : fullModel.getJudgeModel().getJudgements()) {
       try {
         model.getSubmission(judgement.getSubmissionId());
       } catch (Exception e) {
@@ -126,7 +127,8 @@ public class Executive {
         continue;
       }
 
-      final JudgementType judgementType = model.getJudgementType(judgement.getJudgementTypeId());
+      final JudgementType judgementType =
+          model.getJudgeModel().getJudgementType(judgement.getJudgementTypeId());
       final Submission submission = model.getSubmission(judgement.getSubmissionId());
       final Problem problem = model.getProblem(submission.getProblemId());
       final Team team = model.getTeam(submission.getTeamId());
@@ -150,6 +152,90 @@ public class Executive {
           Timestamps.toString(item.get().getTime()),
           item.get().getOperation().toString(),
           item.get().getType().toString());
+    }
+  }
+
+  @Command(name = "live")
+  private void showLiveScoreboard(Invocation invocation) throws Exception {
+    Optional<BlockingQueue<Optional<EventFeedItem>>> feed =
+        contestFetcher.eventFeed(contestFetcher.contests().get(0));
+    if (!feed.isPresent()) {
+      System.err.println("Event feed is not available.");
+      return;
+    }
+
+    ClicsContest entireContest = contestFetcher.fetch();
+    ScoreboardModelImpl fullModel = ScoreboardModelImpl.newBuilder(entireContest)
+        .filterGroups(g -> invocation.getGroups() != null
+            ? invocation.getGroups().equals(g.getName())
+            : !g.getHidden())
+        .filterTooLateSubmissions()
+        .build();
+    ScoreboardModelImpl model = fullModel.toBuilder()
+        .withEmptyScoreboard()
+        .filterSubmissions(x -> false)
+        .build();
+    JudgementDispatcher dispatcher = new JudgementDispatcher(model);
+    dispatcher.observers.add(model);
+
+    for (Optional<EventFeedItem> otem; (otem = feed.get().take()).isPresent();) {
+      final EventFeedItem item = otem.get();
+
+      if (item.hasContestData()) {
+      } else if (item.hasJudgementTypeData()) {
+      } else if (item.hasLanguageData()) {
+      } else if (item.hasProblemData()) {
+      } else if (item.hasGroupData()) {
+        switch (item.getOperation()) {
+          case create:
+          case update:
+            model.getTeamsModel().onGroupAdded(item.getGroupData());
+            break;
+          case delete:
+            model.getTeamsModel().onGroupRemoved(item.getGroupData());
+            break;
+        }
+      } else if (item.hasOrganizationData()) {
+      } else if (item.hasTeamData()) {
+        switch (item.getOperation()) {
+          case create:
+          case update:
+            if (model.getTeamsModel().containsTeam(item.getTeamData())) {
+              model.getTeamsModel().onTeamAdded(item.getTeamData());
+              model.getRanklistModel().onTeamAdded(item.getTeamData());
+            }
+            break;
+          case delete:
+            model.getRanklistModel().onTeamRemoved(item.getTeamData());
+            model.getTeamsModel().onTeamRemoved(item.getTeamData());
+            break;
+        }
+      } else if (item.hasStateData()) {
+      } else if (item.hasSubmissionData()) {
+        final Submission submission = item.getSubmissionData();
+        if (model.getTeamsModel().containsTeam(submission.getTeamId())) {
+          dispatcher.notifySubmission(item.getSubmissionData());
+        }
+      } else if (item.hasJudgementData()) {
+        dispatcher.notifyJudgement(item.getJudgementData());
+      } else if (item.hasRunData()) {
+      } else if (item.hasClarificationData()) {
+      } else if (item.hasAwardData()) {
+      }
+
+      if (feed.get().isEmpty()) {
+        System.out.println(PrettyPrinter.formatScoreboardHeader(model.getProblems()));
+        model.getRows().stream()
+            .limit(20)
+            .map(row -> PrettyPrinter.formatScoreboardRow(
+                model.getTeam(row.getTeamId()),
+                row,
+                false,
+                null))
+            .forEach(System.out::println);
+
+        Thread.sleep(200); // milliseconds
+      }
     }
   }
 

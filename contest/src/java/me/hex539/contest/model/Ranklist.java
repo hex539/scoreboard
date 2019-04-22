@@ -1,35 +1,25 @@
-package me.hex539.contest;
+package me.hex539.contest.model;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
-
-import me.hex539.contest.model.Judge;
-import me.hex539.contest.model.Problems;
-import me.hex539.contest.model.Ranklist;
-import me.hex539.contest.model.Teams;
+import java.util.Optional;
 
 import edu.clics.proto.ClicsProto.*;
 
-public interface ScoreboardModel extends Teams, Problems, Ranklist {
-  public interface Observer{
-    default void setModel(ScoreboardModel model) {}
-    default void onProblemSubmitted(Team team, Submission submission) {}
-    default void onSubmissionJudged(Team team, Judgement judgement) {}
+public interface Ranklist {
+  public interface Observer {
     default void onProblemScoreChanged(Team team, ScoreboardProblem problem) {}
     default void onScoreChanged(Team team, ScoreboardScore score) {}
     default void onTeamRankChanged(Team team, int oldRank, int newRank) {}
   }
 
-  List<ScoreboardRow> getRows();
-  Contest getContest();
-
-  default Teams getTeamsModel() {return this;}
-  default Problems getProblemsModel() {return this;}
-  default Ranklist getRanklistModel() {return this;}
-  Judge getJudgeModel();
+  default List<ScoreboardRow> getRows() {
+    return Collections.emptyList();
+  }
 
   default ScoreboardRow getRow(long index) throws NoSuchElementException {
-    return getRows().get((int) index);
+    return Optional.ofNullable(getRows().get((int) index)).get();
   }
 
   default ScoreboardRow getRow(Team team) throws NoSuchElementException {
@@ -50,9 +40,5 @@ public interface ScoreboardModel extends Teams, Problems, Ranklist {
     } catch (Throwable fromOrElseThrow) {
       throw (NoSuchElementException) fromOrElseThrow;
     }
-  }
-
-  default ScoreboardModel immutable() {
-    return ImmutableScoreboardModel.of(this);
   }
 }

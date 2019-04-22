@@ -2,10 +2,7 @@ package me.hex539.contest;
 
 import com.google.auto.value.AutoValue;
 import com.google.protobuf.util.Durations;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -13,6 +10,11 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import me.hex539.contest.model.Teams;
+import me.hex539.contest.mutable.JudgeMutable;
+import me.hex539.contest.mutable.ProblemsMutable;
+import me.hex539.contest.mutable.RanklistMutable;
+import me.hex539.contest.mutable.TeamsMutable;
 
 import edu.clics.proto.ClicsProto.*;
 
@@ -22,40 +24,22 @@ import static java.util.stream.Collectors.toMap;
 @AutoValue
 public abstract class ScoreboardModelImpl implements ScoreboardModel, ScoreboardModel.Observer {
   abstract ClicsContest getClics();
-  abstract List<ScoreboardRow.Builder> getScoreboardRows();
-  abstract Map<String, Submission> getSubmissionsMap();
-  abstract Map<String, Judgement> getJudgementsMap();
-  abstract Map<String, Problem> getProblemsMap();
-  abstract Map<String, Team> getTeamsMap();
-  abstract Map<String, Group> getGroupsMap();
 
-  abstract SplayList<ScoreboardRow.Builder> getFancyScoreboardRows();
-  abstract Map<String, ScoreboardRow.Builder> getTeamRowMap();
+  public abstract TeamsMutable getTeamsModel();
+  public abstract ProblemsMutable getProblemsModel();
+  public abstract RanklistMutable getRanklistModel();
+  public abstract JudgeMutable getJudgeModel();
 
   public abstract Builder toBuilder();
 
   public static Builder newBuilder(ClicsContest clics) {
-    return new AutoValue_ScoreboardModelImpl.Builder()
-        .setClics(clics)
-        .setProblemsMap(clics.getProblemsMap())
-        .setGroupsMap(clics.getGroupsMap())
-        .setTeamsMap(clics.getTeamsMap())
-        .setSubmissionsMap(clics.getSubmissionsMap())
-        .setJudgementsMap(clics.getJudgementsMap())
-        .setScoreboardRows(clics.getScoreboardList()
-            .stream().map(ScoreboardRow::toBuilder).collect(Collectors.toList()));
+    return new AutoValue_ScoreboardModelImpl.Builder().setClics(clics);
   }
 
   public static Builder newBuilder(ClicsContest clics, ScoreboardModel src) {
-    return new AutoValue_ScoreboardModelImpl.Builder()
-        .setClics(clics)
-        .setProblemsMap(mapBy(src.getProblems(), Problem::getId))
-        .setGroupsMap(mapBy(src.getGroups(), Group::getId))
-        .setTeamsMap(mapBy(src.getTeams(), Team::getId))
-        .setSubmissionsMap(mapBy(src.getSubmissions(), Submission::getId))
-        .setJudgementsMap(mapBy(src.getJudgements(), Judgement::getId))
-        .setScoreboardRows(src.getRows()
-            .stream().map(ScoreboardRow::toBuilder).collect(Collectors.toList()));
+    Builder b = newBuilder(clics);
+    b.reference = src;
+    return b;
   }
 
   private static <K, V> Map<K, V> mapBy(Collection<V> v, Function<V, K> m) {
@@ -66,48 +50,64 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   public abstract static class Builder {
     // Internal builder methods.
     abstract Builder setClics(ClicsContest clics);
-    abstract Builder setScoreboardRows(List<ScoreboardRow.Builder> scoreboardRows);
-    abstract Builder setJudgementsMap(Map<String, Judgement> judgementsMap);
-    abstract Builder setSubmissionsMap(Map<String, Submission> submissionsMap);
-    abstract Builder setTeamsMap(Map<String, Team> teamsMap);
-    abstract Builder setGroupsMap(Map<String, Group> groupsMap);
-    abstract Builder setProblemsMap(Map<String, Problem> problems);
-    abstract Builder setFancyScoreboardRows(SplayList<ScoreboardRow.Builder> rows);
-    abstract Builder setTeamRowMap(Map<String, ScoreboardRow.Builder> teamRows);
+    abstract Builder setTeamsModel(TeamsMutable teams);
+    abstract Builder setProblemsModel(ProblemsMutable problems);
+    abstract Builder setRanklistModel(RanklistMutable ranklist);
+    abstract Builder setJudgeModel(JudgeMutable judge);
 
     abstract ClicsContest getClics();
-    abstract List<ScoreboardRow.Builder> getScoreboardRows();
-    abstract Map<String, Judgement> getJudgementsMap();
-    abstract Map<String, Submission> getSubmissionsMap();
-    abstract Map<String, Team> getTeamsMap();
-    abstract Map<String, Group> getGroupsMap();
-    abstract Map<String, Problem> getProblemsMap();
-    abstract SplayList<ScoreboardRow.Builder> getFancyScoreboardRows();
+    abstract Optional<TeamsMutable> getTeamsModel();
+    abstract Optional<ProblemsMutable> getProblemsModel();
+    abstract Optional<RanklistMutable> getRanklistModel();
+    abstract Optional<JudgeMutable> getJudgeModel();
 
     abstract ScoreboardModelImpl autoBuild();
 
+    // ScoreboardModel copy-builder.
+    private ScoreboardModel reference = null;
+
     // Extra setup.
-    private Predicate<ScoreboardRowOrBuilder> scoreboardFilter =
-        x -> getTeamsMap().containsKey(x.getTeamId());
+    private Predicate<ScoreboardRow> scoreboardFilter =
+        x -> getTeamsModel().get().containsTeam(x.getTeamId());
     private Predicate<Judgement> judgementFilter =
-        x -> getSubmissionsMap().containsKey(x.getSubmissionId());
+        x -> true;
     private Predicate<Submission> submissionFilter =
-        x -> getTeamsMap().containsKey(x.getTeamId());
+        x -> getTeamsModel().get().containsTeam(x.getTeamId());
     private Predicate<Team> teamFilter =
-        x -> x.getGroupIdsList().stream().filter(getGroupsMap()::containsKey).findAny().isPresent();
+        x -> x.getGroupIdsList().stream()
+            .filter(getTeamsModel().get()::containsGroup)
+            .findAny()
+            .isPresent();
     private Predicate<Group> groupFilter = x -> true;
 
     public Builder withEmptyScoreboard() {
-      return setScoreboardRows(createEmptyScoreboard(makeTeamsModel(), makeProblemsModel()));
-    }
-
-    public Builder filterScoreboardRows(final Predicate<ScoreboardRowOrBuilder> pred) {
-      scoreboardFilter = scoreboardFilter.and(pred);
+      scoreboardFilter = x -> false;
+      judgementFilter = x -> false;
       return this;
     }
 
-    public Builder filterJudgements(final Predicate<Judgement> pred) {
-      judgementFilter = judgementFilter.and(pred);
+    public Builder withJudgements(Predicate<Judgement> judgementFilter) {
+      JudgeMutable judge = JudgeMutable.newBuilder()
+        .setProblems(getProblemsModel().get())
+        .setTeams(getTeamsModel().get())
+        .build();
+      setJudgeModel(judge);
+      getClics().getJudgementTypesMap().values().stream()
+          .forEach(judge::onJudgementTypeAdded);
+      getClics().getSubmissionsMap().values().stream()
+          .filter(submissionFilter)
+          .sorted((a, b) -> Long.compare(
+              Durations.toNanos(a.getContestTime()),
+              Durations.toNanos(b.getContestTime())))
+          .forEach(s -> judge.onProblemSubmitted(
+              getTeamsModel().get().getTeam(s.getTeamId()),
+              s));
+      getClics().getJudgementsMap().values().stream()
+          .filter(judgementFilter)
+          .sorted((a, b) -> Long.compare(
+              Durations.toNanos(a.getEndContestTime()),
+              Durations.toNanos(b.getEndContestTime())))
+          .forEach(j -> judge.onSubmissionJudged(j));
       return this;
     }
 
@@ -133,99 +133,73 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     }
 
     public ScoreboardModelImpl build() {
-      return this
-          .setGroupsMap(filterMap(getGroupsMap(), groupFilter))
-          .setTeamsMap(filterMap(getTeamsMap(), teamFilter))
-          .setSubmissionsMap(filterMap(getSubmissionsMap(), submissionFilter))
-          .setJudgementsMap(filterMap(getJudgementsMap(), judgementFilter))
-          .setFancyScoreboardRows(applyFilterToScoreboardRows(
-                getScoreboardRows(),
-                scoreboardFilter,
-                new Comparators.RowComparator(makeTeamsModel())))
-          .setScoreboardRows(getFancyScoreboardRows())
-          .setTeamRowMap(new HashMap<>(
-              getFancyScoreboardRows().stream()
-                  .collect(Collectors.toMap(ScoreboardRowOrBuilder::getTeamId, Function.identity()))))
-          .autoBuild();
-    }
+      if (!getTeamsModel().isPresent()) {
+        TeamsMutable teams = new TeamsMutable();
+        setTeamsModel(teams);
 
-    private Teams makeTeamsModel() {
-     return new Teams() {
-        @Override public Collection<Organization> getOrganizations() {return null;}
-        @Override public Collection<Group> getGroups() {return getGroupsMap().values();}
-        @Override public Collection<Team> getTeams() {return getTeamsMap().values();}
-        @Override public Group getGroup(String id) {return getGroupsMap().get(id);}
-        @Override public Team getTeam(String id) {return getTeamsMap().get(id);}
-      };
-    }
-
-    private Problems makeProblemsModel() {
-      return new Problems() {
-        @Override public List<Problem> getProblems() {
-          return getProblemsMap().values().stream()
-              .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()))
-              .collect(Collectors.toList());
+        if (reference != null) {
+          Teams refTeams = reference.getTeamsModel();
+          refTeams.getOrganizations().forEach(teams::onOrganizationAdded);
+          refTeams.getGroups().stream().filter(groupFilter).forEach(teams::onGroupAdded);
+          refTeams.getTeams().stream().filter(teamFilter).forEach(teams::onTeamAdded);
+        } else {
+          getClics().getOrganizationsMap().values()
+              .forEach(teams::onOrganizationAdded);
+          getClics().getGroupsMap().values().stream()
+              .filter(groupFilter)
+              .forEach(teams::onGroupAdded);
+          getClics().getTeamsMap().values().stream()
+              .filter(teamFilter)
+              .forEach(teams::onTeamAdded);
         }
-        @Override public Problem getProblem(String id) {return getProblemsMap().get(id);}
-      };
-    }
-
-    private static SplayList<ScoreboardRow.Builder> applyFilterToScoreboardRows(
-        List<? extends ScoreboardRow.Builder> rows,
-        Predicate<? super ScoreboardRowOrBuilder> pred,
-        Comparator<? super ScoreboardRowOrBuilder> order) {
-      final SplayList<ScoreboardRow.Builder> res = new SplayList<>(order);
-      int firstRank = -1;
-      int rank = 1;
-      for (ScoreboardRow.Builder i : rows) if (pred.test(i)) {
-        if (firstRank == -1) {
-          firstRank = rank;
-        } else if ((i.getRank() - firstRank) != (rank - 1) && i.getScore().getNumSolved() != 0) {
-          System.err.println("Scoreboard is not sorted increasing by rank."
-              + "\nTeam " + i.getTeamId() + " has index " + (rank - 1)
-              + " but rank " + i.getRank());
-          continue;
-        }
-        ScoreboardRow.Builder b = i.build().toBuilder().setRank(rank);
-        res.add(b);
-        if (res.indexOf(b) != rank - 1) {
-          throw new AssertionError("Scoreboard is not sorted descending by score."
-              + "\nTeam " + b.getTeamId() + " has index " + (res.indexOf(b) + 1)
-              + " but rank " + b.getRank());
-        }
-        ++rank;
       }
-      return res;
+
+      if (!getProblemsModel().isPresent()) {
+        if (reference != null) {
+          setProblemsModel(new ProblemsMutable(reference.getProblemsModel()));
+        } else {
+          ProblemsMutable problems = new ProblemsMutable();
+          setProblemsModel(problems);
+          getClics().getProblemsMap().values().stream()
+              .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()))
+              .forEach(problems::onProblemAdded);
+        }
+      }
+
+      if (!getRanklistModel().isPresent()) {
+        if (reference != null) {
+          setRanklistModel(RanklistMutable.newBuilder()
+              .setTeams(getTeamsModel().get())
+              .setProblems(getProblemsModel().get())
+              .copyFrom(
+                  reference.getRanklistModel(),
+                  scoreboardFilter));
+        } else {
+          setRanklistModel(RanklistMutable.newBuilder()
+              .setTeams(getTeamsModel().get())
+              .setProblems(getProblemsModel().get())
+              .setRows(
+                  getClics().getScoreboardList(),
+                  scoreboardFilter)
+              .build());
+        }
+      }
+
+      if (!getJudgeModel().isPresent()) {
+        if (reference != null) {
+          setJudgeModel(JudgeMutable.newBuilder()
+              .setTeams(getTeamsModel().get())
+              .setProblems(getProblemsModel().get())
+              .copyFrom(
+                  reference.getJudgeModel(),
+                  submissionFilter,
+                  judgementFilter));
+        } else {
+          withJudgements(judgementFilter);
+        }
+      }
+      return autoBuild();
     }
-
-    private static <K, V> Map<K, V> filterMap(Map<K, V> m, Predicate<V> f) {
-      final Map<K, V> res = new HashMap<>();
-      m.entrySet().stream()
-          .filter(e -> f.test(e.getValue()))
-          .forEach(e -> res.put(e.getKey(), e.getValue()));
-      return res;
-    }
-  }
-
-  private static List<ScoreboardRow.Builder> createEmptyScoreboard(Teams tm, Problems pm) {
-    List<ScoreboardRow.Builder> emptyRows = new ArrayList<>();
-    tm.getTeams().stream().sorted(new Comparators.TeamComparator(tm)).forEach(t -> {
-      emptyRows.add(createEmptyScoreboardRow(emptyRows.size() + 1, t, pm));
-    });
-    return emptyRows;
-  }
-
-  private static ScoreboardRow.Builder createEmptyScoreboardRow(long rank, Team team, Problems pm) {
-    return ScoreboardRow.newBuilder()
-        .setRank(rank)
-        .setTeamId(team.getId())
-        .setScore(ScoreboardScore.newBuilder()
-            .setNumSolved(0)
-            .setTotalTime(0)
-            .build())
-        .addAllProblems(pm.getProblems().stream()
-            .map(p -> ScoreboardProblem.newBuilder().setProblemId(p.getId()).build())
-            .collect(toList()));
   }
 
   @Override
@@ -234,189 +208,96 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   @Override
-  public Collection<JudgementType> getJudgementTypes() {
-    return getClics().getJudgementTypes().values();
-  }
-
-  @Override
-  public JudgementType getJudgementType(String id) {
-    try {
-      return getClics().getJudgementTypesOrThrow(id);
-    } catch (IllegalArgumentException e) {
-      throw new NoSuchElementException("Judgement type '" + id + "'");
-    }
-  }
-
-  @Override
   public Organization getOrganization(String id) {
-    try {
-      return getClics().getOrganizationsOrThrow(id);
-    } catch (IllegalArgumentException e) {
-      throw new NoSuchElementException("Organization '" + id + "'");
-    }
+    return getTeamsModel().getOrganization(id);
   }
 
   @Override
   public Collection<Organization> getOrganizations() {
-    return getClics().getOrganizationsMap().values();
+    return getTeamsModel().getOrganizations();
   }
 
   @Override
   public List<Problem> getProblems() {
-    return getClics().getProblems().values().stream()
-        .sorted((a, b) -> Integer.compare(a.getOrdinal(), b.getOrdinal()))
-        .collect(Collectors.toList());
+    return getProblemsModel().getProblems();
   }
 
   @Override
   public List<ScoreboardRow> getRows() {
-    List<ScoreboardRow> res = new ArrayList<>();
-    for (ScoreboardRow.Builder row : getScoreboardRows()) {
-      res.add(fixRank(row));
-    }
-    return res;
-  }
-
-  @Override
-  public List<Submission> getSubmissions() {
-    return getSubmissionsMap().values().stream()
-        .sorted((a, b) -> Long.compare(
-            Durations.toNanos(a.getContestTime()),
-            Durations.toNanos(b.getContestTime())))
-        .collect(Collectors.toList());
-  }
-
-  @Override
-  public List<Judgement> getJudgements() {
-    return getJudgementsMap().values().stream()
-        .sorted((a, b) -> Long.compare(
-            Durations.toNanos(a.getEndContestTime()),
-            Durations.toNanos(b.getEndContestTime())))
-        .collect(Collectors.toList());
+    return getRanklistModel().getRows();
   }
 
   @Override
   public Collection<Group> getGroups() {
-    return getGroupsMap().values();
+    return getTeamsModel().getGroups();
   }
 
   @Override
   public Collection<Team> getTeams() {
-    return getTeamsMap().values();
+    return getTeamsModel().getTeams();
   }
 
   @Override
   public Group getGroup(String id) throws NoSuchElementException {
-    return getGroupsMap().get(id);
+    return getTeamsModel().getGroup(id);
   }
 
   @Override
   public Team getTeam(String id) throws NoSuchElementException {
-    return Optional.ofNullable(getTeamsMap().get(id)).get();
+    return getTeamsModel().getTeam(id);
   }
 
   @Override
   public Problem getProblem(String id) throws NoSuchElementException {
-    return Optional.ofNullable(getProblemsMap().get(id)).get();
+    return getProblemsModel().getProblem(id);
   }
 
   @Override
   public ScoreboardRow getRow(long index) throws NoSuchElementException {
-    return fixRank(getScoreboardRows().get((int) index));
+    return getRanklistModel().getRow(index);
   }
 
   @Override
   public ScoreboardRow getRow(Team team) throws NoSuchElementException {
-    return fixRank(getRowInternal(team));
-  }
-
-  private ScoreboardRow.Builder getRowInternal(Team team) throws NoSuchElementException {
-    try {
-      return Optional.ofNullable(getTeamRowMap().get(team.getId())).get();
-    } catch (NoSuchElementException e) {
-      throw new NoSuchElementException("Team \"" + team.getId() + "\" does not exist.");
-    }
+    return getRanklistModel().getRow(team);
   }
 
   @Override
   public ScoreboardScore getScore(Team team) throws NoSuchElementException {
-    return getRowInternal(team).getScore();
+    return getRanklistModel().getScore(team);
   }
 
   @Override
   public ScoreboardProblem getAttempts(Team team, Problem problem) throws NoSuchElementException {
-    final List<ScoreboardProblem> attempts = getRowInternal(team).getProblemsList();
-    for (ScoreboardProblem attempt : attempts) {
-      if (problem.getId().equals(attempt.getProblemId())) {
-        return attempt;
-      }
-    }
-    throw new NoSuchElementException("Cannot find problem " + problem.getId());
+    return getRanklistModel().getAttempts(team, problem);
   }
 
-  @Override
   public Submission getSubmission(String id) throws NoSuchElementException {
-    return Optional.ofNullable(getSubmissionsMap().get(id)).get();
+    return getJudgeModel().getSubmission(id);
   }
 
   @Override
   public void onProblemSubmitted(Team team, Submission submission) {
-    getSubmissionsMap().put(submission.getId(), submission);
+    getJudgeModel().onProblemSubmitted(team, submission);
   }
 
   @Override
   public void onSubmissionJudged(Team team, Judgement judgement) {
-    getJudgementsMap().put(judgement.getId(), judgement);
+    getJudgeModel().onSubmissionJudged(team, judgement);
   }
 
   @Override
   public void onProblemScoreChanged(Team team, ScoreboardProblem attempt) {
-    // We have to re-insert the original row, even though the score stayed the same.
-    // This is because submit times are used as a tie-breaker.
-    final ScoreboardRow.Builder row = getRowInternal(team);
-    getFancyScoreboardRows().remove(row);
-
-    final List<ScoreboardProblem> attempts = row.getProblemsList();
-    for (int i = attempts.size(); i --> 0;) {
-      final ScoreboardProblem p = attempts.get(i);
-      if (attempt.getProblemId().equals(p.getProblemId())) {
-        getFancyScoreboardRows().add(row.setProblems(i, attempt));
-        return;
-      }
-    }
-    throw new NoSuchElementException("Cannot find problem " + attempt.getProblemId());
+    getRanklistModel().onProblemScoreChanged(team, attempt);
   }
 
   @Override
   public void onScoreChanged(Team team, ScoreboardScore score) {
-    final ScoreboardRow.Builder row = getRowInternal(team);
-    getFancyScoreboardRows().remove(row);
-    getFancyScoreboardRows().add(row.setScore(score));
+    getRanklistModel().onScoreChanged(team, score);
   }
 
   @Override
   public void onTeamRankChanged(Team team, int oldRank, int newRank) {
     // Already handled by onScoreChanged.
-  }
-
-  /**
-   * Find the real rank of a team before returning it.
-   *
-   * Internal representation doesn't care about rank, just relative order. This is because
-   * keeping track of rank after scoreboard changes is an O(N) operation that can sometimes
-   * involve rebuilding the whole scoreboard.
-   *
-   * To keep clients happy we find the real rank of the team and set it on a copy before
-   * handing it out. The updated row isn't saved anywhere because we don't need it.
-   */
-  private ScoreboardRow fixRank(ScoreboardRow.Builder row) {
-    if (getTeamRowMap().get(row.getTeamId()) != row) {
-      throw new AssertionError("Invalid scoreboard row for team " + row.getTeamId());
-    }
-    int realRank = getFancyScoreboardRows().indexOf(row) + 1;
-    if (realRank == 0) {
-      throw new AssertionError("Scoreboard row for team " + row.getTeamId() + " is missing");
-    }
-    return (realRank == row.getRank() ? row : row.setRank(realRank)).build();
   }
 }

@@ -9,6 +9,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import me.hex539.contest.ScoreboardModel;
+import me.hex539.contest.model.Judge;
 
 public final class MockScoreboardModel {
   public static ScoreboardModel example() {
@@ -27,9 +28,23 @@ public final class MockScoreboardModel {
     private final List<Organization> organizations = new ArrayList<>();
     private final List<Group> groups = new ArrayList<>();
     private final List<Submission> submissions = new ArrayList<>();
+    private final List<JudgementType> judgementTypes = new ArrayList<>();
     private final List<Judgement> judgements = new ArrayList<>();
 
     private static final int SUBMISSION_TIME = 100;
+
+    public Builder() {
+      judgementTypes.add(JudgementType.newBuilder()
+          .setId("correct")
+          .setName("Correct")
+          .setSolved(true)
+          .build());
+      judgementTypes.add(JudgementType.newBuilder()
+          .setId("incorrect")
+          .setName("Incorrect")
+          .setSolved(false)
+          .build());
+    }
 
     public ScoreboardModel build() {
       return new ScoreboardModel() {
@@ -64,13 +79,23 @@ public final class MockScoreboardModel {
         }
 
         @Override
-        public List<Submission> getSubmissions() {
-          return submissions;
-        }
+        public Judge getJudgeModel() {
+          return new Judge() {
+            @Override
+            public List<Submission> getSubmissions() {
+              return submissions;
+            }
 
-        @Override
-        public List<Judgement> getJudgements() {
-          return judgements;
+            @Override
+            public List<JudgementType> getJudgementTypes() {
+              return judgementTypes;
+            }
+
+            @Override
+            public List<Judgement> getJudgements() {
+              return judgements;
+            }
+          };
         }
       };
     }
@@ -136,7 +161,7 @@ public final class MockScoreboardModel {
       cols.stream()
           .forEach(col -> {
               IntStream.range(0, (col.getSolved() ? 1 : 0) * -1 + col.getNumJudged())
-                  .forEach(i -> addSubmission(teamName, col.getProblemId(), "wrong-answer"));
+                  .forEach(i -> addSubmission(teamName, col.getProblemId(), "incorrect"));
               IntStream.range(0, (col.getSolved() ? 1 : 0))
                   .forEach(i -> addSubmission(teamName, col.getProblemId(), "correct"));
           });

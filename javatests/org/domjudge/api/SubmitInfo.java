@@ -21,7 +21,7 @@ class SubmitInfo {
   }
 
   public SubmitInfo submit() {
-    d.notifySubmission(s);
+    assertThat(d.notifySubmission(s)).isTrue();
     return this;
   }
 
@@ -42,7 +42,7 @@ class SubmitInfo {
       JudgementDispatcher disp,
       ScoreboardModel model,
       String id) {
-    return new SubmitInfo(disp, model, model.getSubmission(id));
+    return new SubmitInfo(disp, model, model.getJudgeModel().getSubmission(id));
   }
 
   public static SubmitInfo submission(

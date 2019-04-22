@@ -2,8 +2,9 @@ package me.hex539.contest;
 
 import edu.clics.proto.ClicsProto.*;
 import java.util.Comparator;
+import me.hex539.contest.model.Teams;
 
-class Comparators {
+public class Comparators {
   public static class TeamComparator implements Comparator<Team> {
     private final Teams contest;
 

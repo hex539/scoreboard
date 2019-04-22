@@ -5,11 +5,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Function;
 
 import com.google.auto.value.AutoValue;
 
 import edu.clics.proto.ClicsProto.*;
+import me.hex539.contest.model.Judge;
 
 /**
  * Thread-safe implementation of {@link ScoreboardModel}.
@@ -24,7 +26,7 @@ import edu.clics.proto.ClicsProto.*;
  * used across threads with appropriate locking.)
  */
 @AutoValue
-public abstract class ImmutableScoreboardModel implements ScoreboardModel {
+public abstract class ImmutableScoreboardModel implements ScoreboardModel, Judge {
 
   // Internal fields.
   abstract List<Problem> getProblemsById();
@@ -43,9 +45,9 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel {
         .setOrganizations(organizations)
         .setTeams(teams)
         .setGroups(groups)
-        .setJudgementTypes(list(model.getJudgementTypes()))
-        .setJudgements(list(model.getJudgements()))
-        .setSubmissions(list(model.getSubmissions()))
+        .setJudgementTypes(list(model.getJudgeModel().getJudgementTypes()))
+        .setJudgements(list(model.getJudgeModel().getJudgements()))
+        .setSubmissions(list(model.getJudgeModel().getSubmissions()))
         .setProblems(model.getProblems())
         .setProblemsById(sortBy(model.getProblems(), Problem::getId))
         .setRowsByTeamId(sortBy(model.getRows(), ScoreboardRow::getTeamId))
@@ -82,7 +84,12 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel {
   }
 
   @Override
-  public JudgementType getJudgementType(String id) {
+  public Judge getJudgeModel() {
+    return this;
+  }
+
+  @Override
+  public Optional<JudgementType> getJudgementTypeOpt(String id) {
     return binarySearch(getJudgementTypes(), type -> id.compareTo(type.getId()));
   }
 
@@ -95,23 +102,23 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel {
   @Override public abstract List<Submission> getSubmissions();
 
   @Override
-  public Organization getOrganization(String id) {
+  public Optional<Organization> getOrganizationOpt(String id) {
     return binarySearch(getOrganizations(), org -> id.compareTo(org.getId()));
   }
 
   @Override
-  public Group getGroup(String id) throws NoSuchElementException {
+  public Optional<Group> getGroupOpt(String id) {
     return binarySearch(getGroups(), group -> id.compareTo(group.getId()));
   }
 
   @Override
-  public Team getTeam(String id) throws NoSuchElementException {
+  public Optional<Team> getTeamOpt(String id) {
     return binarySearch(getTeams(), team -> id.compareTo(team.getId()));
   }
 
   @Override
   public Problem getProblem(String id) throws NoSuchElementException {
-    return binarySearch(getProblemsById(), prob -> id.compareTo(prob.getId()));
+    return binarySearch(getProblemsById(), prob -> id.compareTo(prob.getId())).get();
   }
 
   @Override
@@ -122,7 +129,7 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel {
   @Override
   public ScoreboardRow getRow(Team team) throws NoSuchElementException {
     final String id = team.getId();
-    return binarySearch(getRowsByTeamId(), row -> id.compareTo(row.getTeamId()));
+    return binarySearch(getRowsByTeamId(), row -> id.compareTo(row.getTeamId())).get();
   }
 
   @Override
@@ -144,11 +151,11 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel {
   }
 
   @Override
-  public Submission getSubmission(String id) throws NoSuchElementException {
+  public Optional<Submission> getSubmissionOpt(String id) {
     return binarySearch(getSubmissions(), sub -> id.compareTo(sub.getId()));
   }
 
-  private static <T> T binarySearch(List<T> items, Function<T, Integer> compareTo) {
+  private static <T> Optional<T> binarySearch(List<T> items, Function<T, Integer> compareTo) {
     final T res;
 
     if (!items.isEmpty()) {
@@ -164,9 +171,9 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel {
     }
 
     if (res != null && compareTo.apply(res) == 0) {
-      return res;
+      return Optional.ofNullable(res);
     } else {
-      throw new NoSuchElementException("Unknown element");
+      return Optional.empty();
     }
   }
 

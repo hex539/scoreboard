@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.HashSet;
 import java.util.Set;
@@ -125,11 +124,18 @@ public class ResolverController {
     this(contest, sourceModel, true);
   }
 
-  public ResolverController(ClicsContest contest, ScoreboardModel sourceModel, boolean showCompileErrors) {
+  public ResolverController(
+      ClicsContest contest,
+      ScoreboardModel sourceModel,
+      boolean showCompileErrors) {
     this(contest, sourceModel, showCompileErrors, DEFAULT_BUFFER_AHEAD);
   }
 
-  public ResolverController(ClicsContest contest, ScoreboardModel sourceModel, boolean showCompileErrors, int bufferAhead) {
+  public ResolverController(
+      ClicsContest contest,
+      ScoreboardModel sourceModel,
+      boolean showCompileErrors,
+      int bufferAhead) {
     this.contest = MissingJudgements.ensureJudgements(contest);
     this.model =
       ScoreboardModelImpl.newBuilder(contest, sourceModel)
@@ -215,7 +221,7 @@ public class ResolverController {
     }
   }
 
-  public void resolveContest() {
+  private void resolveContest() {
     Team currentTeam = null;
     Team prevTeam = null;
 
@@ -254,7 +260,7 @@ public class ResolverController {
       judgementsForSubmissions.put(j.getSubmissionId(), j);
     }
 
-    sourceModel.getSubmissions().forEach(submission -> {
+    for (Submission submission : sourceModel.getJudgeModel().getSubmissions()) {
       if (endTime != null) {
         final Duration afterEnd = Timestamps.between(
             endTime,
@@ -262,7 +268,7 @@ public class ResolverController {
                 Timestamp.getDefaultInstance(),
                 submission.getContestTime()));
         if (Durations.toNanos(afterEnd) >= 0) {
-          return;
+          continue;
         }
       }
 
@@ -277,12 +283,11 @@ public class ResolverController {
 
         if (intoFreeze.getSeconds() >= 0) {
           addPendingSubmission(submission);
-          return;
+          continue;
         }
       }
-
       judgeSubmission(submission);
-    });
+    }
     addResolution(Resolution.STARTED);
   }
 
@@ -290,20 +295,18 @@ public class ResolverController {
     final Problem problem = model.getProblem(submission.getProblemId());
 
     // The submission needs to exist.
-    final Team team;
-    try {
-      team = model.getTeam(submission.getTeamId());
-    } catch (NoSuchElementException e) {
+    final Optional<Team> team = model.getTeamsModel().getTeamOpt(submission.getTeamId());
+    if (!team.isPresent()) {
       return;
     }
 
     // The problem needs to be pending (unsolved) as of the freeze.
-    if (model.getAttempts(team, problem).getSolved()) {
+    if (model.getAttempts(team.get(), problem).getSolved()) {
       return;
     }
 
     teamSubmissions
-        .computeIfAbsent(team.getId(), k -> new TreeMap<>())
+        .computeIfAbsent(team.get().getId(), k -> new TreeMap<>())
         .computeIfAbsent(problem.getOrdinal(), k -> new ArrayList<>())
         .add(submission);
   }
