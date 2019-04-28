@@ -9,9 +9,8 @@ To replay the final hour of an example contest try running:
 
 ```
 bazel run scoreboards/resolver -- \
-    --url https://www.domjudge.org/demoweb/api/ \
-    --groups=Participants \
-  resolver
+    --url https://www.domjudge.org/demoweb \
+    --groups "NWERC - Eindhoven University of Technology"
 ```
 
 If your contest is still frozen, you will need to give credentials so that the
@@ -20,7 +19,7 @@ the `--username` and `--password` options (use `--help` to see others):
 
 ```
 bazel run scoreboards/resolver -- \
-    --url https://www.domjudge.org/demoweb/api/ \
+    --url https://contest.example.org/ \
     --groups=Participants \
     --username=admin \
     --password=admin \

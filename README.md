@@ -12,7 +12,7 @@ To replay the final hour of an example contest in a console try running:
 ```
 bazel run scoreboards/console -- \
     --url https://www.domjudge.org/demoweb/api/ \
-    --groups=Participants \
+    --groups "NWERC - Eindhoven University of Technology" \
   resolver
 ```
 
