@@ -16,6 +16,7 @@ import edu.clics.proto.ClicsProto.*;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;
 
+import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 
 public class ResolverWindow extends Thread {
@@ -47,6 +48,7 @@ public class ResolverWindow extends Thread {
     if (!glfwInit()) {
       System.exit(1);
     }
+    GLFWErrorCallback.createPrint().set();
 
     long primaryMonitor = glfwGetPrimaryMonitor();
     GLFWVidMode videoMode = glfwGetVideoMode(primaryMonitor);
@@ -58,6 +60,10 @@ public class ResolverWindow extends Thread {
         "Resolver",
         primaryMonitor,
         NULL);
+    if (window == 0L) {
+      System.err.println("Failed to create a GLFW window for OpenGL.");
+      System.exit(1);
+    }
     glfwMakeContextCurrent(window);
     createCapabilities();
 
