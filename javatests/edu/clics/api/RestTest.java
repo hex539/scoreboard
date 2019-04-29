@@ -1,7 +1,7 @@
 package edu.clics.api;
 
 import static com.google.common.truth.Truth.*;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -54,7 +54,7 @@ public class RestTest {
 
     server.enqueue(new MockResponse().setBody(json.toString()));
 
-    EventFeedItem event = client.eventFeed(contest).get().poll(400, MILLISECONDS).get();
+    EventFeedItem event = client.eventFeed(contest).get().poll(1, SECONDS).get();
     assertThat(event.getId()).isEqualTo("34111");
     assertThat(event.getType()).isEqualTo(EventFeedItem.Type.contests);
     assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.delete);
@@ -83,7 +83,7 @@ public class RestTest {
 
     server.enqueue(new MockResponse().setBody(json.toString()));
 
-    EventFeedItem event = client.eventFeed(contest).get().poll(400, MILLISECONDS).get();
+    EventFeedItem event = client.eventFeed(contest).get().poll(1, SECONDS).get();
 
     assertThat(event.getType()).isEqualTo(EventFeedItem.Type.groups);
     assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.create);
@@ -116,7 +116,7 @@ public class RestTest {
 
     server.enqueue(new MockResponse().setBody(json.toString()));
 
-    EventFeedItem event = client.eventFeed(contest).get().poll(400, MILLISECONDS).get();
+    EventFeedItem event = client.eventFeed(contest).get().poll(1, SECONDS).get();
     assertThat(event.getType()).isEqualTo(EventFeedItem.Type.teams);
     assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.create);
 
@@ -146,7 +146,7 @@ public class RestTest {
 
     server.enqueue(new MockResponse().setBody(json.toString()));
 
-    EventFeedItem event = client.eventFeed(contest).get().poll(400, MILLISECONDS).get();
+    EventFeedItem event = client.eventFeed(contest).get().poll(1, SECONDS).get();
     assertThat(event.getType()).isEqualTo(EventFeedItem.Type.judgements);
     assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.update);
 
@@ -185,10 +185,10 @@ public class RestTest {
         json1.toString() + "\r\n\r\n" + json2.toString() + "\n" + json3.toString()));
 
     BlockingQueue<Optional<EventFeedItem>> events = client.eventFeed(contest).get();
-    assertThat(events.poll(400, MILLISECONDS).get().getOperation()).isEqualTo(EventFeedItem.Operation.create);
-    assertThat(events.poll(400, MILLISECONDS).get().getOperation()).isEqualTo(EventFeedItem.Operation.update);
-    assertThat(events.poll(400, MILLISECONDS).get().getOperation()).isEqualTo(EventFeedItem.Operation.delete);
-    assertThat(events.poll(400, MILLISECONDS).isPresent()).isFalse();
+    assertThat(events.poll(1, SECONDS).get().getOperation()).isEqualTo(EventFeedItem.Operation.create);
+    assertThat(events.poll(1, SECONDS).get().getOperation()).isEqualTo(EventFeedItem.Operation.update);
+    assertThat(events.poll(1, SECONDS).get().getOperation()).isEqualTo(EventFeedItem.Operation.delete);
+    assertThat(events.poll(1, SECONDS).isPresent()).isFalse();
   }
 
   @Test
@@ -210,7 +210,7 @@ public class RestTest {
 
     server.enqueue(new MockResponse().setBody(json.toString()));
 
-    EventFeedItem event = client.eventFeed(contest).get().poll(400, MILLISECONDS).get();
+    EventFeedItem event = client.eventFeed(contest).get().poll(1, SECONDS).get();
     assertThat(event.getOperation()).isEqualTo(EventFeedItem.Operation.create);
 
     assertThat(new ClicsRest.GsonSingleton().get().toJson(event)).isEqualTo(json.toString());
