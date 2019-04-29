@@ -71,6 +71,9 @@ public class Executive {
       ContestConfig.Source.Builder sourceBuilder =
           ApiDetective.detectApi(invocation.getUrl()).get()
               .toBuilder();
+      if (invocation.getContest() != null) {
+        sourceBuilder.setContestId(invocation.getContest());
+      }
       if (invocation.getUsername() != null) {
           sourceBuilder.setAuthentication(
               ContestConfig.Authentication.newBuilder()

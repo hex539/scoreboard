@@ -9,6 +9,7 @@ message Source {
   string name = 2;
   string base_url = 3;
   string file_path = 4;
+  string contest_id = 8;
   Authentication authentication = 5;
 
   oneof api_specific_info {

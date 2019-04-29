@@ -55,6 +55,14 @@ public class ClicsRest extends RestClient<ClicsRest> {
     return contests;
   }
 
+  public Optional<Contest> getContest(String id) throws Exception {
+    try {
+      return getFrom("/contests/" + id, Contest.class);
+    } catch (CompletionException e) {
+      throw new IllegalArgumentException("Contest does not exist: " + id);
+    }
+  }
+
   public List<Contest> getContests() throws Exception {
     return getListFrom("/contests", Contest[].class);
   }

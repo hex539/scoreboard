@@ -7,13 +7,21 @@ import com.lexicalscope.jewel.cli.CommandLineInterface;
 import com.lexicalscope.jewel.cli.InvalidOptionSpecificationException;
 import com.lexicalscope.jewel.cli.Option;
 
-public @CommandLineInterface interface Invocation {
+@CommandLineInterface
+public interface Invocation {
   @Option(
       shortName = "h",
       longName = "help",
       helpRequest = true,
       description = "Display this help and exit")
     boolean isHelp();
+
+  @Option(
+      shortName = "c",
+      longName = "contest",
+      defaultToNull = true,
+      description = "Contest ID to resolve")
+    String getContest();
 
   @Option(
       shortName = "u",

@@ -51,7 +51,10 @@ public class ContestDownloader {
     }
 
     if (source.hasClicsApi()) {
-      return getClicsRestApi().downloadFirstContest();
+      final ClicsRest api = getClicsRestApi();
+      return source.getContestId().length() > 0
+          ? api.downloadPublicContest(api.getContest(source.getContestId()).get())
+          : api.downloadFirstContest();
     }
 
     if (source.getDomjudge3Api() != null) {
