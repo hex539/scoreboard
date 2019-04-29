@@ -102,9 +102,9 @@ public class Renderer implements ResolverController.Observer {
     finalisedRank = focusedRank + 1;
   }
 
-  public void setVideoMode(GLFWVidMode videoMode) {
-    screen.width = videoMode.width();
-    screen.height = videoMode.height();
+  public void setVideoMode(final int screenWidth, final int screenHeight) {
+    screen.width = screenWidth;
+    screen.height = screenHeight;
 
     rootLayout.width = screen.width;
     rootLayout.height = screen.height;
@@ -142,11 +142,12 @@ public class Renderer implements ResolverController.Observer {
       }
     }
 
+    glLoadIdentity();
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glViewport(0, 0, videoMode.width(), videoMode.height());
+    glViewport(0, 0, screenWidth, screenHeight);
     glOrtho(
-        0, videoMode.width(),
-        0, videoMode.height(),
+        0, screen.width,
+        0, screen.height,
         0.0, -1.0);
   }
 

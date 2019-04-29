@@ -31,6 +31,12 @@ public class ResolverWindow extends Thread {
 
   private final Semaphore exit = new Semaphore(0);
   private final Semaphore advance = new Semaphore(0);
+  private final Semaphore toggleFullscreen = new Semaphore(0);
+  private final Semaphore resizeWindow = new Semaphore(0);
+
+  int windowHeight = -1;
+  int windowWidth = -1;
+  boolean isFullscreen = false;
 
   public ResolverWindow(
       CompletableFuture<? extends ResolverController> resolver,
@@ -53,27 +59,56 @@ public class ResolverWindow extends Thread {
     long primaryMonitor = glfwGetPrimaryMonitor();
     GLFWVidMode videoMode = glfwGetVideoMode(primaryMonitor);
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    windowHeight = Math.max(videoMode.height() * 3 / 4, 1);
+    windowWidth = Math.min(videoMode.width(), windowHeight * 16 / 9);
+
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     final long window = glfwCreateWindow(
-        videoMode.width(),
-        videoMode.height(),
+        windowWidth,
+        windowHeight,
         "Resolver",
-        primaryMonitor,
+        /* display= */ NULL,
         NULL);
     if (window == 0L) {
       System.err.println("Failed to create a GLFW window for OpenGL.");
       System.exit(1);
     }
     glfwMakeContextCurrent(window);
+    glfwSetWindowSizeCallback(window, this::onWindowSizeCallback);
     createCapabilities();
 
     glfwSetKeyCallback(window, this::onKeyCallback);
-    renderer.setVideoMode(videoMode);
+    renderer.setVideoMode(windowWidth, windowHeight);
 
     ArrayDeque<Long> frames = PRINT_FPS ? new ArrayDeque<>() : null;
     final long minFrameTime = LIMIT_FPS ? TimeUnit.SECONDS.toNanos(1) / MAX_FPS : 0L;
 
     for (long lastFrameTime = 0; !glfwWindowShouldClose(window) && !exit.tryAcquire();) {
+      if (toggleFullscreen.tryAcquire()) {
+        isFullscreen = !isFullscreen;
+        if (isFullscreen) {
+          primaryMonitor = glfwGetPrimaryMonitor();
+          videoMode = glfwGetVideoMode(primaryMonitor);
+
+          glfwSetWindowMonitor(
+              window,
+              primaryMonitor,
+              0, 0, videoMode.width(), videoMode.height(),
+              videoMode.refreshRate());
+          renderer.setVideoMode(videoMode.width(), videoMode.height());
+        } else {
+          resizeWindow.release();
+        }
+      }
+      if (resizeWindow.tryAcquire()) {
+        glfwSetWindowMonitor(
+            window,
+            NULL,
+            0, 0, windowWidth, windowHeight,
+            videoMode.refreshRate());
+        renderer.setVideoMode(windowWidth, windowHeight);
+      }
+
       long timeNow = System.nanoTime();
       if (LIMIT_FPS) {
         timeNow += (long) (1e9 / MAX_FPS);
@@ -115,6 +150,15 @@ public class ResolverWindow extends Thread {
     glfwTerminate();
   }
 
+  private void onWindowSizeCallback(long win, int width, int height) {
+    if (isFullscreen) {
+      return;
+    }
+    windowWidth = width;
+    windowHeight = height;
+    resizeWindow.release();
+  }
+
   private void onKeyCallback(long win, int key, int scancode, int action, int mods) {
     if (action != GLFW_RELEASE && action != GLFW_REPEAT) {
       return;
@@ -122,6 +166,11 @@ public class ResolverWindow extends Thread {
     switch (key) {
       case GLFW_KEY_ESCAPE: {
         exit.release();
+        return;
+      }
+      case GLFW_KEY_F11:
+      case 'F': {
+        toggleFullscreen.release();
         return;
       }
       case GLFW_KEY_ENTER:
