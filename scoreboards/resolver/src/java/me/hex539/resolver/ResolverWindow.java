@@ -160,9 +160,31 @@ public class ResolverWindow extends Thread {
   }
 
   private void onKeyCallback(long win, int key, int scancode, int action, int mods) {
-    if (action != GLFW_RELEASE && action != GLFW_REPEAT) {
-      return;
+    if ((mods & GLFW_MOD_ALT) != 0) {
+      if (action == GLFW_PRESS) {
+        onAltKeyCallback(win, key, scancode, action);
+      }
+    } else {
+      if (action == GLFW_RELEASE || action == GLFW_REPEAT) {
+        onKeyCallback(win, key, scancode, action);
+      }
     }
+  }
+
+
+  private void onAltKeyCallback(long win, int key, int scancode, int action) {
+    switch (key) {
+      case GLFW_KEY_ENTER: {
+        toggleFullscreen.release();
+        return;
+      }
+      default: {
+        return;
+      }
+    }
+  }
+
+  private void onKeyCallback(long win, int key, int scancode, int action) {
     switch (key) {
       case GLFW_KEY_ESCAPE: {
         exit.release();
