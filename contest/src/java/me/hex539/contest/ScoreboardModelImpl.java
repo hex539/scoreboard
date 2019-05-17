@@ -208,16 +208,6 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   @Override
-  public Organization getOrganization(String id) {
-    return getTeamsModel().getOrganization(id);
-  }
-
-  @Override
-  public Collection<Organization> getOrganizations() {
-    return getTeamsModel().getOrganizations();
-  }
-
-  @Override
   public List<Problem> getProblems() {
     return getProblemsModel().getProblems();
   }
@@ -225,26 +215,6 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   @Override
   public List<ScoreboardRow> getRows() {
     return getRanklistModel().getRows();
-  }
-
-  @Override
-  public Collection<Group> getGroups() {
-    return getTeamsModel().getGroups();
-  }
-
-  @Override
-  public Collection<Team> getTeams() {
-    return getTeamsModel().getTeams();
-  }
-
-  @Override
-  public Group getGroup(String id) throws NoSuchElementException {
-    return getTeamsModel().getGroup(id);
-  }
-
-  @Override
-  public Team getTeam(String id) throws NoSuchElementException {
-    return getTeamsModel().getTeam(id);
   }
 
   @Override

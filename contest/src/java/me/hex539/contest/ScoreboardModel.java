@@ -10,7 +10,7 @@ import me.hex539.contest.model.Teams;
 
 import edu.clics.proto.ClicsProto.*;
 
-public interface ScoreboardModel extends Teams, Problems, Ranklist {
+public interface ScoreboardModel extends Problems, Ranklist {
   public interface Observer{
     default void setModel(ScoreboardModel model) {}
     default void onProblemSubmitted(Team team, Submission submission) {}
@@ -23,7 +23,7 @@ public interface ScoreboardModel extends Teams, Problems, Ranklist {
   List<ScoreboardRow> getRows();
   Contest getContest();
 
-  default Teams getTeamsModel() {return this;}
+  Teams getTeamsModel();
   default Problems getProblemsModel() {return this;}
   default Ranklist getRanklistModel() {return this;}
   Judge getJudgeModel();

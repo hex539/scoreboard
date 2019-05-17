@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.model.Judge;
+import me.hex539.contest.model.Teams;
 
 public final class MockScoreboardModel {
   public static ScoreboardModel example() {
@@ -54,11 +55,6 @@ public final class MockScoreboardModel {
         }
 
         @Override
-        public Collection<Team> getTeams() {
-          return teams;
-        }
-
-        @Override
         public List<Problem> getProblems() {
           return problems;
         }
@@ -69,13 +65,23 @@ public final class MockScoreboardModel {
         }
 
         @Override
-        public Collection<Organization> getOrganizations() {
-          return organizations;
-        }
+        public Teams getTeamsModel() {
+          return new Teams() {
+            @Override
+            public Collection<Organization> getOrganizations() {
+              return organizations;
+            }
 
-        @Override
-        public Collection<Group> getGroups() {
-          return groups;
+            @Override
+            public Collection<Group> getGroups() {
+              return groups;
+            }
+
+            @Override
+            public Collection<Team> getTeams() {
+              return teams;
+            }
+          };
         }
 
         @Override

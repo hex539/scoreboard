@@ -11,6 +11,7 @@ import java.util.Set;
 
 import edu.clics.proto.ClicsProto.*;
 import me.hex539.contest.model.Judge;
+import me.hex539.contest.model.Teams;
 
 public class JudgementDispatcher {
   private static final boolean DEBUG = false;
@@ -25,6 +26,7 @@ public class JudgementDispatcher {
   private final boolean showCompileErrors;
   private final ScoreboardModel model;
   private final Judge judge;
+  private final Teams teams;
   private final Comparators.RowComparator rowComparator;
 
   private final Logger warn = (DEBUG ? System.err::println : s -> {});
@@ -41,7 +43,7 @@ public class JudgementDispatcher {
   public JudgementDispatcher(
       final ScoreboardModel model,
       final boolean showCompileErrors) {
-    this(model, showCompileErrors, new Comparators.RowComparator(model));
+    this(model, showCompileErrors, new Comparators.RowComparator(model.getTeamsModel()));
   }
 
   public JudgementDispatcher(
@@ -50,18 +52,19 @@ public class JudgementDispatcher {
       final Comparators.RowComparator rowComparator) {
     this.model = model;
     this.judge = model.getJudgeModel();
+    this.teams = model.getTeamsModel();
     this.showCompileErrors = showCompileErrors;
     this.rowComparator = rowComparator;
 
     for (Submission s : judge.getSubmissions()) {
       submissionOrder.put(s.getId(), submissionOrder.size());
-      Team team = model.getTeam(s.getTeamId());
+      Team team = teams.getTeam(s.getTeamId());
       Problem problem = model.getProblem(s.getProblemId());
       getSubmissions(team, problem).add(s);
     }
     for (Judgement j : judge.getJudgements()) {
       Submission s = judge.getSubmission(j.getSubmissionId());
-      Team team = model.getTeam(s.getTeamId());
+      Team team = teams.getTeam(s.getTeamId());
       Problem problem = model.getProblem(s.getProblemId());
       getJudgements(team, problem).removeIf(x -> x.getSubmissionId().equals(j.getSubmissionId()));
       getJudgements(team, problem).add(j);
@@ -77,7 +80,7 @@ public class JudgementDispatcher {
     final Team team;
     final Problem problem;
     try {
-      team = model.getTeam(submission.getTeamId());
+      team = teams.getTeam(submission.getTeamId());
       problem = model.getProblem(submission.getProblemId());
     } catch (NoSuchElementException e) {
       return false;
@@ -107,7 +110,7 @@ public class JudgementDispatcher {
     final Problem problem;
     try {
       submission = judge.getSubmission(j.getSubmissionId());
-      team = model.getTeam(submission.getTeamId());
+      team = teams.getTeam(submission.getTeamId());
       problem = model.getProblem(submission.getProblemId());
     } catch (NoSuchElementException e) {
       return null;

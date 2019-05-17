@@ -33,7 +33,7 @@ public class ModelObserverTest {
     dispatcher.observers.add(model);
     dispatcher.observers.add(observer);
 
-    final Team team2 = model.getTeam("Team 2");
+    final Team team2 = model.getTeamsModel().getTeam("Team 2");
 
     // Initially we'll have the submissions+judgements from the mock.
     assertThat(model.getJudgeModel().getSubmissions()).hasSize(3);
@@ -90,7 +90,7 @@ public class ModelObserverTest {
     dispatcher.observers.add(model);
     dispatcher.observers.add(observer);
 
-    final Team team5 = model.getTeam("Team 5");
+    final Team team5 = model.getTeamsModel().getTeam("Team 5");
     submission(dispatcher, model, "Team 5", "A", 101).submit().judge("correct");
 
     verify(observer).onTeamRankChanged(eq(team5), eq(5), eq(2));
@@ -124,7 +124,7 @@ public class ModelObserverTest {
 
     dispatcher.observers.add(model);
     dispatcher.observers.add(observer);
-    final Team team2 = model.getTeam("Team 2");
+    final Team team2 = model.getTeamsModel().getTeam("Team 2");
 
     // Rejudge from 2 to 1 correct answers.
     submission(dispatcher, model, "ms4").judge("incorrect");
@@ -145,7 +145,7 @@ public class ModelObserverTest {
     return rows
         .stream()
         .map(ScoreboardRow::getTeamId)
-        .map(model::getTeam)
+        .map(model.getTeamsModel()::getTeam)
         .map(Team::getName)
         .collect(Collectors.toList());
   }

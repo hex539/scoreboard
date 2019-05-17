@@ -183,7 +183,7 @@ public class ResolverTest {
     ScoreboardModel reference = ScoreboardModelImpl.newBuilder(entireContest).build();
     Instant startImmutable = Instant.now();
     reference = reference.immutable();
-    assertThat(reference.getTeams().size()).isEqualTo(n);
+    assertThat(reference.getTeamsModel().getTeams().size()).isEqualTo(n);
 
     Instant startResolve = Instant.now();
 

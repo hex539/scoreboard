@@ -20,6 +20,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 
 import edu.clics.proto.ClicsProto.*;
+import me.hex539.contest.model.Problems;
+import me.hex539.contest.model.Ranklist;
+import me.hex539.contest.model.Teams;
+import me.hex539.contest.mutable.RanklistMutable;
+import me.hex539.contest.immutable.ImmutableProblems;
+import me.hex539.contest.immutable.ImmutableTeams;
 
 public class ResolverController {
 
@@ -107,6 +113,9 @@ public class ResolverController {
 
   private final ClicsContest contest;
   private final ScoreboardModelImpl model;
+  private final Problems problems;
+  private final Ranklist ranklist;
+  private final Teams teams;
   private final JudgementDispatcher dispatcher;
   private final Thread resolutionThread;
 
@@ -142,6 +151,10 @@ public class ResolverController {
         .withEmptyScoreboard()
         .filterSubmissions(s -> false)
         .build();
+
+    this.problems = this.model.getProblemsModel();
+    this.teams = this.model.getTeamsModel();
+    this.ranklist = this.model.getRanklistModel();
 
     this.dispatcher = new JudgementDispatcher(model, showCompileErrors);
     this.dispatcher.observers.add(this.model);
@@ -225,7 +238,7 @@ public class ResolverController {
     Team currentTeam = null;
     Team prevTeam = null;
 
-    for (int currentRank = model.getTeams().size(); currentRank > 0; prevTeam = currentTeam) {
+    for (int currentRank = teams.getTeams().size(); currentRank > 0; prevTeam = currentTeam) {
       currentTeam = getTeamAt(currentRank);
       if (currentTeam != prevTeam) {
         moveToProblem(currentTeam, null);
@@ -239,12 +252,8 @@ public class ResolverController {
     moveToProblem(null, null);
   }
 
-  private ScoreboardModel getModel() {
-    return model;
-  }
-
   private Team getTeamAt(int rank) {
-    return model.getTeam(model.getRow(rank - 1).getTeamId());
+    return teams.getTeam(model.getRow(rank - 1).getTeamId());
   }
 
   private void createSubmissions(ScoreboardModel sourceModel) {
@@ -292,10 +301,10 @@ public class ResolverController {
   }
 
   private void addPendingSubmission(final Submission submission) {
-    final Problem problem = model.getProblem(submission.getProblemId());
+    final Problem problem = problems.getProblem(submission.getProblemId());
 
     // The submission needs to exist.
-    final Optional<Team> team = model.getTeamsModel().getTeamOpt(submission.getTeamId());
+    final Optional<Team> team = teams.getTeamOpt(submission.getTeamId());
     if (!team.isPresent()) {
       return;
     }

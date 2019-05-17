@@ -12,6 +12,7 @@ import com.google.auto.value.AutoValue;
 
 import edu.clics.proto.ClicsProto.*;
 import me.hex539.contest.model.Judge;
+import me.hex539.contest.model.Teams;
 
 /**
  * Thread-safe implementation of {@link ScoreboardModel}.
@@ -26,7 +27,8 @@ import me.hex539.contest.model.Judge;
  * used across threads with appropriate locking.)
  */
 @AutoValue
-public abstract class ImmutableScoreboardModel implements ScoreboardModel, Judge {
+public abstract class ImmutableScoreboardModel
+    implements ScoreboardModel, Judge, Teams {
 
   // Internal fields.
   abstract List<Problem> getProblemsById();
@@ -35,9 +37,10 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel, Judge
   public static ImmutableScoreboardModel of(ScoreboardModel model) {
     final List<ScoreboardRow> rows = list(model.getRows());
 
-    final List<Organization> organizations = sortBy(model.getOrganizations(), Organization::getId);
-    final List<Team> teams = sortBy(model.getTeams(), Team::getId);
-    final List<Group> groups = sortBy(model.getGroups(), Group::getId);
+    final Teams teamsModel = model.getTeamsModel();
+    final List<Organization> organizations = sortBy(teamsModel.getOrganizations(), Organization::getId);
+    final List<Team> teams = sortBy(teamsModel.getTeams(), Team::getId);
+    final List<Group> groups = sortBy(teamsModel.getGroups(), Group::getId);
 
     return newBuilder()
         .setRows(rows)
@@ -81,6 +84,11 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel, Judge
 
     // Builder
     abstract ImmutableScoreboardModel build();
+  }
+
+  @Override
+  public Teams getTeamsModel() {
+    return this;
   }
 
   @Override
