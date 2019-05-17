@@ -48,7 +48,11 @@ public interface Teams {
   }
 
   default Team getTeam(String id) throws NoSuchElementException {
-    return getTeamOpt(id).get();
+    try {
+      return getTeamOpt(id).get();
+    } catch (NoSuchElementException e) {
+      throw new NoSuchElementException("No such team: '" + id + "'");
+    }
   }
 
   default boolean containsTeam(String id) {
