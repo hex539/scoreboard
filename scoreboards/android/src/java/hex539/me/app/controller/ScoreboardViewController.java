@@ -34,7 +34,7 @@ public class ScoreboardViewController {
     view.setAdapter(adapter);
     view.getItemAnimator().setMoveDuration(900L);
     view.setChildDrawingOrderCallback((a, b) -> a-1-b);
-    view.scrollToPosition(model.getTeams().size());
+    view.scrollToPosition(model.getTeamsModel().getTeams().size());
   }
 
   @UiThread

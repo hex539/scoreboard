@@ -10,6 +10,8 @@ import me.hex539.app.view.ScoreboardRowView;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;
 import me.hex539.contest.SplayList;
+import me.hex539.contest.model.Problems;
+import me.hex539.contest.model.Teams;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,7 +36,8 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
     }
   }
 
-  private final ScoreboardModel mModel;
+  private final Problems mProblems;
+  private final Teams mTeams;
   private final SplayList<ClicsProto.ScoreboardRow> mRows;
   private final Handler mHandler;
 
@@ -54,7 +57,8 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
           ViewGroup.LayoutParams.WRAP_CONTENT);
 
   public ScoreboardAdapter(ScoreboardModel model, Handler handler) {
-    mModel = model;
+    mProblems = model.getProblemsModel();
+    mTeams = model.getTeamsModel();
     mHandler = handler;
     mRows = new SplayList<>(model.getRows(), ClicsProto.ScoreboardRow::getTeamId);
     setHasStableIds(true);
@@ -126,8 +130,8 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
   @Override
   public void onBindViewHolder(ViewHolder viewHolder, int position, List<Object> payloads) {
     ClicsProto.ScoreboardRow row = mRows.get(position);
-    ClicsProto.Team team = mModel.getTeam(row.getTeamId());
-    ClicsProto.Organization organization = mModel.getOrganization(team.getOrganizationId());
+    ClicsProto.Team team = mTeams.getTeam(row.getTeamId());
+    ClicsProto.Organization organization = mTeams.getOrganization(team.getOrganizationId());
     viewHolder.view
       .setRowInfo(
           ScoreboardRowView.RowInfo.create(row, team, organization))
@@ -186,7 +190,7 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
         throw new AssertionError("Team " + team + " does not exist");
       }
       mRows.set(index, mRows.get(index).toBuilder()
-          .setProblems(mModel.getProblem(attempt.getProblemId()).getOrdinal(), attempt)
+          .setProblems(mProblems.getProblem(attempt.getProblemId()).getOrdinal(), attempt)
           .build());
       notifyItemChanged(index, team);
     });
