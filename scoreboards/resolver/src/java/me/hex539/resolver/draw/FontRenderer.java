@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 
 import edu.clics.proto.ClicsProto.*;
 
-import me.hex539.contest.ScoreboardModel;
+import me.hex539.contest.model.Teams;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.stb.STBTTAlignedQuad;
@@ -83,14 +83,14 @@ public class FontRenderer {
   private double screenWidth = 1;
   private double screenHeight = 1;
 
-  public FontRenderer(ScoreboardModel model, CompletableFuture<? extends ByteBuffer> ttfFont) {
+  public FontRenderer(Teams teams, CompletableFuture<? extends ByteBuffer> ttfFont) {
     try {
       ttfData[0] = ttfFont.get();
     } catch (Exception e) {
       throw new Error("Failed to load font", e);
     }
 
-    supplyCodePoints(model, allCodePoints);
+    supplyCodePoints(teams, allCodePoints);
 
     fontInfo[0] = STBTTFontinfo.create();
     if (!stbtt_InitFont(fontInfo[0], ttfData[0])) {
@@ -108,7 +108,7 @@ public class FontRenderer {
     }
   }
 
-  private static void supplyCodePoints(ScoreboardModel model, List<Integer> into){
+  private static void supplyCodePoints(Teams teams, List<Integer> into){
     List<Integer> codePoints = new ArrayList<>();
     for (int i = 32; i < 128; i++) {
       codePoints.add(i);
@@ -116,10 +116,10 @@ public class FontRenderer {
     for (String special : Symbols.ALL) {
       addString(codePoints, special);
     }
-    for (Team team : model.getTeams()) {
+    for (Team team : teams.getTeams()) {
       addString(codePoints, team.getName());
     }
-    for (Organization organisation : model.getOrganizations()) {
+    for (Organization organisation : teams.getOrganizations()) {
       addString(codePoints, organisation.getName());
     }
     Collections.sort(codePoints);

@@ -28,6 +28,7 @@ import edu.clics.proto.ClicsProto.*;
 
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;
+import me.hex539.contest.model.Teams;
 import me.hex539.resolver.draw.AttemptColour;
 import me.hex539.resolver.draw.DebugDraw;
 import me.hex539.resolver.draw.FontRenderer;
@@ -40,6 +41,7 @@ public class Renderer implements ResolverController.Observer {
   private static boolean ENABLE_WIREFRAME = false;
 
   private final ScoreboardModel model;
+  private final Teams teams;
   private final Queue<RankAnimation> moveAnimation = new ArrayDeque<>();
   private final Queue<RankAnimation> scrollAnimation = new ArrayDeque<>();
   private final Queue<RankAnimation> focusAnimation = new ArrayDeque<>();
@@ -71,13 +73,14 @@ public class Renderer implements ResolverController.Observer {
 
   public Renderer(ScoreboardModel model, CompletableFuture<? extends ByteBuffer> ttfData) {
     this.model = model;
+    this.teams = model.getTeamsModel();
 
     this.particles = ENABLE_PARTICLES ? new Particles() : null;
-    this.font = new FontRenderer(model, ttfData);
+    this.font = new FontRenderer(teams, ttfData);
 
     for (ScoreboardRow row : model.getRows()) {
       final String teamId = row.getTeamId();
-      final Team team = model.getTeam(teamId);
+      final Team team = teams.getTeam(teamId);
       final Layout.Group rowLayout = new Layout.Group(ENABLE_WIREFRAME
           ? DebugDraw::wireframe
           : l -> drawRow(l, model.getRow(team)));
@@ -312,7 +315,7 @@ public class Renderer implements ResolverController.Observer {
     if (row.getRank() >= finalisedRank) {
       drawRank(rowX, rowY, row.getRank(), teamFocused);
     }
-    drawLabel(rowX, rowY, model.getTeam(row.getTeamId()), teamFocused);
+    drawLabel(rowX, rowY, teams.getTeam(row.getTeamId()), teamFocused);
     drawScore(rowX, rowY, row.getScore(), teamFocused);
   }
 
@@ -364,7 +367,7 @@ public class Renderer implements ResolverController.Observer {
               rowX + teamLabelWidth * 0.1,
               rowY + cellMargin,
               (int) (rowHeight / 2.0 - cellMargin),
-              model.getOrganization(organizationId).getName());
+              teams.getOrganization(organizationId).getName());
         } catch (NoSuchElementException noSuchOrganization) {
           // Team has an organisation but it's missing... FIXME, find out why some teams have
           // organization=0 despite no such organization existing.
