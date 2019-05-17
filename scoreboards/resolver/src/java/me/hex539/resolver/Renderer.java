@@ -408,7 +408,6 @@ public class Renderer implements ResolverController.Observer {
 
     final boolean pending = (attempts.getNumPending() > 0);
     final boolean attempted = (attempts.getNumJudged() > 0 || pending);
-    final String text;
 
     final double cellX = cellLayout.x;
     final double cellY = cellLayout.y;
@@ -422,18 +421,7 @@ public class Renderer implements ResolverController.Observer {
     }
 
     final short[] rgb = AttemptColour.of(attempts);
-    float r = rgb[0] / 255.0f;
-    float g = rgb[1] / 255.0f;
-    float b = rgb[2] / 255.0f;
-    if (attempts.getSolved()) {
-      text = FontRenderer.Symbols.CORRECT;
-    } else if (attempts.getNumPending() > 0) {
-      text = FontRenderer.Symbols.PENDING;
-    } else if (attempts.getNumJudged() > 0) {
-      text = FontRenderer.Symbols.WRONG;
-    } else {
-      text = null;
-    }
+    final String text = getAttemptSymbol(attempts);
 
     if (focused) {
       if (pending) {
@@ -454,7 +442,7 @@ public class Renderer implements ResolverController.Observer {
       glColor4f(0f, 0f, 0f, 0.7f);
       glVertex2d(cellX, cellY + cellHeight);
       glVertex2d(cellX+cellWidth, cellY + cellHeight);
-      glColor4f(r, g, b, 0.6f);
+      glColor4ub((byte) rgb[0], (byte) rgb[1], (byte) rgb[2], (byte) (0.6f * 255));
       glVertex2d(cellX+cellWidth, cellY+cellHeight-shHeight);
       glVertex2d(cellX+shWidth, cellY+cellHeight-shHeight);
       glVertex2d(cellX+shWidth, cellY);
@@ -462,7 +450,7 @@ public class Renderer implements ResolverController.Observer {
       glVertex2d(cellX, cellY);
       glEnd();
 
-      glColor4f(r, g, b, 0.6f);
+      glColor4ub((byte) rgb[0], (byte) rgb[1], (byte) rgb[2], (byte) (0.6f * 255));
       new Layout(this::glQuad).covering(cellLayout).adjust(shWidth, 0, -shWidth, -shHeight).draw();
 
       glDisable(GL_BLEND);
@@ -470,14 +458,14 @@ public class Renderer implements ResolverController.Observer {
       if (focused && pending) {
         glColor3f(1.0f, 1.0f, 1.0f);
       } else {
-        glColor3f(r, g, b);
+        glColor3ub((byte) rgb[0], (byte) rgb[1], (byte) rgb[2]);
       }
       new Layout(this::glQuad).covering(cellLayout).draw();
     }
 
     if (text != null) {
       if (focused && pending) {
-        glColor3f(r, g, b);
+        glColor3ub((byte) rgb[0], (byte) rgb[1], (byte) rgb[2]);
       } else {
         glColor3f(1.0f, 1.0f, 1.0f);
       }
@@ -498,6 +486,18 @@ public class Renderer implements ResolverController.Observer {
     }
   }
 
+  private String getAttemptSymbol(ScoreboardProblem attempts) {
+    if (attempts.getSolved()) {
+      return FontRenderer.Symbols.CORRECT;
+    } else if (attempts.getNumPending() > 0) {
+      return FontRenderer.Symbols.PENDING;
+    } else if (attempts.getNumJudged() > 0) {
+      return FontRenderer.Symbols.WRONG;
+    } else {
+      return null;
+    }
+  }
+
   private void glQuad(Layout layout) {
     glBegin(GL_QUADS);
     glVertex2d(layout.x, layout.y);
@@ -506,7 +506,6 @@ public class Renderer implements ResolverController.Observer {
     glVertex2d(layout.x, layout.y + layout.height);
     glEnd();
   }
-
 
   private static double clamp(double x, double a, double b) {
     if (x < a) return a;
