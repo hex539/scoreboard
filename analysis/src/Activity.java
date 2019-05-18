@@ -71,7 +71,7 @@ public class Activity {
         .filterTooLateSubmissions()
         .build();
 
-    Stream<Judgement> judgementsStream = fullModel.getJudgements().stream();
+    Stream<Judgement> judgementsStream = fullModel.getJudgeModel().getJudgements().stream();
     if (applyFreeze && entireContest.getContest().hasScoreboardFreezeDuration()) {
       final Timestamp freezeTime = Timestamps.subtract(
           Timestamps.add(
@@ -103,7 +103,7 @@ public class Activity {
       statsByLanguage.put(languageId, new SubmitStats(entireContest.getContest()));
     }
 
-    for (Submission s : fullModel.getSubmissions()) {
+    for (Submission s : fullModel.getJudgeModel().getSubmissions()) {
       final Judgement judgement = judgementsMap.get(s.getId());
       statsByProblem.get(s.getProblemId()).add(s, judgement, fullModel);
       statsByLanguage.get(s.getLanguageId()).add(s, judgement, fullModel);
@@ -121,7 +121,7 @@ public class Activity {
       final File activityDir = new File(workingDirectory, "activity");
       activityDir.mkdir();
 
-      fullModel.getProblems().stream().parallel().forEach(problem -> {
+      fullModel.getProblemsModel().getProblems().stream().parallel().forEach(problem -> {
         final File file = new File(activityDir, problem.getLabel() + ".tex");
         final SubmitStats stats = statsByProblem.get(problem.getId()).crop();
 

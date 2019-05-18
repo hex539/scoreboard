@@ -41,12 +41,12 @@ public class SubmitStats {
   }
 
   public SubmitStats add(Submission submission, Judgement judgement, ScoreboardModel model) {
-    final Team team = model.getTeam(submission.getTeamId());
+    final Team team = model.getTeamsModel().getTeam(submission.getTeamId());
     final JudgementType verdict =
         judgement != null
             && judgement.getJudgementTypeId() != null
             && !"".equals(judgement.getJudgementTypeId())
-                ? model.getJudgementType(judgement.getJudgementTypeId())
+                ? model.getJudgeModel().getJudgementType(judgement.getJudgementTypeId())
                 : null;
 
     if (verdict != null && verdict.getId().equals("CE")) {

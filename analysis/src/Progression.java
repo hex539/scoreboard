@@ -47,17 +47,17 @@ public class Progression {
     dispatcher.observers.add(model);
 
     final Map<String, TeamProgression> teams = new HashMap<>();
-    model.getTeams().forEach(
+    model.getTeamsModel().getTeams().forEach(
         team -> teams.put(team.getId(), new TeamProgression(team, model.getProblems())));
 
-    final Map<String, Judgement> judgementsMap = fullModel.getJudgements()
+    final Map<String, Judgement> judgementsMap = fullModel.getJudgeModel().getJudgements()
         .stream()
         .collect(Collectors.toMap(
             Judgement::getSubmissionId,
             Function.identity(),
             (a, b) -> b));
 
-    for (Submission submission : fullModel.getSubmissions()) {
+    for (Submission submission : fullModel.getJudgeModel().getSubmissions()) {
       try {
         model.getSubmission(submission.getId());
       } catch (Exception e) {
