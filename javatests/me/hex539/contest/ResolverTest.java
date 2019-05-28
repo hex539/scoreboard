@@ -185,21 +185,26 @@ public class ResolverTest {
     reference = reference.immutable();
     assertThat(reference.getTeamsModel().getTeams().size()).isEqualTo(n);
 
-    Instant startResolve = Instant.now();
+    Instant createResolve = Instant.now();
 
     ResolverController resolver = new ResolverController(entireContest, reference);
     assertThat(resolver.advance()).isEqualTo(Resolution.STARTED);
     Observer observer = mock(Observer.class);
     resolver.addObserver(observer);
+    resolver.advance();
+
+    Instant startResolve = Instant.now();
+
     resolver.drain();
 
     Instant finishResolve = Instant.now();
 
     System.err.println("");
-    System.err.println("Time to build CLICS:  " + Duration.between(startBuild, startModel));
-    System.err.println("Time to build model:  " + Duration.between(startModel, startImmutable));
-    System.err.println("Time to finish model: " + Duration.between(startImmutable, startResolve));
-    System.err.println("Time to resolve:      " + Duration.between(startResolve, finishResolve));
+    System.err.println("Time to build CLICS:    " + Duration.between(startBuild, startModel));
+    System.err.println("Time to build model:    " + Duration.between(startModel, startImmutable));
+    System.err.println("Time to finish model:   " + Duration.between(startImmutable, createResolve));
+    System.err.println("Time to start resolve:  " + Duration.between(createResolve, startResolve));
+    System.err.println("Time to finish resolve: " + Duration.between(startResolve, finishResolve));
 
     verify(observer, times(2 * n)).onTeamRankChanged(any(), anyInt(), eq(1));
   }
