@@ -63,8 +63,8 @@ public class Renderer implements ResolverController.Observer {
 
   private Team focusedTeam;
   private Problem focusedProblem;
-  private int focusedRank;
   private int finalisedRank;
+  private double scrolledRank = -1.0;
 
   private final Layout.Group screen = new Layout.Group();
   private final Layout.Group rootLayout = new Layout.Group();
@@ -101,8 +101,8 @@ public class Renderer implements ResolverController.Observer {
 
     focusedTeam = null;
     focusedProblem = null;
-    focusedRank = model.getRows().size();
-    finalisedRank = focusedRank + 1;
+    finalisedRank = model.getRows().size() + 1;
+    scrollTo(finalisedRank - 1, false);
   }
 
   public void setVideoMode(final int screenWidth, final int screenHeight) {
@@ -167,7 +167,7 @@ public class Renderer implements ResolverController.Observer {
         final long duration = TimeUnit.MILLISECONDS.toNanos(180);
         focusAnimation.offer(RankAnimation.create(
             oldRank, newRank, System.nanoTime() + delay, duration));
-        scrollTo(newRank);
+        scrollTo(newRank, true);
       }
     }
 
@@ -210,12 +210,23 @@ public class Renderer implements ResolverController.Observer {
     focusedProblem = null;
   }
 
-  private void scrollTo(int rank) {
-    if (rank != focusedRank) {
-      final long duration = TimeUnit.MILLISECONDS.toNanos(200);
-      scrollAnimation.offer(RankAnimation.create(focusedRank, rank, System.nanoTime(), duration));
-      focusedRank = rank;
+  public void onScroll(double distance) {
+    onScroll(distance, true);
+  }
+
+  public void onScroll(double distance, boolean smooth) {
+    scrollTo(scrolledRank - distance * 2.5, smooth);
+  }
+
+  public void scrollTo(double newRank, boolean smooth) {
+    if (minScrolledRank != 0 || maxScrolledRank != 0) {
+      newRank = clamp(newRank, minScrolledRank, maxScrolledRank);
     }
+    if (smooth && newRank != scrolledRank) {
+      final long duration = TimeUnit.MILLISECONDS.toNanos(600);
+      scrollAnimation.offer(RankAnimation.create(scrolledRank, newRank, System.nanoTime(), duration));
+    }
+    scrolledRank = newRank;
   }
 
   public boolean mainLoop(final long timeNow) {
@@ -233,12 +244,12 @@ public class Renderer implements ResolverController.Observer {
 
   private void layout(final long timeNow) {
     // Animate the viewport toward the next focused team.
-    double scrolledRank = (double) focusedRank;
+    double displayedRank = scrolledRank;
     for (RankAnimation anim : scrollAnimation) {
-      scrolledRank += slerp((anim.toRank() - anim.fromRank()) * -1.0, 0.0, anim.progress(timeNow));
+      displayedRank += slerp((anim.toRank() - anim.fromRank()) * -1.0, 0.0, anim.progress(timeNow));
     }
-    scrolledRank = clamp(scrolledRank, minScrolledRank, maxScrolledRank);
-    screen.y = (float) ((scrolledRank + visibleRowsBelow) * (rowHeight + cellMargin) + cellMargin);
+    displayedRank = clamp(displayedRank, minScrolledRank, maxScrolledRank);
+    screen.y = (float) ((displayedRank + visibleRowsBelow) * (rowHeight + cellMargin) + cellMargin);
 
     List<RankAnimation> moveAnims = new ArrayList<>(moveAnimation);
     Collections.reverse(moveAnims);
@@ -520,13 +531,13 @@ public class Renderer implements ResolverController.Observer {
 
   @AutoValue
   public static abstract class RankAnimation {
-    abstract long fromRank();
+    abstract double fromRank();
     abstract long fromTime();
 
-    abstract long toRank();
+    abstract double toRank();
     abstract long toTime();
 
-    public static RankAnimation create(long from, long to, long now, long duration) {
+    public static RankAnimation create(double from, double to, long now, long duration) {
       return new AutoValue_Renderer_RankAnimation(from, now, to, now + duration);
     }
 

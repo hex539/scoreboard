@@ -7,6 +7,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.CompletableFuture;
@@ -15,8 +16,10 @@ import edu.clics.proto.ClicsProto.*;
 
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;
+import me.hex539.resolver.input.Gamepad;
 
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWGamepadState;
 import org.lwjgl.glfw.GLFWVidMode;
 
 public class ResolverWindow extends Thread {
@@ -74,10 +77,13 @@ public class ResolverWindow extends Thread {
       System.exit(1);
     }
     glfwMakeContextCurrent(window);
-    glfwSetWindowSizeCallback(window, this::onWindowSizeCallback);
     createCapabilities();
 
+    final Set<Gamepad> gamepads = Gamepad.findAll();
     glfwSetKeyCallback(window, this::onKeyCallback);
+    glfwSetMouseButtonCallback(window, this::onMouseButtonCallback);
+    glfwSetScrollCallback(window, this::onScrollCallback);
+    glfwSetWindowSizeCallback(window, this::onWindowSizeCallback);
     renderer.setVideoMode(windowWidth, windowHeight);
 
     ArrayDeque<Long> frames = PRINT_FPS ? new ArrayDeque<>() : null;
@@ -122,6 +128,8 @@ public class ResolverWindow extends Thread {
         System.err.println("FPS: " + frames.size());
       }
 
+      updateJoysticks(gamepads, (timeNow - lastFrameTime) / 1e9);
+
       boolean active = false;
       glClear(GL_COLOR_BUFFER_BIT);
       active |= renderer.mainLoop(timeNow);
@@ -159,6 +167,31 @@ public class ResolverWindow extends Thread {
     resizeWindow.release();
   }
 
+  private void onMouseButtonCallback(long win, int button, int action, int mods) {
+    if (action == GLFW_PRESS) {
+      controller.onAdvance();
+    }
+  }
+
+  private void onScrollCallback(long win, double xOffset, double yOffset) {
+    renderer.onScroll(yOffset);
+  }
+
+  private void updateJoysticks(Set<? extends Gamepad> gamepads, double duration) {
+    double dist = 0.0;
+    for (Gamepad gamepad : gamepads) {
+      if (gamepad.update()) {
+        dist += gamepad.getScroll();
+        for (int i = gamepad.getPresses(); i --> 0;) {
+          controller.onAdvance();
+        }
+      }
+    }
+    if (dist != 0) {
+      renderer.onScroll(-20.0 * duration * dist, /* smooth= */ false);
+    }
+  }
+
   private void onKeyCallback(long win, int key, int scancode, int action, int mods) {
     if ((mods & GLFW_MOD_ALT) != 0) {
       if (action == GLFW_PRESS) {
@@ -170,7 +203,6 @@ public class ResolverWindow extends Thread {
       }
     }
   }
-
 
   private void onAltKeyCallback(long win, int key, int scancode, int action) {
     switch (key) {
