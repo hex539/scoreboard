@@ -10,16 +10,41 @@ android_sdk_repository(
   build_tools_version = "27.0.3",
 )
 
+skylib_version = "0.8.0"
+http_archive(
+  name = "bazel_skylib",
+  type = "tar.gz",
+  url = "https://github.com/bazelbuild/bazel-skylib/releases/download/{}/bazel-skylib.{}.tar.gz".format (skylib_version, skylib_version),
+  sha256 = "2ef429f5d7ce7111263289644d233707dba35e39696377ebab8b0bc701f7818e",
+)
+
+load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
+bazel_skylib_workspace()
+
 git_repository(
   name = 'com_google_protobuf',
   remote = 'https://github.com/google/protobuf',
-  tag = "v3.6.1.3",
+  tag = "v3.8.0",
 )
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+protobuf_deps()
 
 git_repository(
   name = "org_pubref_rules_maven",
   remote = "https://github.com/pubref/rules_maven",
-  commit = "25214e11ef391bd2dc08cad3a5637ceac93b0769",
+  commit = "339c378f856461add63f155d82077de5813e649e",
+  shallow_since = "1555185650 -0600",
+)
+
+maven_jar(
+  name = "error_prone_annotations_maven",
+  artifact = "com.google.errorprone:error_prone_annotations:2.3.2",
+)
+
+bind(
+  name = "error_prone_annotations",
+  actual = "@error_prone_annotations_maven//jar",
 )
 
 maven_jar(
