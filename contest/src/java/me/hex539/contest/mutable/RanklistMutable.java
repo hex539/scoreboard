@@ -137,16 +137,20 @@ public abstract class RanklistMutable implements Ranklist, Ranklist.Observer, Te
     final ScoreboardRow.Builder row = getRowInternal(team);
     final int oldRank = getRank(row);
 
-    // We have to re-insert the original row, even though the score stayed the same.
-    // This is because submit times are used as a tie-breaker.
-    removeRow(row);
-
     final List<ScoreboardProblem> attempts = row.getProblemsList();
     for (int i = attempts.size(); i --> 0;) {
       final ScoreboardProblem p = attempts.get(i);
       if (attempt.getProblemId().equals(p.getProblemId())) {
+        // We have to re-insert the original row, even though the score stayed
+        // the same. This is because submit times are used as a tie-breaker.
+        boolean reinsert = attempt.getSolved() || p.getSolved();
+        if (reinsert) {
+          removeRow(row);
+        }
         row.setProblems(i, attempt);
-        addRow(row);
+        if (reinsert) {
+          addRow(row);
+        }
         return;
       }
     }
