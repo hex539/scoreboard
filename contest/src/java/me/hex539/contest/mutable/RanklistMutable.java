@@ -135,7 +135,6 @@ public abstract class RanklistMutable implements Ranklist, Ranklist.Observer, Te
   @Override
   public void onProblemScoreChanged(Team team, ScoreboardProblem attempt) {
     final ScoreboardRow.Builder row = getRowInternal(team);
-    final int oldRank = getRank(row);
 
     final List<ScoreboardProblem> attempts = row.getProblemsList();
     for (int i = attempts.size(); i --> 0;) {
