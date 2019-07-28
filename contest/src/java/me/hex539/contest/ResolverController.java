@@ -265,39 +265,39 @@ public class ResolverController {
         ? Timestamps.subtract(endTime, contest.getContest().getScoreboardFreezeDuration())
         : null;
 
+    final List<Submission> postFreeze = new ArrayList<>();
+    final List<Submission> preFreeze = new ArrayList<>();
+
+    for (Submission submission : sourceModel.getJudgeModel().getSubmissions()) {
+      if (isBefore(submission, endTime)) {
+        dispatcher.notifySubmission(submission);
+        if (isBefore(submission, freezeTime)) {
+          preFreeze.add(submission);
+        } else {
+          postFreeze.add(submission);
+        }
+      }
+    }
+
     for (Judgement j : contest.getJudgementsMap().values()) {
       judgementsForSubmissions.put(j.getSubmissionId(), j);
     }
 
-    for (Submission submission : sourceModel.getJudgeModel().getSubmissions()) {
-      if (endTime != null) {
-        final Duration afterEnd = Timestamps.between(
-            endTime,
-            Timestamps.add(
-                Timestamp.getDefaultInstance(),
-                submission.getContestTime()));
-        if (Durations.toNanos(afterEnd) >= 0) {
-          continue;
-        }
-      }
-
-      dispatcher.notifySubmission(submission);
-
-      if (freezeTime != null) {
-        final Duration intoFreeze = Timestamps.between(
-            freezeTime,
-            Timestamps.add(
-                Timestamp.getDefaultInstance(),
-                submission.getContestTime()));
-
-        if (intoFreeze.getSeconds() >= 0) {
-          addPendingSubmission(submission);
-          continue;
-        }
-      }
-      judgeSubmission(submission);
-    }
+    preFreeze.forEach(this::judgeSubmission);
+    postFreeze.forEach(this::addPendingSubmission);
     addResolution(Resolution.STARTED);
+  }
+
+  private static boolean isBefore(Submission submission, Timestamp endTime) {
+    if (endTime == null) {
+      return true;
+    }
+    final Duration afterEnd = Timestamps.between(
+        endTime,
+        Timestamps.add(
+            Timestamp.getDefaultInstance(),
+            submission.getContestTime()));
+    return Durations.toNanos(afterEnd) < 0;
   }
 
   private void addPendingSubmission(final Submission submission) {
