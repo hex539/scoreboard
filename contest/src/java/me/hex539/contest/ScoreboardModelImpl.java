@@ -233,6 +233,11 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   @Override
+  public long getRank(Team team) throws NoSuchElementException {
+    return getRanklistModel().getRank(team);
+  }
+
+  @Override
   public ScoreboardScore getScore(Team team) throws NoSuchElementException {
     return getRanklistModel().getScore(team);
   }

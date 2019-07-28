@@ -108,6 +108,11 @@ public abstract class RanklistMutable implements Ranklist, Ranklist.Observer, Te
   }
 
   @Override
+  public long getRank(Team team) throws NoSuchElementException {
+    return getRank(getRowInternal(team));
+  }
+
+  @Override
   public ScoreboardScore getScore(Team team) throws NoSuchElementException {
     return getRowInternal(team).getScore();
   }

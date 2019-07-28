@@ -157,7 +157,7 @@ public class JudgementDispatcher {
 
     final int oldRank;
     if (!newScore.equals(oldScore)) {
-      oldRank = (int) computeRank(team);
+      oldRank = (int) model.getRanklistModel().getRank(team);
     } else {
       oldRank = 0;
     }
@@ -170,7 +170,7 @@ public class JudgementDispatcher {
     if (!newScore.equals(oldScore)) {
       observers.forEach(x -> x.onScoreChanged(team, newScore));
 
-      final int newRank = (int) computeRank(team);
+      final int newRank = (int) model.getRanklistModel().getRank(team);
       if (oldRank != newRank) {
         info.log("Team rank " + oldRank + " -> " + newRank + " for " + team.getName());
         observers.forEach(x -> x.onTeamRankChanged(team, oldRank, newRank));
@@ -233,15 +233,6 @@ public class JudgementDispatcher {
           .setNumPending(submissions.size() - verdicts.size())
           .setSolved(false)
           .build();
-    }
-  }
-
-  private long computeRank(final Team team) {
-    final ScoreboardRow myRow = model.getRow(team);
-    if (model instanceof ScoreboardModelImpl) {
-      return myRow.getRank();
-    } else {
-      return model.getRows().stream().filter(r -> rowComparator.compare(myRow, r) > 0).count() + 1;
     }
   }
 

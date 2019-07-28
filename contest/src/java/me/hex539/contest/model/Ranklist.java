@@ -26,6 +26,10 @@ public interface Ranklist {
     return getRows().stream().filter(x -> team.getId().equals(x.getTeamId())).findFirst().get();
   }
 
+  default long getRank(Team team) throws NoSuchElementException {
+    return getRow(team).getRank();
+  }
+
   default ScoreboardScore getScore(Team team) throws NoSuchElementException {
     return getRow(team).getScore();
   }
