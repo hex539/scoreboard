@@ -141,11 +141,6 @@ public abstract class ImmutableScoreboardModel
   }
 
   @Override
-  public ScoreboardScore getScore(Team team) throws NoSuchElementException {
-    return getRow(team).getScore();
-  }
-
-  @Override
   public ScoreboardProblem getAttempts(Team team, Problem problem) throws NoSuchElementException {
     try {
       return getRow(team).getProblemsList().stream()
