@@ -90,7 +90,7 @@ public class ResolverTest {
     resolver.drain();
 
     verify(observer, never()).onProblemSubmitted(any(), any());
-    verify(observer, times(400)).onProblemScoreChanged(any(), any());
+    verify(observer, times(399)).onProblemScoreChanged(any(), any());
     verify(observer, times(53)).onScoreChanged(any(), any());
     verify(observer, times(53)).onTeamRankChanged(any(), anyInt(), anyInt());
     verify(observer, times(120)).onTeamRankFinalised(any(), anyInt());
@@ -131,7 +131,7 @@ public class ResolverTest {
     resolver.drain();
 
     verify(observer, never()).onProblemSubmitted(any(), any());
-    verify(observer, times(413)).onProblemScoreChanged(any(), any());
+    verify(observer, times(412)).onProblemScoreChanged(any(), any());
     verify(observer, times(69)).onScoreChanged(any(), any());
     verify(observer, times(68)).onTeamRankChanged(any(), anyInt(), anyInt());
     verify(observer, times(122)).onTeamRankFinalised(any(), anyInt());

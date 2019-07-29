@@ -146,7 +146,9 @@ public class JudgementDispatcher {
         scoreProblem(problem, verdicts, submissions, newPenaltyCount);
 
     final ScoreboardScore oldScore = model.getRanklistModel().getScore(team);
-    final ScoreboardScore newScore = attempts.equals(model.getRanklistModel().getAttempts(team, problem))
+    final boolean attemptsChanged = !attempts.equals(oldAttempts);
+
+    final ScoreboardScore newScore = !attemptsChanged
         ? oldScore
         : ScoreboardScore.newBuilder()
             .setNumSolved(oldScore.getNumSolved()
@@ -158,8 +160,10 @@ public class JudgementDispatcher {
                 + (newPenaltyCount[0] - oldPenaltyCount[0]) * model.getContest().getPenaltyTime())
             .build();
 
+    final boolean scoreChanged = attemptsChanged && !newScore.equals(oldScore);
+
     final int oldRank;
-    if (!newScore.equals(oldScore)) {
+    if (scoreChanged) {
       oldRank = (int) model.getRanklistModel().getRank(team);
     } else {
       oldRank = 0;
@@ -167,10 +171,12 @@ public class JudgementDispatcher {
 
     observers.forEach(x -> {
       x.onSubmissionJudged(team, j);
-      x.onProblemScoreChanged(team, attempts);
+      if (attemptsChanged) {
+        x.onProblemScoreChanged(team, attempts);
+      }
     });
 
-    if (!newScore.equals(oldScore)) {
+    if (scoreChanged) {
       observers.forEach(x -> x.onScoreChanged(team, newScore));
 
       final int newRank = (int) model.getRanklistModel().getRank(team);

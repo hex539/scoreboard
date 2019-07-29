@@ -138,27 +138,18 @@ public abstract class RanklistMutable implements Ranklist, Ranklist.Observer, Te
   }
 
   @Override
-  public void onProblemScoreChanged(Team team, ScoreboardProblem attempt) {
+  public void onProblemScoreChanged(Team team, ScoreboardProblem upd) {
     final ScoreboardRow.Builder row = getRowInternal(team);
 
-    final List<ScoreboardProblem> attempts = row.getProblemsList();
-    for (int i = attempts.size(); i --> 0;) {
-      final ScoreboardProblem p = attempts.get(i);
-      if (attempt.getProblemId().equals(p.getProblemId())) {
-        // We have to re-insert the original row, even though the score stayed
-        // the same. This is because submit times are used as a tie-breaker.
-        boolean reinsert = attempt.getSolved() || p.getSolved();
-        if (reinsert) {
-          removeRow(row);
-        }
-        row.setProblems(i, attempt);
-        if (reinsert) {
-          addRow(row);
-        }
-        return;
-      }
-    }
-    throw new NoSuchElementException("Cannot find problem " + attempt.getProblemId());
+    final int idx = getProblems().getProblemIndex(upd.getProblemId());
+    final ScoreboardProblem orig = row.getProblems(idx);
+
+    // If solve status or time change, sort order can also change.
+    final boolean resort = upd.getSolved() != orig.getSolved() || upd.getTime() != orig.getTime();
+
+    if (resort) removeRow(row);
+    row.setProblems(idx, upd);
+    if (resort) addRow(row);
   }
 
   @Override
