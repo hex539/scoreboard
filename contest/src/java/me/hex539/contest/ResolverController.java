@@ -321,13 +321,14 @@ public class ResolverController {
   }
 
   private boolean judgeNextProblem(final Team team, final int currentRank) {
-    if (!teamSubmissions.containsKey(team.getId())) {
+    final SortedMap<Integer, List<Submission>> subs = teamSubmissions.get(team.getId());
+    if (subs == null) {
       return false;
     }
 
-    final int problemOrdinal = teamSubmissions.get(team.getId()).firstKey();
-    final List<Submission> attempts = teamSubmissions.get(team.getId()).remove(problemOrdinal);
-    if (teamSubmissions.get(team.getId()).size() == 0) {
+    final int problemOrdinal = subs.firstKey();
+    final List<Submission> attempts = subs.remove(problemOrdinal);
+    if (subs.size() == 0) {
       teamSubmissions.remove(team.getId());
     }
 
