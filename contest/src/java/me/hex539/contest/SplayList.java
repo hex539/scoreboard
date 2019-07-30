@@ -164,6 +164,9 @@ public final class SplayList<T> extends AbstractList<T> implements List<T>, Sort
   @Override
   public void clear() {
     root = null;
+    if (tagger != null) {
+      tagMap.clear();
+    }
   }
 
   @Override
