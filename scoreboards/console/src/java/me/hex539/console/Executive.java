@@ -142,7 +142,7 @@ public class Executive {
   @Command(name = "events")
   private void showEvents(Invocation invocation) throws Exception {
     Optional<BlockingQueue<Optional<EventFeedItem>>> feed =
-        contestFetcher.eventFeed(contestFetcher.contests().get(0));
+        contestFetcher.eventFeed(chooseContest(contestFetcher.contests()));
     if (!feed.isPresent()) {
       System.err.println("Event feed is not available.");
       return;
@@ -158,7 +158,7 @@ public class Executive {
   @Command(name = "live")
   private void showLiveScoreboard(Invocation invocation) throws Exception {
     Optional<BlockingQueue<Optional<EventFeedItem>>> feed =
-        contestFetcher.eventFeed(contestFetcher.contests().get(0));
+        contestFetcher.eventFeed(chooseContest(contestFetcher.contests()));
     if (!feed.isPresent()) {
       System.err.println("Event feed is not available.");
       return;
@@ -291,5 +291,32 @@ public class Executive {
     } else {
       contestFetcher.fetch().writeTo(System.out);
     }
+  }
+
+  private Contest chooseContest(List<Contest> contests) {
+    if (contests.size() == 0) {
+      System.err.println("No contests available");
+      System.exit(1);
+    }
+    if (contests.size() > 1) {
+      System.err.println("Choose contest:");
+      System.err.println(" ---");
+      for (int i = 0; i < contests.size(); i++) {
+        System.err.printf(" %2d) %s\n", i + 1, contests.get(i).getName());
+      }
+      System.err.println(" ---");
+      while (true) {
+        System.err.print("  > ");
+        try {
+          final int id = new java.util.Scanner(System.in).nextInt();
+          if (0 < id && id <= contests.size()) {
+            return contests.get(id - 1);
+          }
+        } catch (java.util.InputMismatchException e) {
+          continue;
+        }
+      }
+    }
+    return contests.get(0);
   }
 }
