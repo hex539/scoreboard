@@ -48,12 +48,13 @@ public class ContestConverters {
         .build();
   }
 
+  // @return {@param x} in seconds, rounded towards zero.
   private static final long doubleToSeconds(double x) {
-    return Math.round(x - (0.5 - 1e-20));
+    return (long) x;
   }
 
   private static final int doubleToNanos(double x) {
-    return (int) Math.round(1000000000L * (x - doubleToSeconds(x)) - (0.5 - 1e-20));
+    return (int) (1000000000L * (x - doubleToSeconds(x)));
   }
 
   private static final Timestamp doubleToTimestamp(double x) {
