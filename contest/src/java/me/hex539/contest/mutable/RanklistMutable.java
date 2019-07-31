@@ -91,7 +91,7 @@ public abstract class RanklistMutable implements Ranklist, Ranklist.Observer, Te
   public ScoreboardRow getRow(long index) throws NoSuchElementException {
     return rowsByIndex != null
         ? rowsByIndex.get((int) index)
-        : fixRank(getRealRows().get((int) index));
+        : fixRank(getRealRows().get((int) index), (int) index + 1);
   }
 
   @Override
