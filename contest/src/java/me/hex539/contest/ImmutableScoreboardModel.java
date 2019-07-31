@@ -6,11 +6,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.function.Function;
 
 import com.google.auto.value.AutoValue;
 
 import edu.clics.proto.ClicsProto.*;
+import me.hex539.contest.immutable.ImmutableTeams;
 import me.hex539.contest.immutable.SortedLists;
 import me.hex539.contest.model.Judge;
 import me.hex539.contest.model.Teams;
@@ -28,8 +28,7 @@ import me.hex539.contest.model.Teams;
  * used across threads with appropriate locking.)
  */
 @AutoValue
-public abstract class ImmutableScoreboardModel
-    implements ScoreboardModel, Judge, Teams {
+public abstract class ImmutableScoreboardModel implements ScoreboardModel, Judge {
 
   // Internal fields.
   abstract List<Problem> getProblemsById();
@@ -38,17 +37,10 @@ public abstract class ImmutableScoreboardModel
   public static ImmutableScoreboardModel of(ScoreboardModel model) {
     final List<ScoreboardRow> rows = list(model.getRows());
 
-    final Teams teamsModel = model.getTeamsModel();
-    final List<Organization> organizations = SortedLists.sortBy(teamsModel.getOrganizations(), Organization::getId);
-    final List<Team> teams = SortedLists.sortBy(teamsModel.getTeams(), Team::getId);
-    final List<Group> groups = SortedLists.sortBy(teamsModel.getGroups(), Group::getId);
-
     return newBuilder()
         .setRows(rows)
         .setContest(model.getContest())
-        .setOrganizations(organizations)
-        .setTeams(teams)
-        .setGroups(groups)
+        .setTeamsModel(ImmutableTeams.of(model.getTeamsModel()))
         .setJudgementTypes(list(model.getJudgeModel().getJudgementTypes()))
         .setJudgements(list(model.getJudgeModel().getJudgements()))
         .setSubmissions(list(model.getJudgeModel().getSubmissions()))
@@ -69,10 +61,7 @@ public abstract class ImmutableScoreboardModel
     public abstract Builder setContest(Contest contest);
     abstract Builder setRowsByTeamId(List<ScoreboardRow> rows);
 
-    // Teams
-    public abstract Builder setOrganizations(List<Organization> organizations);
-    public abstract Builder setTeams(List<Team> teams);
-    public abstract Builder setGroups(List<Group> groups);
+    public abstract Builder setTeamsModel(Teams teams);
 
     // Judge
     public abstract Builder setJudgementTypes(List<JudgementType> types);
@@ -88,11 +77,6 @@ public abstract class ImmutableScoreboardModel
   }
 
   @Override
-  public Teams getTeamsModel() {
-    return this;
-  }
-
-  @Override
   public Judge getJudgeModel() {
     return this;
   }
@@ -104,26 +88,8 @@ public abstract class ImmutableScoreboardModel
 
   // Widening return types of inherited functions.
   @Override public abstract List<JudgementType> getJudgementTypes();
-  @Override public abstract List<Organization> getOrganizations();
-  @Override public abstract List<Group> getGroups();
-  @Override public abstract List<Team> getTeams();
   @Override public abstract List<Judgement> getJudgements();
   @Override public abstract List<Submission> getSubmissions();
-
-  @Override
-  public Optional<Organization> getOrganizationOpt(String id) {
-    return SortedLists.binarySearch(getOrganizations(), org -> id.compareTo(org.getId()));
-  }
-
-  @Override
-  public Optional<Group> getGroupOpt(String id) {
-    return SortedLists.binarySearch(getGroups(), group -> id.compareTo(group.getId()));
-  }
-
-  @Override
-  public Optional<Team> getTeamOpt(String id) {
-    return SortedLists.binarySearch(getTeams(), team -> id.compareTo(team.getId()));
-  }
 
   @Override
   public Problem getProblem(String id) throws NoSuchElementException {
