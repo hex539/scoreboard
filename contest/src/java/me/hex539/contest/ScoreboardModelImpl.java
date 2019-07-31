@@ -18,7 +18,6 @@ import me.hex539.contest.mutable.TeamsMutable;
 
 import edu.clics.proto.ClicsProto.*;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 @AutoValue

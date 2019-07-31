@@ -23,9 +23,6 @@ import edu.clics.proto.ClicsProto.*;
 import me.hex539.contest.model.Problems;
 import me.hex539.contest.model.Ranklist;
 import me.hex539.contest.model.Teams;
-import me.hex539.contest.mutable.RanklistMutable;
-import me.hex539.contest.immutable.ImmutableProblems;
-import me.hex539.contest.immutable.ImmutableTeams;
 
 public class ResolverController {
 

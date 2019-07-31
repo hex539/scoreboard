@@ -19,7 +19,6 @@ import me.hex539.contest.ResolverController;
 import me.hex539.resolver.input.Gamepad;
 
 import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWGamepadState;
 import org.lwjgl.glfw.GLFWVidMode;
 
 public class ResolverWindow extends Thread {

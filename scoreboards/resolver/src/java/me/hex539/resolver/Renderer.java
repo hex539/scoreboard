@@ -35,8 +35,6 @@ import me.hex539.resolver.draw.DebugDraw;
 import me.hex539.resolver.draw.FontRenderer;
 import me.hex539.resolver.layout.Layout;
 
-import org.lwjgl.glfw.GLFWVidMode;
-
 public class Renderer implements ResolverController.Observer {
   private static boolean ENABLE_PARTICLES = true;
   private static boolean ENABLE_WIREFRAME = false;
