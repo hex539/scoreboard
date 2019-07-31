@@ -207,36 +207,6 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
     return getClics().getContest();
   }
 
-  @Override
-  public List<ScoreboardRow> getRows() {
-    return getRanklistModel().getRows();
-  }
-
-  @Override
-  public ScoreboardRow getRow(long index) throws NoSuchElementException {
-    return getRanklistModel().getRow(index);
-  }
-
-  @Override
-  public ScoreboardRow getRow(Team team) throws NoSuchElementException {
-    return getRanklistModel().getRow(team);
-  }
-
-  @Override
-  public long getRank(Team team) throws NoSuchElementException {
-    return getRanklistModel().getRank(team);
-  }
-
-  @Override
-  public ScoreboardScore getScore(Team team) throws NoSuchElementException {
-    return getRanklistModel().getScore(team);
-  }
-
-  @Override
-  public ScoreboardProblem getAttempts(Team team, Problem problem) throws NoSuchElementException {
-    return getRanklistModel().getAttempts(team, problem);
-  }
-
   public Submission getSubmission(String id) throws NoSuchElementException {
     return getJudgeModel().getSubmission(id);
   }

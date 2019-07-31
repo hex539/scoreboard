@@ -12,6 +12,7 @@ import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ImmutableScoreboardModel;
 import me.hex539.contest.model.Judge;
 import me.hex539.contest.model.Problems;
+import me.hex539.contest.model.Ranklist;
 import me.hex539.contest.model.Teams;
 
 public final class MockScoreboardModel {
@@ -57,16 +58,21 @@ public final class MockScoreboardModel {
         }
 
         @Override
-        public List<ScoreboardRow> getRows() {
-          return rows;
-        }
-
-        @Override
         public Problems getProblemsModel() {
           return new Problems() {
             @Override
             public List<Problem> getProblems() {
               return problems;
+            }
+          };
+        }
+
+        @Override
+        public Ranklist getRanklistModel() {
+          return new Ranklist() {
+            @Override
+            public List<ScoreboardRow> getRows() {
+              return rows;
             }
           };
         }

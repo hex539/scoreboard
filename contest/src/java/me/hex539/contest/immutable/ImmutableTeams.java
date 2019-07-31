@@ -1,12 +1,7 @@
 package me.hex539.contest.immutable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.function.Function;
 
 import edu.clics.proto.ClicsProto.*;
 import me.hex539.contest.model.Teams;

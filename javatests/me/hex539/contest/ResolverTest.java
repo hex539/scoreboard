@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import me.hex539.contest.ResolverController.Observer;
 import me.hex539.contest.ResolverController.Resolution;
+import me.hex539.contest.model.Ranklist;
 import org.junit.Test;
 
 public class ResolverTest {
@@ -53,10 +54,11 @@ public class ResolverTest {
     verify(observer, times(28)).onTeamRankChanged(any(), anyInt(), anyInt());
     verify(observer, times(51)).onTeamRankFinalised(any(), anyInt());
 
-    assertThat(model.getRows().size()).isEqualTo(51);
+    final Ranklist rl = model.getRanklistModel();
+    assertThat(rl.getRows().size()).isEqualTo(51);
     for (int i = 0; i < 51; i++) {
-      assertThat(model.getRow(i)).isEqualTo(reference.getRow(i));
-      assertThat(model.getRow(i)).isEqualTo(
+      assertThat(rl.getRow(i)).isEqualTo(reference.getRanklistModel().getRow(i));
+      assertThat(rl.getRow(i)).isEqualTo(
           entireContest.getScoreboard(i).toBuilder().setRank(i + 1).build());
     }
   }
@@ -93,10 +95,11 @@ public class ResolverTest {
     verify(observer, times(53)).onTeamRankChanged(any(), anyInt(), anyInt());
     verify(observer, times(120)).onTeamRankFinalised(any(), anyInt());
 
-    assertThat(model.getRows().size()).isEqualTo(120);
+    final Ranklist rl = model.getRanklistModel();
+    assertThat(rl.getRows().size()).isEqualTo(120);
     for (int i = 0; i < 120; i++) {
-      assertThat(model.getRow(i)).isEqualTo(reference.getRow(i));
-      assertThat(model.getRow(i)).isEqualTo(
+      assertThat(rl.getRow(i)).isEqualTo(reference.getRanklistModel().getRow(i));
+      assertThat(rl.getRow(i)).isEqualTo(
           entireContest.getScoreboard(i).toBuilder().setRank(i + 1).build());
     }
   }
@@ -133,10 +136,11 @@ public class ResolverTest {
     verify(observer, times(68)).onTeamRankChanged(any(), anyInt(), anyInt());
     verify(observer, times(122)).onTeamRankFinalised(any(), anyInt());
 
-    assertThat(model.getRows().size()).isEqualTo(entireContest.getScoreboardCount());
+    final Ranklist rl = model.getRanklistModel();
+    assertThat(rl.getRows().size()).isEqualTo(entireContest.getScoreboardCount());
     for (int i = 0; i < entireContest.getScoreboardCount(); i++) {
-      assertThat(model.getRow(i)).isEqualTo(reference.getRow(i));
-      assertThat(model.getRow(i)).isEqualTo(
+      assertThat(rl.getRow(i)).isEqualTo(reference.getRanklistModel().getRow(i));
+      assertThat(rl.getRow(i)).isEqualTo(
           entireContest.getScoreboard(i).toBuilder().setRank(i + 1).build());
     }
   }

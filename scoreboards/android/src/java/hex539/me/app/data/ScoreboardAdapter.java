@@ -11,6 +11,7 @@ import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;
 import me.hex539.contest.SplayList;
 import me.hex539.contest.model.Problems;
+import me.hex539.contest.model.Ranklist;
 import me.hex539.contest.model.Teams;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
   }
 
   private final Problems mProblems;
+  private final Ranklist mRanklist;
   private final Teams mTeams;
   private final SplayList<ClicsProto.ScoreboardRow> mRows;
   private final Handler mHandler;
@@ -58,9 +60,10 @@ public class ScoreboardAdapter extends RecyclerView.Adapter<ScoreboardAdapter.Vi
 
   public ScoreboardAdapter(ScoreboardModel model, Handler handler) {
     mProblems = model.getProblemsModel();
+    mRanklist = model.getRanklistModel();
     mTeams = model.getTeamsModel();
     mHandler = handler;
-    mRows = new SplayList<>(model.getRows(), ClicsProto.ScoreboardRow::getTeamId);
+    mRows = new SplayList<>(mRanklist.getRows(), ClicsProto.ScoreboardRow::getTeamId);
     setHasStableIds(true);
   }
 

@@ -1,6 +1,5 @@
 package me.hex539.contest.model;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -14,9 +13,7 @@ public interface Ranklist {
     default void onTeamRankChanged(Team team, int oldRank, int newRank) {}
   }
 
-  default List<ScoreboardRow> getRows() {
-    return Collections.emptyList();
-  }
+  List<ScoreboardRow> getRows();
 
   default ScoreboardRow getRow(long index) throws NoSuchElementException {
     return Optional.ofNullable(getRows().get((int) index)).get();

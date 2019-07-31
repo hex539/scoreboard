@@ -83,7 +83,7 @@ public class ModelObserverTest {
             .build()).build();
     JudgementDispatcher dispatcher = new JudgementDispatcher(model);
 
-    for (ScoreboardRow row : model.getRows()) {
+    for (ScoreboardRow row : model.getRanklistModel().getRows()) {
       System.err.println("  " + row.getTeamId() + ":\n    " + row.getScore());
     }
 
@@ -140,7 +140,7 @@ public class ModelObserverTest {
   }
 
   private static List<String> getRankList(ScoreboardModel model) {
-    final List<ScoreboardRow> rows = new ArrayList<>(model.getRows());
+    final List<ScoreboardRow> rows = new ArrayList<>(model.getRanklistModel().getRows());
     Collections.sort(rows, (a, b) -> Long.compare(a.getRank(), b.getRank()));
     return rows
         .stream()

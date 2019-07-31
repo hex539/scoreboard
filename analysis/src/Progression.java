@@ -73,7 +73,7 @@ public class Progression {
       }
       teams.get(submission.getTeamId()).problemAttempted(verdict);
 
-      for (ScoreboardRow row : model.getRows()) {
+      for (ScoreboardRow row : model.getRanklistModel().getRows()) {
         if (row.getScore().getNumSolved() > 0) {
           teams.get(row.getTeamId()).rankChanged(submission.getContestTime(), row.getRank());
         }
@@ -108,7 +108,7 @@ public class Progression {
         JtwigModel.newModel()
             .with(
                 "teams",
-                model.getRows().stream()
+                model.getRanklistModel().getRows().stream()
                     .map(row -> teams.get(row.getTeamId()).finalise(row, model))
                     .collect(Collectors.toList()))
             .with(

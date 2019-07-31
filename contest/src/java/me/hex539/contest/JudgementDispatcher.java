@@ -145,8 +145,8 @@ public class JudgementDispatcher {
     final ScoreboardProblem attempts =
         scoreProblem(problem, verdicts, submissions, newPenaltyCount);
 
-    final ScoreboardScore oldScore = model.getScore(team);
-    final ScoreboardScore newScore = attempts.equals(model.getAttempts(team, problem))
+    final ScoreboardScore oldScore = model.getRanklistModel().getScore(team);
+    final ScoreboardScore newScore = attempts.equals(model.getRanklistModel().getAttempts(team, problem))
         ? oldScore
         : ScoreboardScore.newBuilder()
             .setNumSolved(oldScore.getNumSolved()

@@ -253,7 +253,7 @@ public class ResolverController {
   }
 
   private Team getTeamAt(int rank) {
-    return teams.getTeam(model.getRow(rank - 1).getTeamId());
+    return teams.getTeam(model.getRanklistModel().getRow(rank - 1).getTeamId());
   }
 
   private void createSubmissions(ScoreboardModel sourceModel) {
@@ -310,7 +310,7 @@ public class ResolverController {
     }
 
     // The problem needs to be pending (unsolved) as of the freeze.
-    if (model.getAttempts(team.get(), problem).getSolved()) {
+    if (model.getRanklistModel().getAttempts(team.get(), problem).getSolved()) {
       return;
     }
 

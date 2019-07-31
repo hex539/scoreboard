@@ -132,7 +132,7 @@ public class Executive {
       final Submission submission = model.getSubmission(judgement.getSubmissionId());
       final Problem problem = model.getProblemsModel().getProblem(submission.getProblemId());
       final Team team = model.getTeamsModel().getTeam(submission.getTeamId());
-      final ScoreboardRow row = model.getRow(team);
+      final ScoreboardRow row = model.getRanklistModel().getRow(team);
 
       System.out.println(
           PrettyPrinter.formatVerdictRow(team, problem, submission, judgementType, row));
@@ -225,7 +225,7 @@ public class Executive {
 
       if (feed.get().isEmpty()) {
         System.out.println(PrettyPrinter.formatScoreboardHeader(model.getProblemsModel().getProblems()));
-        model.getRows().stream()
+        model.getRanklistModel().getRows().stream()
             .limit(20)
             .map(row -> PrettyPrinter.formatScoreboardRow(
                 model.getTeamsModel().getTeam(row.getTeamId()),
@@ -270,7 +270,7 @@ public class Executive {
       controller.advance();
 
       System.out.println(PrettyPrinter.formatScoreboardHeader(model.getProblemsModel().getProblems()));
-      model.getRows().stream()
+      model.getRanklistModel().getRows().stream()
           .map(row -> PrettyPrinter.formatScoreboardRow(
               model.getTeamsModel().getTeam(row.getTeamId()),
               row,

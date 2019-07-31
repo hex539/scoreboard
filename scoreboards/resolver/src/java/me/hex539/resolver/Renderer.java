@@ -28,6 +28,7 @@ import edu.clics.proto.ClicsProto.*;
 
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;
+import me.hex539.contest.model.Ranklist;
 import me.hex539.contest.model.Teams;
 import me.hex539.resolver.draw.AttemptColour;
 import me.hex539.resolver.draw.DebugDraw;
@@ -41,6 +42,7 @@ public class Renderer implements ResolverController.Observer {
   private static boolean ENABLE_WIREFRAME = false;
 
   private final ScoreboardModel model;
+  private final Ranklist ranklist;
   private final Teams teams;
   private final Queue<RankAnimation> moveAnimation = new ArrayDeque<>();
   private final Queue<RankAnimation> scrollAnimation = new ArrayDeque<>();
@@ -73,17 +75,18 @@ public class Renderer implements ResolverController.Observer {
 
   public Renderer(ScoreboardModel model, CompletableFuture<? extends ByteBuffer> ttfData) {
     this.model = model;
+    this.ranklist = model.getRanklistModel();
     this.teams = model.getTeamsModel();
 
     this.particles = ENABLE_PARTICLES ? new Particles() : null;
     this.font = new FontRenderer(teams, ttfData);
 
-    for (ScoreboardRow row : model.getRows()) {
+    for (ScoreboardRow row : ranklist.getRows()) {
       final String teamId = row.getTeamId();
       final Team team = teams.getTeam(teamId);
       final Layout.Group rowLayout = new Layout.Group(ENABLE_WIREFRAME
           ? DebugDraw::wireframe
-          : l -> drawRow(l, model.getRow(team)));
+          : l -> drawRow(l, ranklist.getRow(team)));
       final Layout.Group scoreLayout = new Layout.Group(ENABLE_WIREFRAME
           ? DebugDraw::wireframe
           : null);
@@ -91,7 +94,7 @@ public class Renderer implements ResolverController.Observer {
         final Problem problem = model.getProblemsModel().getProblem(attempts.getProblemId());
         final Layout cellLayout = new Layout(ENABLE_WIREFRAME
             ? DebugDraw::wireframe
-            : l -> drawAttempts(l, team, model.getAttempts(team, problem)));
+            : l -> drawAttempts(l, team, ranklist.getAttempts(team, problem)));
         scoreLayout.children.add(cellLayout);
       }
       rowLayout.children.add(scoreLayout);
@@ -101,7 +104,7 @@ public class Renderer implements ResolverController.Observer {
 
     focusedTeam = null;
     focusedProblem = null;
-    finalisedRank = model.getRows().size() + 1;
+    finalisedRank = ranklist.getRows().size() + 1;
     scrollTo(finalisedRank - 1, false);
   }
 
@@ -132,7 +135,7 @@ public class Renderer implements ResolverController.Observer {
          - visibleRowsBelow;
     maxScrolledRank = Math.max(minScrolledRank,
         + (0*screen.height + cellMargin / 2.0) / (rowHeight + cellMargin)
-             - visibleRowsBelow + model.getRows().size());
+             - visibleRowsBelow + ranklist.getRows().size());
 
     for (Layout.Group rowLayout : rowLayouts.values()) {
       int position = 0;
@@ -158,8 +161,8 @@ public class Renderer implements ResolverController.Observer {
   public void onProblemFocused(Team team, Problem problem) {
     if (focusedTeam != team) {
       if (team != null && problem == null) {
-        final int oldRank = (focusedTeam != null ? (int) model.getRow(focusedTeam).getRank() : -1);
-        final int newRank = (int) model.getRow(team).getRank();
+        final int oldRank = (focusedTeam != null ? (int) ranklist.getRow(focusedTeam).getRank() : -1);
+        final int newRank = (int) ranklist.getRow(team).getRank();
         if (!focusAnimation.isEmpty()) {
           focusAnimation.clear();
         }
@@ -254,8 +257,8 @@ public class Renderer implements ResolverController.Observer {
     List<RankAnimation> moveAnims = new ArrayList<>(moveAnimation);
     Collections.reverse(moveAnims);
 
-    for (int rowIndex = model.getRows().size(); rowIndex --> 0;) {
-      final ScoreboardRow row = model.getRow(rowIndex);
+    for (int rowIndex = ranklist.getRows().size(); rowIndex --> 0;) {
+      final ScoreboardRow row = ranklist.getRow(rowIndex);
 
       double effectiveRank = row.getRank();
 
