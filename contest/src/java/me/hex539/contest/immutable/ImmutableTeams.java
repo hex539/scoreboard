@@ -28,9 +28,9 @@ public class ImmutableTeams implements Teams {
   }
 
   public ImmutableTeams(Teams source) {
-    organizations = sortBy(source.getOrganizations(), Organization::getId);
-    groups = sortBy(source.getGroups(), Group::getId);
-    teams = sortBy(source.getTeams(), Team::getId);
+    organizations = SortedLists.sortBy(source.getOrganizations(), Organization::getId);
+    groups = SortedLists.sortBy(source.getGroups(), Group::getId);
+    teams = SortedLists.sortBy(source.getTeams(), Team::getId);
   }
 
   @Override
@@ -50,44 +50,16 @@ public class ImmutableTeams implements Teams {
 
   @Override
   public Optional<Organization> getOrganizationOpt(String id) {
-    return binarySearch(organizations, org -> id.compareTo(org.getId()));
+    return SortedLists.binarySearch(organizations, org -> id.compareTo(org.getId()));
   }
 
   @Override
   public Optional<Group> getGroupOpt(String id) {
-    return binarySearch(groups, group -> id.compareTo(group.getId()));
+    return SortedLists.binarySearch(groups, group -> id.compareTo(group.getId()));
   }
 
   @Override
   public Optional<Team> getTeamOpt(String id) {
-    return binarySearch(teams, team -> id.compareTo(team.getId()));
-  }
-
-  private static <T> Optional<T> binarySearch(List<T> items, Function<T, Integer> compareTo) {
-    final T res;
-
-    if (!items.isEmpty()) {
-      int l = 0;
-      for (int rad = (1 << 30); rad != 0; rad >>>= 1) {
-        if (l + rad < items.size() && compareTo.apply(items.get(l + rad)) >= 0) {
-          l += rad;
-        }
-      }
-      res = items.get(l);
-    } else {
-      res = null;
-    }
-
-    if (res != null && compareTo.apply(res) == 0) {
-      return Optional.ofNullable(res);
-    } else {
-      return Optional.empty();
-    }
-  }
-
-  private static <T, K extends Comparable<K>> List<T> sortBy(Collection<T> l, Function<T, K> key) {
-    List<T> list = new ArrayList<>(l);
-    Collections.sort(list, (a, b) -> key.apply(a).compareTo(key.apply(b)));
-    return Collections.unmodifiableList(list);
+    return SortedLists.binarySearch(teams, team -> id.compareTo(team.getId()));
   }
 }

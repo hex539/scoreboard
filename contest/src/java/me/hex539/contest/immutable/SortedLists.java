@@ -12,7 +12,7 @@ import edu.clics.proto.ClicsProto.*;
 /**
  * Helpers for dealing with sorted lists.
  */
-abstract class SortedLists {
+public abstract class SortedLists {
 
   private SortedLists() {}
 

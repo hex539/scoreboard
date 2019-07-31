@@ -11,6 +11,7 @@ import java.util.function.Function;
 import com.google.auto.value.AutoValue;
 
 import edu.clics.proto.ClicsProto.*;
+import me.hex539.contest.immutable.SortedLists;
 import me.hex539.contest.model.Judge;
 import me.hex539.contest.model.Teams;
 
@@ -38,9 +39,9 @@ public abstract class ImmutableScoreboardModel
     final List<ScoreboardRow> rows = list(model.getRows());
 
     final Teams teamsModel = model.getTeamsModel();
-    final List<Organization> organizations = sortBy(teamsModel.getOrganizations(), Organization::getId);
-    final List<Team> teams = sortBy(teamsModel.getTeams(), Team::getId);
-    final List<Group> groups = sortBy(teamsModel.getGroups(), Group::getId);
+    final List<Organization> organizations = SortedLists.sortBy(teamsModel.getOrganizations(), Organization::getId);
+    final List<Team> teams = SortedLists.sortBy(teamsModel.getTeams(), Team::getId);
+    final List<Group> groups = SortedLists.sortBy(teamsModel.getGroups(), Group::getId);
 
     return newBuilder()
         .setRows(rows)
@@ -52,8 +53,8 @@ public abstract class ImmutableScoreboardModel
         .setJudgements(list(model.getJudgeModel().getJudgements()))
         .setSubmissions(list(model.getJudgeModel().getSubmissions()))
         .setProblems(model.getProblems())
-        .setProblemsById(sortBy(model.getProblems(), Problem::getId))
-        .setRowsByTeamId(sortBy(model.getRows(), ScoreboardRow::getTeamId))
+        .setProblemsById(SortedLists.sortBy(model.getProblems(), Problem::getId))
+        .setRowsByTeamId(SortedLists.sortBy(model.getRows(), ScoreboardRow::getTeamId))
         .build();
   }
 
@@ -98,7 +99,7 @@ public abstract class ImmutableScoreboardModel
 
   @Override
   public Optional<JudgementType> getJudgementTypeOpt(String id) {
-    return binarySearch(getJudgementTypes(), type -> id.compareTo(type.getId()));
+    return SortedLists.binarySearch(getJudgementTypes(), type -> id.compareTo(type.getId()));
   }
 
   // Widening return types of inherited functions.
@@ -111,22 +112,22 @@ public abstract class ImmutableScoreboardModel
 
   @Override
   public Optional<Organization> getOrganizationOpt(String id) {
-    return binarySearch(getOrganizations(), org -> id.compareTo(org.getId()));
+    return SortedLists.binarySearch(getOrganizations(), org -> id.compareTo(org.getId()));
   }
 
   @Override
   public Optional<Group> getGroupOpt(String id) {
-    return binarySearch(getGroups(), group -> id.compareTo(group.getId()));
+    return SortedLists.binarySearch(getGroups(), group -> id.compareTo(group.getId()));
   }
 
   @Override
   public Optional<Team> getTeamOpt(String id) {
-    return binarySearch(getTeams(), team -> id.compareTo(team.getId()));
+    return SortedLists.binarySearch(getTeams(), team -> id.compareTo(team.getId()));
   }
 
   @Override
   public Problem getProblem(String id) throws NoSuchElementException {
-    return binarySearch(getProblemsById(), prob -> id.compareTo(prob.getId())).get();
+    return SortedLists.binarySearch(getProblemsById(), prob -> id.compareTo(prob.getId())).get();
   }
 
   @Override
@@ -137,7 +138,7 @@ public abstract class ImmutableScoreboardModel
   @Override
   public ScoreboardRow getRow(Team team) throws NoSuchElementException {
     final String id = team.getId();
-    return binarySearch(getRowsByTeamId(), row -> id.compareTo(row.getTeamId())).get();
+    return SortedLists.binarySearch(getRowsByTeamId(), row -> id.compareTo(row.getTeamId())).get();
   }
 
   @Override
@@ -155,35 +156,7 @@ public abstract class ImmutableScoreboardModel
 
   @Override
   public Optional<Submission> getSubmissionOpt(String id) {
-    return binarySearch(getSubmissions(), sub -> id.compareTo(sub.getId()));
-  }
-
-  private static <T> Optional<T> binarySearch(List<T> items, Function<T, Integer> compareTo) {
-    final T res;
-
-    if (!items.isEmpty()) {
-      int l = 0;
-      for (int rad = (1 << 30); rad != 0; rad >>>= 2) {
-        if (l + rad < items.size() && compareTo.apply(items.get(l + rad)) <= 0) {
-          l += rad;
-        }
-      }
-      res = items.get(l);
-    } else {
-      res = null;
-    }
-
-    if (res != null && compareTo.apply(res) == 0) {
-      return Optional.ofNullable(res);
-    } else {
-      return Optional.empty();
-    }
-  }
-
-  private static <T, K extends Comparable<K>> List<T> sortBy(Collection<T> l, Function<T, K> key) {
-    List<T> list = new ArrayList<>(l);
-    Collections.sort(list, (a, b) -> key.apply(a).compareTo(key.apply(b)));
-    return Collections.unmodifiableList(list);
+    return SortedLists.binarySearch(getSubmissions(), sub -> id.compareTo(sub.getId()));
   }
 
   private static <T> List<T> list(Collection<T> list) {
