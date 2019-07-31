@@ -9,7 +9,9 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import me.hex539.contest.ScoreboardModel;
+import me.hex539.contest.ImmutableScoreboardModel;
 import me.hex539.contest.model.Judge;
+import me.hex539.contest.model.Problems;
 import me.hex539.contest.model.Teams;
 
 public final class MockScoreboardModel {
@@ -48,20 +50,25 @@ public final class MockScoreboardModel {
     }
 
     public ScoreboardModel build() {
-      return new ScoreboardModel() {
+      return ImmutableScoreboardModel.of(new ScoreboardModel() {
         @Override
         public Contest getContest() {
           return Contest.newBuilder().setFormalName("FakeContest").build();
         }
 
         @Override
-        public List<Problem> getProblems() {
-          return problems;
+        public List<ScoreboardRow> getRows() {
+          return rows;
         }
 
         @Override
-        public List<ScoreboardRow> getRows() {
-          return rows;
+        public Problems getProblemsModel() {
+          return new Problems() {
+            @Override
+            public List<Problem> getProblems() {
+              return problems;
+            }
+          };
         }
 
         @Override
@@ -103,7 +110,7 @@ public final class MockScoreboardModel {
             }
           };
         }
-      };
+      });
     }
 
     public Builder setProblems(final String... names) {

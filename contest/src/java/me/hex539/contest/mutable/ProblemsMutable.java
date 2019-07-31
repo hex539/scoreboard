@@ -37,6 +37,11 @@ public class ProblemsMutable implements Problems {
   }
 
   @Override
+  public int getProblemsCount() {
+    return problemsById.size();
+  }
+
+  @Override
   public Problem getProblem(String id) throws NoSuchElementException {
     return Optional.ofNullable(problemsById.get(id)).get();
   }

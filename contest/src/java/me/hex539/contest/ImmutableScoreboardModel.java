@@ -13,6 +13,7 @@ import edu.clics.proto.ClicsProto.*;
 import me.hex539.contest.immutable.ImmutableTeams;
 import me.hex539.contest.immutable.SortedLists;
 import me.hex539.contest.model.Judge;
+import me.hex539.contest.model.Problems;
 import me.hex539.contest.model.Teams;
 
 /**
@@ -31,7 +32,6 @@ import me.hex539.contest.model.Teams;
 public abstract class ImmutableScoreboardModel implements ScoreboardModel, Judge {
 
   // Internal fields.
-  abstract List<Problem> getProblemsById();
   abstract List<ScoreboardRow> getRowsByTeamId();
 
   public static ImmutableScoreboardModel of(ScoreboardModel model) {
@@ -41,11 +41,10 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel, Judge
         .setRows(rows)
         .setContest(model.getContest())
         .setTeamsModel(ImmutableTeams.of(model.getTeamsModel()))
+        .setProblemsModel(model.getProblemsModel())
         .setJudgementTypes(list(model.getJudgeModel().getJudgementTypes()))
         .setJudgements(list(model.getJudgeModel().getJudgements()))
         .setSubmissions(list(model.getJudgeModel().getSubmissions()))
-        .setProblems(model.getProblems())
-        .setProblemsById(SortedLists.sortBy(model.getProblems(), Problem::getId))
         .setRowsByTeamId(SortedLists.sortBy(model.getRows(), ScoreboardRow::getTeamId))
         .build();
   }
@@ -62,15 +61,12 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel, Judge
     abstract Builder setRowsByTeamId(List<ScoreboardRow> rows);
 
     public abstract Builder setTeamsModel(Teams teams);
+    public abstract Builder setProblemsModel(Problems problems);
 
     // Judge
     public abstract Builder setJudgementTypes(List<JudgementType> types);
     public abstract Builder setJudgements(List<Judgement> judgements);
     public abstract Builder setSubmissions(List<Submission> submissions);
-
-    // Problems
-    public abstract Builder setProblems(List<Problem> problems);
-    abstract Builder setProblemsById(List<Problem> problems);
 
     // Builder
     abstract ImmutableScoreboardModel build();
@@ -90,11 +86,6 @@ public abstract class ImmutableScoreboardModel implements ScoreboardModel, Judge
   @Override public abstract List<JudgementType> getJudgementTypes();
   @Override public abstract List<Judgement> getJudgements();
   @Override public abstract List<Submission> getSubmissions();
-
-  @Override
-  public Problem getProblem(String id) throws NoSuchElementException {
-    return SortedLists.binarySearch(getProblemsById(), prob -> id.compareTo(prob.getId())).get();
-  }
 
   @Override
   public ScoreboardRow getRow(long index) throws NoSuchElementException {

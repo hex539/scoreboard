@@ -18,4 +18,8 @@ public interface Problems {
   default boolean containsProblem(String id) {
     return getProblems().stream().filter(x -> id.equals(x.getId())).findFirst().isPresent();
   }
+
+  default int getProblemsCount() {
+    return getProblems().size();
+  }
 }

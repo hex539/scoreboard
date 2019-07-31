@@ -15,6 +15,7 @@ import me.hex539.contest.JudgementDispatcher;
 import me.hex539.contest.MissingJudgements;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
+import me.hex539.contest.model.Problems;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.jtwig.environment.EnvironmentConfiguration;
 import org.jtwig.environment.EnvironmentConfigurationBuilder;
@@ -48,7 +49,7 @@ public class Progression {
 
     final Map<String, TeamProgression> teams = new HashMap<>();
     model.getTeamsModel().getTeams().forEach(
-        team -> teams.put(team.getId(), new TeamProgression(team, model.getProblems())));
+        team -> teams.put(team.getId(), new TeamProgression(team, model.getProblemsModel())));
 
     final Map<String, Judgement> judgementsMap = fullModel.getJudgeModel().getJudgements()
         .stream()
@@ -112,7 +113,7 @@ public class Progression {
                     .collect(Collectors.toList()))
             .with(
                 "problems",
-                model.getProblems())
+                model.getProblemsModel().getProblems())
             .with(
                 "contest",
                 model.getContest())
@@ -131,9 +132,10 @@ public class Progression {
     public ScoreboardRow row;
     public ScoreboardModel model;
 
-    public TeamProgression(Team team, List<Problem> problems) {
+    public TeamProgression(Team team, Problems problems) {
       this.team = team;
-      problems.forEach(p -> problemScoreProgression.put(p.getId(), new TreeMap<Long, ScoreboardProblem>()));
+      problems.getProblems().forEach(
+          p -> problemScoreProgression.put(p.getId(), new TreeMap<Long, ScoreboardProblem>()));
     }
 
     public TeamProgression finalise(ScoreboardRow row, ScoreboardModel model) {

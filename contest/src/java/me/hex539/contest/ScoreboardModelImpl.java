@@ -208,18 +208,8 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
   }
 
   @Override
-  public List<Problem> getProblems() {
-    return getProblemsModel().getProblems();
-  }
-
-  @Override
   public List<ScoreboardRow> getRows() {
     return getRanklistModel().getRows();
-  }
-
-  @Override
-  public Problem getProblem(String id) throws NoSuchElementException {
-    return getProblemsModel().getProblem(id);
   }
 
   @Override

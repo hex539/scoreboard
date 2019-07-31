@@ -88,7 +88,7 @@ public class Renderer implements ResolverController.Observer {
           ? DebugDraw::wireframe
           : null);
       for (ScoreboardProblem attempts : row.getProblemsList()) {
-        final Problem problem = model.getProblem(attempts.getProblemId());
+        final Problem problem = model.getProblemsModel().getProblem(attempts.getProblemId());
         final Layout cellLayout = new Layout(ENABLE_WIREFRAME
             ? DebugDraw::wireframe
             : l -> drawAttempts(l, team, model.getAttempts(team, problem)));
@@ -119,13 +119,13 @@ public class Renderer implements ResolverController.Observer {
       font.setVideoSize(screen.width, screen.height);
     }
 
-    cellWidth = (int) ((screen.width * 0.7) / Math.max(12, model.getProblems().size())) * 0.9f;
+    cellWidth = (int) ((screen.width * 0.7) / Math.max(12, model.getProblemsModel().getProblemsCount())) * 0.9f;
     cellHeight = cellWidth / 2.4f;
     cellMargin = cellWidth / 10;
 
-    teamLabelWidth = screen.width - (cellWidth + cellMargin) * model.getProblems().size();
+    teamLabelWidth = screen.width - (cellWidth + cellMargin) * model.getProblemsModel().getProblemsCount();
 
-    rowWidth = (cellWidth + cellMargin) * model.getProblems().size();
+    rowWidth = (cellWidth + cellMargin) * model.getProblemsModel().getProblemsCount();
     rowHeight = cellHeight + cellMargin;
 
     minScrolledRank = + (1*screen.height + cellMargin / 2.0) / (rowHeight + cellMargin)
@@ -180,7 +180,7 @@ public class Renderer implements ResolverController.Observer {
     if (attempts.getNumJudged() != 0 && attempts.getNumPending() == 0) {
       Optional.ofNullable(rowLayouts.get(team.getId()))
           .map(x -> x.children().get(0))
-          .map(x -> x.children().get(model.getProblemIndex(attempts.getProblemId())))
+          .map(x -> x.children().get(model.getProblemsModel().getProblemIndex(attempts.getProblemId())))
           .ifPresent(cellLayout -> particles.launchFrom(
               cellLayout,
               2000,

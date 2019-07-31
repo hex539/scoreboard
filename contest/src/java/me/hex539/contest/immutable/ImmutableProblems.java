@@ -24,7 +24,7 @@ public class ImmutableProblems implements Problems {
     return new ImmutableProblems(copy);
   }
 
-  public ImmutableProblems(Problems copy) {
+  ImmutableProblems(Problems copy) {
     indicesById = IntStream.range(0, copy.getProblems().size())
         .collect(HashMap::new, (m, i) -> m.put(copy.getProblems().get(i).getId(), i), Map::putAll);
     problemsByIndex = SortedLists.sortBy(copy.getProblems(), Problem::getOrdinal);
