@@ -9,14 +9,17 @@ import edu.clics.proto.ClicsProto.*;
 import me.hex539.contest.ApiDetective;
 import me.hex539.contest.ContestConfig;
 import me.hex539.contest.ContestDownloader;
+import me.hex539.contest.EventFeedController;
 import me.hex539.contest.JudgementDispatcher;
 import me.hex539.contest.ResolverController;
+import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -157,73 +160,19 @@ public class Executive {
 
   @Command(name = "live")
   private void showLiveScoreboard(Invocation invocation) throws Exception {
-    Optional<BlockingQueue<Optional<EventFeedItem>>> feed =
-        contestFetcher.eventFeed(chooseContest(contestFetcher.contests()));
-    if (!feed.isPresent()) {
+    final EventFeedController controller;
+    try {
+      controller = new EventFeedController(
+          contestFetcher,
+          chooseContest(contestFetcher.contests()));
+    } catch (NoSuchElementException e) {
       System.err.println("Event feed is not available.");
       return;
     }
 
-    ClicsContest entireContest = contestFetcher.fetch();
-    ScoreboardModelImpl fullModel = ScoreboardModelImpl.newBuilder(entireContest)
-        .filterGroups(g -> invocation.getGroups() != null
-            ? invocation.getGroups().equals(g.getName())
-            : !g.getHidden())
-        .filterTooLateSubmissions()
-        .build();
-    ScoreboardModelImpl model = fullModel.toBuilder()
-        .withEmptyScoreboard()
-        .filterSubmissions(x -> false)
-        .build();
-    JudgementDispatcher dispatcher = new JudgementDispatcher(model);
-    dispatcher.observers.add(model);
-
-    for (Optional<EventFeedItem> otem; (otem = feed.get().take()).isPresent();) {
-      final EventFeedItem item = otem.get();
-
-      if (item.hasContestData()) {
-      } else if (item.hasJudgementTypeData()) {
-      } else if (item.hasLanguageData()) {
-      } else if (item.hasProblemData()) {
-      } else if (item.hasGroupData()) {
-        switch (item.getOperation()) {
-          case create:
-          case update:
-            model.getTeamsModel().onGroupAdded(item.getGroupData());
-            break;
-          case delete:
-            model.getTeamsModel().onGroupRemoved(item.getGroupData());
-            break;
-        }
-      } else if (item.hasOrganizationData()) {
-      } else if (item.hasTeamData()) {
-        switch (item.getOperation()) {
-          case create:
-          case update:
-            if (model.getTeamsModel().containsTeam(item.getTeamData())) {
-              model.getTeamsModel().onTeamAdded(item.getTeamData());
-              model.getRanklistModel().onTeamAdded(item.getTeamData());
-            }
-            break;
-          case delete:
-            model.getRanklistModel().onTeamRemoved(item.getTeamData());
-            model.getTeamsModel().onTeamRemoved(item.getTeamData());
-            break;
-        }
-      } else if (item.hasStateData()) {
-      } else if (item.hasSubmissionData()) {
-        final Submission submission = item.getSubmissionData();
-        if (model.getTeamsModel().containsTeam(submission.getTeamId())) {
-          dispatcher.notifySubmission(item.getSubmissionData());
-        }
-      } else if (item.hasJudgementData()) {
-        dispatcher.notifyJudgement(item.getJudgementData());
-      } else if (item.hasRunData()) {
-      } else if (item.hasClarificationData()) {
-      } else if (item.hasAwardData()) {
-      }
-
-      if (feed.get().isEmpty()) {
+    final ScoreboardModel model = controller.model;
+    while (!controller.finished()) {
+      if (controller.advance()) {
         System.out.println(PrettyPrinter.formatScoreboardHeader(model.getProblemsModel().getProblems()));
         model.getRanklistModel().getRows().stream()
             .limit(20)
@@ -234,8 +183,8 @@ public class Executive {
                 null))
             .forEach(System.out::println);
 
-        Thread.sleep(200); // milliseconds
       }
+      Thread.sleep(200); // milliseconds
     }
   }
 
