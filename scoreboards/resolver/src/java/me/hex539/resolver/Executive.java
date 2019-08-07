@@ -14,6 +14,7 @@ import edu.clics.proto.ClicsProto.*;
 import me.hex539.contest.ApiDetective;
 import me.hex539.contest.ContestConfig;
 import me.hex539.contest.ContestDownloader;
+import me.hex539.contest.ImmutableScoreboardModel;
 import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ScoreboardModelImpl;
 import me.hex539.contest.ResolverController;
@@ -47,8 +48,8 @@ public class Executive {
         .thenApplyAsync(b -> b
             .filterTooLateSubmissions()
             .filterGroups(getGroupFilter(invocation))
-            .build()
-            .immutable());
+            .build())
+        .thenApplyAsync(ImmutableScoreboardModel::of);
 
     final CompletableFuture<ScoreboardModelImpl> model = entireContest
         .thenCombineAsync(reference, ScoreboardModelImpl::newBuilder)

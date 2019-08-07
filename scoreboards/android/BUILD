@@ -17,6 +17,7 @@ android_library(
   deps = [
     "//scoreboards/android/proto:java",
     "//contest",
+    "//contest:data_structures",
     "//external:guava",
     "//third_party/auto:auto_value",
     "//third_party/auto:auto_value_annotations",

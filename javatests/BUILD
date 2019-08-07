@@ -6,7 +6,9 @@ java_library(
     "me/hex539/testing/utils/*.java",
   ]),
   deps = [
-    "//contest",
+    "//contest:immutable",
+    "//contest:model",
+    "@com_google_protobuf//:protobuf_java",
   ],
 )
 
@@ -20,7 +22,10 @@ java_test(
   ]),
   deps = [
     ":utils",
-    "//contest",
+    "//contest:judgement_dispatcher",
+    "//contest:model",
+    "//contest:mutable",
+    "@com_google_protobuf//:protobuf_java",
     "@mockito//jar",
     "@truth//jar",
   ],
@@ -71,7 +76,8 @@ java_test(
     "me/hex539/contest/DataStructuresTest.java",
   ]),
   deps = [
-    "//contest",
+    "//contest:data_structures",
+    "@guava_maven//jar",
     "@mockito//jar",
     "@truth//jar",
   ],
@@ -88,8 +94,13 @@ java_test(
     "resources/**",
   ]),
   deps = [
-    "//contest",
+    "//contest:immutable",
+    "//contest:model",
+    "//contest:mutable",
+    "//contest:network",
+    "//contest:resolver",
     "//api/clics/proto:java",
+    "@com_google_protobuf//:protobuf_java_util",
     "@mockito//jar",
     "@truth//jar",
   ],

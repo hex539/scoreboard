@@ -18,5 +18,8 @@ java_library(
     "@com_google_protobuf//:protobuf_java_util",
     "@okhttp//jar",
     "@okio//jar",
-  ]
+  ],
+  exports = [
+    "//api/domjudge/proto:java",
+  ],
 )

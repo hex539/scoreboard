@@ -19,4 +19,7 @@ java_library(
     "@okhttp//jar",
     "@okio//jar",
   ],
+  exports = [
+    "//api/clics/proto:java",
+  ],
 )

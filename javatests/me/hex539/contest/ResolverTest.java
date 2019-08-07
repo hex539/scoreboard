@@ -28,11 +28,10 @@ public class ResolverTest {
         .build();
 
     final ScoreboardModel reference =
-        ScoreboardModelImpl.newBuilder(entireContest)
+        ImmutableScoreboardModel.of(ScoreboardModelImpl.newBuilder(entireContest)
             .filterGroups(g -> "1".equals(g.getId()))
             .filterTooLateSubmissions()
-            .build()
-            .immutable();
+            .build());
 
     final ScoreboardModelImpl model =
         ScoreboardModelImpl.newBuilder(entireContest, reference)
@@ -69,11 +68,10 @@ public class ResolverTest {
         new ContestDownloader(getClass().getResourceAsStream("/resources/contests/nwerc2017.pb")).fetch();
 
     final ScoreboardModel reference =
-        ScoreboardModelImpl.newBuilder(entireContest)
+        ImmutableScoreboardModel.of(ScoreboardModelImpl.newBuilder(entireContest)
             .filterGroups(g -> "12890".equals(g.getId()))
             .filterTooLateSubmissions()
-            .build()
-            .immutable();
+            .build());
 
     final ScoreboardModelImpl model =
         ScoreboardModelImpl.newBuilder(entireContest, reference)
@@ -110,11 +108,10 @@ public class ResolverTest {
         new ContestDownloader(getClass().getResourceAsStream("/resources/contests/nwerc2018.pb")).fetch();
 
     final ScoreboardModel reference =
-        ScoreboardModelImpl.newBuilder(entireContest)
+        ImmutableScoreboardModel.of(ScoreboardModelImpl.newBuilder(entireContest)
             .filterGroups(g -> !g.getHidden())
             .filterTooLateSubmissions()
-            .build()
-            .immutable();
+            .build());
 
     final ScoreboardModelImpl model =
         ScoreboardModelImpl.newBuilder(entireContest, reference)
@@ -186,7 +183,7 @@ public class ResolverTest {
     Instant startModel = Instant.now();
     ScoreboardModel reference = ScoreboardModelImpl.newBuilder(entireContest).build();
     Instant startImmutable = Instant.now();
-    reference = reference.immutable();
+    reference = ImmutableScoreboardModel.of(reference);
     assertThat(reference.getTeamsModel().getTeams().size()).isEqualTo(n);
 
     Instant createResolve = Instant.now();

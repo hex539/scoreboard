@@ -10,6 +10,7 @@ java_binary(
     "//contest",
     "//interop",
     "@com_google_protobuf//:protobuf_java",
+    "@com_google_protobuf//:protobuf_java_util",
     "@jewelcli//jar",
   ],
 )

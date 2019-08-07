@@ -23,8 +23,4 @@ public interface ScoreboardModel {
   Problems getProblemsModel();
   Ranklist getRanklistModel();
   Judge getJudgeModel();
-
-  default ScoreboardModel immutable() {
-    return ImmutableScoreboardModel.of(this);
-  }
 }

@@ -11,7 +11,6 @@ java_binary(
   deps = [
     ":common",
     "//third_party/org/jtwig",
-    "@com_google_protobuf//:protobuf_java",
   ]
 )
 
@@ -27,13 +26,13 @@ java_binary(
   deps = [
     ":common",
     "//third_party/org/jtwig",
-    "@com_google_protobuf//:protobuf_java",
   ],
 )
 
 COMMON_DEPS = [
   "@jewelcli//jar",
   "@com_google_protobuf//:protobuf_java",
+  "@com_google_protobuf//:protobuf_java_util",
   "@apachecommonslang//jar",
   "//contest",
   "//interop",
