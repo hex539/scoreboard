@@ -8,6 +8,7 @@ import me.hex539.contest.ScoreboardModelImpl;
 
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
 import java.util.NoSuchElementException;
 
 public class EventFeedController {
@@ -67,59 +68,44 @@ public class EventFeedController {
       final EventFeedItem item = otem.get();
 
       if (item.hasContestData()) {
-        // model.setContest(contest);
+        updateItem(
+            item.getContestData(),
+            item.getOperation(),
+            x -> {}, // model::setContest,
+            x -> {});
       } else if (item.hasJudgementTypeData()) {
-        switch (item.getOperation()) {
-          case create:
-          case update:
-            model.getJudgeModel().onJudgementTypeAdded(item.getJudgementTypeData());
-            break;
-          case delete:
-            // model.getJudgeModel().onJudgementTypeRemoved(item.getJudgementTypeData());
-            break;
-        }
+          updateItem(
+              item.getJudgementTypeData(),
+              item.getOperation(),
+              model.getJudgeModel()::onJudgementTypeAdded,
+              model.getJudgeModel()::onJudgementTypeRemoved);
       } else if (item.hasLanguageData()) {
       } else if (item.hasProblemData()) {
       } else if (item.hasGroupData()) {
-        switch (item.getOperation()) {
-          case create:
-          case update:
-            model.getTeamsModel().onGroupAdded(item.getGroupData());
-            break;
-          case delete:
-            model.getTeamsModel().onGroupRemoved(item.getGroupData());
-            break;
-        }
+        updateItem(
+            item.getGroupData(),
+            item.getOperation(),
+            model.getTeamsModel()::onGroupAdded,
+            model.getTeamsModel()::onGroupRemoved);
       } else if (item.hasOrganizationData()) {
-        switch (item.getOperation()) {
-          case create:
-          case update:
-            model.getTeamsModel().onOrganizationAdded(item.getOrganizationData());
-            break;
-          case delete:
-            model.getTeamsModel().onOrganizationRemoved(item.getOrganizationData());
-            break;
-        }
+        updateItem(
+            item.getOrganizationData(),
+            item.getOperation(),
+            model.getTeamsModel()::onOrganizationAdded,
+            model.getTeamsModel()::onOrganizationRemoved);
       } else if (item.hasTeamData()) {
-        switch (item.getOperation()) {
-          case create:
-          case update:
-//            if (model.getTeamsModel().containsTeam(item.getTeamData())) {
-              model.getTeamsModel().onTeamAdded(item.getTeamData());
-              model.getRanklistModel().onTeamAdded(item.getTeamData());
-//            }
-            break;
-          case delete:
-            model.getRanklistModel().onTeamRemoved(item.getTeamData());
-            model.getTeamsModel().onTeamRemoved(item.getTeamData());
-            break;
-        }
+        updateItem(
+            item.getTeamData(),
+            item.getOperation(),
+            model.getTeamsModel()::onTeamAdded,
+            model.getTeamsModel()::onTeamRemoved);
       } else if (item.hasStateData()) {
       } else if (item.hasSubmissionData()) {
-        final Submission submission = item.getSubmissionData();
-        if (model.getTeamsModel().containsTeam(submission.getTeamId())) {
-          dispatcher.notifySubmission(item.getSubmissionData());
-        }
+        updateItem(
+            item.getSubmissionData(),
+            item.getOperation(),
+            dispatcher::notifySubmission,
+            x -> {});
       } else if (item.hasJudgementData()) {
         dispatcher.notifyJudgement(item.getJudgementData());
       } else if (item.hasRunData()) {
@@ -129,6 +115,22 @@ public class EventFeedController {
     }
 
     return activity;
+  }
+
+  static <T> void updateItem(
+      T data,
+      EventFeedItem.Operation operation,
+      Consumer<? super T> onAdd,
+      Consumer<? super T> onRemove) {
+    switch (operation) {
+      case create:
+      case update:
+        onAdd.accept(data);
+        break;
+      case delete:
+        onRemove.accept(data);
+        break;
+    }
   }
 }
 

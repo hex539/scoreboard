@@ -57,6 +57,10 @@ public abstract class JudgeMutable implements Judge, Judge.Observer {
     judgementTypes.put(type.getId(), type);
   }
 
+  public void onJudgementTypeRemoved(JudgementType type) {
+    judgementTypes.remove(type.getId());
+  }
+
   @Override
   public Optional<JudgementType> getJudgementTypeOpt(String id) {
     return Optional.ofNullable(judgementTypes.get(id));
