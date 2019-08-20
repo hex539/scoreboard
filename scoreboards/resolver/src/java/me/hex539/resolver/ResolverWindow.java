@@ -3,10 +3,13 @@ package me.hex539.resolver;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayDeque;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -18,8 +21,10 @@ import me.hex539.contest.ScoreboardModel;
 import me.hex539.contest.ResolverController;
 import me.hex539.resolver.input.Gamepad;
 
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.system.MemoryStack;
 
 public class ResolverWindow extends Thread {
   private static final boolean PRINT_FPS = false;
@@ -92,7 +97,7 @@ public class ResolverWindow extends Thread {
       if (toggleFullscreen.tryAcquire()) {
         isFullscreen = !isFullscreen;
         if (isFullscreen) {
-          primaryMonitor = glfwGetPrimaryMonitor();
+          primaryMonitor = getGlfwWindowMonitor(window).orElse(primaryMonitor);
           videoMode = glfwGetVideoMode(primaryMonitor);
 
           glfwSetWindowMonitor(
@@ -155,6 +160,36 @@ public class ResolverWindow extends Thread {
       }
     }
     glfwTerminate();
+  }
+
+  /**
+   * Find which monitor {@param win} is most likely associated with for the
+   * purpose of switching in and out of fullscreen.
+   *
+   * <p>TODO: Go by pixel area covered rather than simply looking for the
+   * monitor containing the centre. This will not work in degenerate cases, or
+   * in literal edge cases where the centre of the window is offscreen.
+   */
+  private Optional<Long> getGlfwWindowMonitor(long win) {
+    try (MemoryStack s = stackPush()) {
+      IntBuffer x = s.mallocInt(1);
+      IntBuffer y = s.mallocInt(1);
+      IntBuffer w = s.mallocInt(1);
+      IntBuffer h = s.mallocInt(1);
+      glfwGetWindowPos(win, x, y);
+      final int winX = x.get(0) + windowWidth / 2;
+      final int winY = y.get(0) + windowHeight / 2;
+      PointerBuffer monitors = glfwGetMonitors();
+      for (int i = 0; i < monitors.remaining(); i++) {
+        final long monitor = monitors.get(i);
+        glfwGetMonitorWorkarea(monitor, x, y, w, h);
+        if ((x.get(0) <= winX && winX <= x.get(0) + w.get(0))
+            && (y.get(0) <= winY && winY <= y.get(0) + h.get(0))) {
+          return Optional.ofNullable(monitor);
+        }
+      }
+    }
+    return Optional.empty();
   }
 
   private void onWindowSizeCallback(long win, int width, int height) {
