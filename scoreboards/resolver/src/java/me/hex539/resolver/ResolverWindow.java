@@ -41,6 +41,8 @@ public class ResolverWindow extends Thread {
   private final Semaphore toggleFullscreen = new Semaphore(0);
   private final Semaphore resizeWindow = new Semaphore(0);
 
+  int windowX = -1;
+  int windowY = -1;
   int windowHeight = -1;
   int windowWidth = -1;
   boolean isFullscreen = false;
@@ -87,6 +89,7 @@ public class ResolverWindow extends Thread {
     glfwSetKeyCallback(window, this::onKeyCallback);
     glfwSetMouseButtonCallback(window, this::onMouseButtonCallback);
     glfwSetScrollCallback(window, this::onScrollCallback);
+    glfwSetWindowPosCallback(window, this::onWindowPosCallback);
     glfwSetWindowSizeCallback(window, this::onWindowSizeCallback);
     renderer.setVideoMode(windowWidth, windowHeight);
 
@@ -114,8 +117,8 @@ public class ResolverWindow extends Thread {
         glfwSetWindowMonitor(
             window,
             NULL,
-            0, 0, windowWidth, windowHeight,
-            videoMode.refreshRate());
+            windowX, windowY, windowWidth, windowHeight,
+            GLFW_DONT_CARE);
         renderer.setVideoMode(windowWidth, windowHeight);
       }
 
@@ -176,20 +179,37 @@ public class ResolverWindow extends Thread {
       IntBuffer y = s.mallocInt(1);
       IntBuffer w = s.mallocInt(1);
       IntBuffer h = s.mallocInt(1);
-      glfwGetWindowPos(win, x, y);
-      final int winX = x.get(0) + windowWidth / 2;
-      final int winY = y.get(0) + windowHeight / 2;
       PointerBuffer monitors = glfwGetMonitors();
+      long bestArea = 0;
+      long bestMonitor = -1;
       for (int i = 0; i < monitors.remaining(); i++) {
         final long monitor = monitors.get(i);
         glfwGetMonitorWorkarea(monitor, x, y, w, h);
-        if ((x.get(0) <= winX && winX <= x.get(0) + w.get(0))
-            && (y.get(0) <= winY && winY <= y.get(0) + h.get(0))) {
-          return Optional.ofNullable(monitor);
+        final long minX = Math.max(x.get(0), windowX);
+        final long minY = Math.max(y.get(0), windowY);
+        final long maxX = Math.min(w.get(0), windowX + windowWidth);
+        final long maxY = Math.min(h.get(0), windowY + windowHeight);
+        if (minX < maxX && minY < maxY) {
+          final long area = (maxX - minX) * (maxY - minY);
+          if (area > bestArea) {
+            bestArea = area;
+            bestMonitor = monitor;
+          }
         }
+      }
+      if (bestMonitor != -1) {
+        return Optional.ofNullable(bestMonitor);
       }
     }
     return Optional.empty();
+  }
+
+  private void onWindowPosCallback(long win, int x, int y) {
+    if (isFullscreen) {
+      return;
+    }
+    windowX = x;
+    windowY = y;
   }
 
   private void onWindowSizeCallback(long win, int width, int height) {
