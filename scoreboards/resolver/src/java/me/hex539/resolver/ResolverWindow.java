@@ -168,10 +168,6 @@ public class ResolverWindow extends Thread {
   /**
    * Find which monitor {@param win} is most likely associated with for the
    * purpose of switching in and out of fullscreen.
-   *
-   * <p>TODO: Go by pixel area covered rather than simply looking for the
-   * monitor containing the centre. This will not work in degenerate cases, or
-   * in literal edge cases where the centre of the window is offscreen.
    */
   private Optional<Long> getGlfwWindowMonitor(long win) {
     try (MemoryStack s = stackPush()) {
@@ -187,8 +183,8 @@ public class ResolverWindow extends Thread {
         glfwGetMonitorWorkarea(monitor, x, y, w, h);
         final long minX = Math.max(x.get(0), windowX);
         final long minY = Math.max(y.get(0), windowY);
-        final long maxX = Math.min(w.get(0), windowX + windowWidth);
-        final long maxY = Math.min(h.get(0), windowY + windowHeight);
+        final long maxX = Math.min(x.get(0) + w.get(0), windowX + windowWidth);
+        final long maxY = Math.min(y.get(0) + h.get(0), windowY + windowHeight);
         if (minX < maxX && minY < maxY) {
           final long area = (maxX - minX) * (maxY - minY);
           if (area > bestArea) {
