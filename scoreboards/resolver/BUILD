@@ -28,6 +28,11 @@ java_binary(
     "@lwjgl_glfw_natives_windows//jar",
     "@lwjgl_opengl_natives_windows//jar",
     "@lwjgl_stb_natives_windows//jar",
+  ] + [
+    "@lwjgl_natives_macos//jar",
+    "@lwjgl_glfw_natives_macos//jar",
+    "@lwjgl_opengl_natives_macos//jar",
+    "@lwjgl_stb_natives_macos//jar",
   ],
 )
 

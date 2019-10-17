@@ -193,6 +193,11 @@ maven_jar(
 )
 
 maven_jar(
+  name = "lwjgl_natives_macos",
+  artifact = "org.lwjgl:lwjgl:jar:natives-macos:{}".format(LWJGL_VER),
+)
+
+maven_jar(
   name = "lwjgl_glfw",
   artifact = "org.lwjgl:lwjgl-glfw:jar:{}".format(LWJGL_VER),
 )
@@ -205,6 +210,11 @@ maven_jar(
 maven_jar(
   name = "lwjgl_glfw_natives_windows",
   artifact = "org.lwjgl:lwjgl-glfw:jar:natives-windows:{}".format(LWJGL_VER),
+)
+
+maven_jar(
+  name = "lwjgl_glfw_natives_macos",
+  artifact = "org.lwjgl:lwjgl-glfw:jar:natives-macos:{}".format(LWJGL_VER),
 )
 
 maven_jar(
@@ -223,6 +233,11 @@ maven_jar(
 )
 
 maven_jar(
+  name = "lwjgl_opengl_natives_macos",
+  artifact = "org.lwjgl:lwjgl-opengl:jar:natives-macos:{}".format(LWJGL_VER),
+)
+
+maven_jar(
   name = "lwjgl_stb",
   artifact = "org.lwjgl:lwjgl-stb:jar:{}".format(LWJGL_VER),
 )
@@ -235,6 +250,11 @@ maven_jar(
 maven_jar(
   name = "lwjgl_stb_natives_windows",
   artifact = "org.lwjgl:lwjgl-stb:jar:natives-windows:{}".format(LWJGL_VER),
+)
+
+maven_jar(
+  name = "lwjgl_stb_natives_macos",
+  artifact = "org.lwjgl:lwjgl-stb:jar:natives-macos:{}".format(LWJGL_VER),
 )
 
 http_archive(
