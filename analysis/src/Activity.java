@@ -133,7 +133,7 @@ public class Activity {
 
         if (printSolveStats) {
           System.out.printf(
-              "\\newcommand{\\solvestats%s{%d}{%d}} %% +%d?\n",
+              "\\newcommand{\\solvestats%s}{\\printsolvestats{%d}{%d + ?}} %% +%d?\n",
               problem.getLabel(),
               stats.totalAttempts,
               stats.totalAccepted,
