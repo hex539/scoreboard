@@ -56,7 +56,7 @@ public class Renderer implements ResolverController.Observer {
 
   double rowWidth;
   double rowHeight;
-  double visibleRowsBelow = 7.4;
+  double visibleRowsBelow = 5.4;
 
   double minScrolledRank;
   double maxScrolledRank;
@@ -224,7 +224,7 @@ public class Renderer implements ResolverController.Observer {
       newRank = clamp(newRank, minScrolledRank, maxScrolledRank);
     }
     if (smooth && newRank != scrolledRank) {
-      final long duration = TimeUnit.MILLISECONDS.toNanos(600);
+      final long duration = TimeUnit.MILLISECONDS.toNanos(400);
       scrollAnimation.offer(RankAnimation.create(scrolledRank, newRank, System.nanoTime(), duration));
     }
     scrolledRank = newRank;
