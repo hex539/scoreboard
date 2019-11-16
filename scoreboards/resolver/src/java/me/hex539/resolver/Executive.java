@@ -31,8 +31,13 @@ public class Executive {
       return null;
     });
 
-    final CompletableFuture<ByteBuffer> fontData = CompletableFuture.supplyAsync(
-        () -> FontRenderer.mapResource(FontRenderer.FONT_SYMBOLA));
+    final CompletableFuture<ByteBuffer[]> fontData = CompletableFuture.supplyAsync(
+        () -> new ByteBuffer[] {
+            FontRenderer.mapResource(FontRenderer.FONT_NOTO_SANS),
+            FontRenderer.mapResource(FontRenderer.FONT_NOTO_SANS_SYMBOLS),
+            FontRenderer.mapResource(FontRenderer.FONT_SYMBOLA),
+            FontRenderer.mapResource(FontRenderer.FONT_UNIFONT)
+          });
 
     final CompletableFuture<ClicsContest> entireContest =
         CompletableFuture.supplyAsync(() -> {

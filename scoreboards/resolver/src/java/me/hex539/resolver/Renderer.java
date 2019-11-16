@@ -71,7 +71,7 @@ public class Renderer implements ResolverController.Observer {
   private final Map<String, Layout.Group> rowLayouts = new HashMap<>();
   private long lastTime = -1L;
 
-  public Renderer(ScoreboardModel model, CompletableFuture<? extends ByteBuffer> ttfData) {
+  public Renderer(ScoreboardModel model, CompletableFuture<ByteBuffer[]> ttfData) {
     this.model = model;
     this.ranklist = model.getRanklistModel();
     this.teams = model.getTeamsModel();

@@ -10,17 +10,19 @@ import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.stb.STBTruetype.*;
 import static org.lwjgl.system.MemoryStack.*;
 
-import java.util.List;
-import java.util.Collections;
-import java.util.ArrayList;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.nio.FloatBuffer;
-import java.util.Map;
-import java.util.HashMap;
+import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import edu.clics.proto.ClicsProto.*;
 
@@ -37,18 +39,21 @@ import org.lwjgl.system.MemoryStack;
 public class FontRenderer {
   public static final String FONT_SYMBOLA = "/resources/fonts/Symbola.ttf";
   public static final String FONT_UNIFONT = "/resources/fonts/unifont-11.0.03.ttf";
+  public static final String FONT_NOTO_SANS = "/resources/fonts/NotoSansDisplay-Regular.ttf";
+  public static final String FONT_NOTO_SANS_SYMBOLS = "/resources/fonts/NotoSansSymbols-Regular.ttf";
 
   private static final int WIDTH = 2048;
   private static final int HEIGHT = 512;
 
-  private final ByteBuffer[] ttfData = new ByteBuffer[1];
-  private final STBTTFontinfo[] fontInfo = new STBTTFontinfo[1];
+  private final ByteBuffer[] ttfData;
+  private final STBTTFontinfo[] fontInfo;
   private int ascent;
   private int descent;
   private int lineGap;
 
   private Map<Integer, Font> fonts = new HashMap<>();
   private final List<Integer> allCodePoints = new ArrayList<>();
+  private final Map<Integer, Integer> codePointsToGlyphs = new HashMap<>();
 
   public enum Alignment {
     LEFT,
@@ -62,8 +67,8 @@ public class FontRenderer {
     public static final String CORRECT = "✓";
     public static final String PENDING = "?";
     public static final String WRONG = "✖";
-    public static final String TRIES_ONE = "ᴛʀʏ";
-    public static final String TRIES_MANY = "ᴛʀɪᴇs";
+    public static final String TRIES_ONE = "TRY";
+    public static final String TRIES_MANY = "TRIES";
 
     static final String[] ALL = {CORRECT, PENDING, WRONG, TRIES_ONE, TRIES_MANY};
   }
@@ -83,34 +88,37 @@ public class FontRenderer {
   private double screenWidth = 1;
   private double screenHeight = 1;
 
-  public FontRenderer(Teams teams, CompletableFuture<? extends ByteBuffer> ttfFont) {
+  public FontRenderer(Teams teams, CompletableFuture<ByteBuffer[]> ttfFont) {
     try {
-      ttfData[0] = ttfFont.get();
+      ttfData = ttfFont.get();
+      fontInfo = new STBTTFontinfo[ttfData.length];
     } catch (Exception e) {
       throw new Error("Failed to load font", e);
     }
 
     supplyCodePoints(teams, allCodePoints);
 
-    fontInfo[0] = STBTTFontinfo.create();
-    if (!stbtt_InitFont(fontInfo[0], ttfData[0])) {
-      throw new IllegalStateException("Failed to initialize font information.");
-    }
+    for (int fontIdx=0; fontIdx < ttfData.length; fontIdx++) {
+      fontInfo[fontIdx] = STBTTFontinfo.create();
+      if (!stbtt_InitFont(fontInfo[fontIdx], ttfData[fontIdx])) {
+        throw new IllegalStateException("Failed to initialize font information.");
+      }
 
-    try (MemoryStack stack = stackPush()) {
-      final IntBuffer pAscent  = stack.mallocInt(1);
-      final IntBuffer pDescent = stack.mallocInt(1);
-      final IntBuffer pLineGap = stack.mallocInt(1);
-      stbtt_GetFontVMetrics(fontInfo[0], pAscent, pDescent, pLineGap);
-      this.ascent = pAscent.get(0);
-      this.descent = pDescent.get(0);
-      this.lineGap = pLineGap.get(0);
+      try (MemoryStack stack = stackPush()) {
+        final IntBuffer pAscent  = stack.mallocInt(1);
+        final IntBuffer pDescent = stack.mallocInt(1);
+        final IntBuffer pLineGap = stack.mallocInt(1);
+        stbtt_GetFontVMetrics(fontInfo[fontIdx], pAscent, pDescent, pLineGap);
+        this.ascent = pAscent.get(0);
+        this.descent = pDescent.get(0);
+        this.lineGap = pLineGap.get(0);
+      }
     }
   }
 
   private static void supplyCodePoints(Teams teams, List<Integer> into){
     List<Integer> codePoints = new ArrayList<>();
-    for (int i = 32; i < 128; i++) {
+    for (int i = 32; i < 127; i++) {
       codePoints.add(i);
     }
     for (String special : Symbols.ALL) {
@@ -153,34 +161,54 @@ public class FontRenderer {
         /* texId= */ glGenTextures(),
         /* cdata[]= */ STBTTPackedchar.malloc(allCodePoints.size()));
 
+    final Set<Integer> remainingCodePoints = new TreeSet<>(allCodePoints);
+    codePointsToGlyphs.clear();
+
     ByteBuffer bitmap = BufferUtils.createByteBuffer(WIDTH * HEIGHT);
-
-    final int stride = 0;
-    final int padding = 1;
     STBTTPackContext context = STBTTPackContext.create();
-    stbtt_PackBegin(context, bitmap, WIDTH, HEIGHT, stride, padding);
+    stbtt_PackBegin(context, bitmap, WIDTH, HEIGHT, /* stride= */ 0, /* padding= */ 1);
+    for (int fontIdx = 0, glyphIdx = 0; fontIdx < ttfData.length; fontIdx++) {
+      if (remainingCodePoints.isEmpty()) {
+        break;
+      }
 
-    IntBuffer buffer = BufferUtils.createIntBuffer(allCodePoints.size());
-    for (int i : allCodePoints) {
-      buffer.put(i);
+      List<Integer> currentCodePoints = new ArrayList<>();
+      for (int i : remainingCodePoints) {
+        if (stbtt_FindGlyphIndex(fontInfo[fontIdx], i) != 0) {
+          codePointsToGlyphs.put(i, glyphIdx);
+          currentCodePoints.add(i);
+          glyphIdx++;
+        }
+      }
+      remainingCodePoints.removeAll(currentCodePoints);
+
+      IntBuffer buffer = BufferUtils.createIntBuffer(currentCodePoints.size());
+      for (int i : currentCodePoints) {
+        buffer.put(i);
+      }
+      buffer.flip();
+
+      double fontSize = fontHeight * (double) (ascent - descent) / (double) ascent;
+
+      STBTTPackRange.Buffer packRanges = STBTTPackRange.malloc(1);
+      packRanges.put(STBTTPackRange.malloc().set(
+          /* size= */ (float) fontSize,
+          /* start= */ 0,
+          /* buffer= */ buffer,
+          /* length= */ currentCodePoints.size(),
+          /* font = */ font.cdata,
+          /* unused= */ (byte) 0,
+          /* unused= */ (byte) 0));
+      packRanges.flip();
+      stbtt_PackFontRanges(context, ttfData[fontIdx], 0, packRanges);
+      font.cdata.position(font.cdata.position() + currentCodePoints.size());
     }
-    buffer.flip();
-
-    double fontSize = fontHeight * (double) (ascent - descent) / (double) ascent;
-
-    STBTTPackRange.Buffer packRanges = STBTTPackRange.malloc(1);
-    packRanges.put(STBTTPackRange.malloc().set(
-        /* size= */ (float) fontSize,
-        /* start= */ 0,
-        /* buffer= */ buffer,
-        /* length= */ allCodePoints.size(),
-        /* font = */ font.cdata,
-        /* unused= */ (byte) 0,
-        /* unused= */ (byte) 0));
-    packRanges.flip();
-    final int fontIndex = 0;
-    stbtt_PackFontRanges(context, ttfData[0], fontIndex, packRanges);
+    font.cdata.position(0);
     stbtt_PackEnd(context);
+
+    if (remainingCodePoints.size() > 0) {
+      System.err.println("Warning: unavailable Unicode code points: " + remainingCodePoints);
+    }
 
     glBindTexture(GL_TEXTURE_2D, font.texId);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, WIDTH, HEIGHT, 0, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap);
@@ -251,7 +279,6 @@ public class FontRenderer {
       float[] vy = new float[n * 2];
       n = 0;
 
-      glBegin(GL_QUADS);
       for (int i = 0, to = text.length(); i < to; ) {
         i += nextCodepoint(text, to, i, pCodePoint);
 
@@ -263,12 +290,16 @@ public class FontRenderer {
           lineStart = i;
           continue;
         }
+        final int glyphIndex = indexOfGlyph(cp);
+        if (glyphIndex < 0) {
+          continue;
+        }
 
         float cpX = x.get(0);
-        stbtt_GetPackedQuad(font.cdata, WIDTH, HEIGHT, indexOfGlyph(cp), x, y, q, true);
+        stbtt_GetPackedQuad(font.cdata, WIDTH, HEIGHT, glyphIndex, x, y, q, true);
         if (i < to) {
           nextCodepoint(text, to, i, pCodePoint);
-          x.put(0, x.get(0) + stbtt_GetGlyphKernAdvance(fontInfo[0], indexOfGlyph(cp), indexOfGlyph(pCodePoint.get(0))) * scale);
+          x.put(0, x.get(0) + stbtt_GetGlyphKernAdvance(fontInfo[0], glyphIndex, indexOfGlyph(pCodePoint.get(0))) * scale);
         }
 
         s[n*2+0] = q.s0();
@@ -282,6 +313,10 @@ public class FontRenderer {
         n++;
       }
 
+      if (n == 0) {
+        return;
+      }
+
       if (align != Alignment.LEFT) {
         double xMin = vx[0];
         double xMax = vx[n*2-1];
@@ -290,6 +325,7 @@ public class FontRenderer {
         }
       }
 
+      glBegin(GL_QUADS);
       for (int i = 0; i < n; i++) {
         glTexCoord2f(s[i*2+0], t[i*2+0]);
         glVertex2f(vx[i*2+0], vy[i*2+0]);
@@ -322,16 +358,11 @@ public class FontRenderer {
   }
 
   private int indexOfGlyph(int codePoint) {
-    int l = 0, r = allCodePoints.size();
-    while (l + 1 < r) {
-      int x = (l + r) / 2;
-      if (allCodePoints.get(x) <= codePoint) {
-        l = x;
-      } else {
-        r = x;
-      }
+    Integer res = codePointsToGlyphs.get(codePoint);
+    if (res == null) {
+      return -1;
     }
-    return l;
+    return res;
   }
 
   public static ByteBuffer mapResource(String location) {
