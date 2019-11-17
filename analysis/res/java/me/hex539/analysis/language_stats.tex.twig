@@ -27,12 +27,14 @@ endfor
       {draw=none,fill=Red},% Wrong-Answer
       {draw=none,fill=Plum},% Time-Limit
       {draw=none,fill=Goldenrod},% Compile-Error / Runtime-Error
-      {draw=none,fill=SkyBlue}}% Pending
+      {draw=none,fill=SkyBlue} % Pending
+    }
   },
   /pgfplots/ybar legend/.style={
-    /pgfplots/legend image code/.code={%
+    /pgfplots/legend image code/.code={
       \draw[##1,/tikz/.cd,yshift=-0.25em]
-      (0cm,0cm) rectangle (3pt,0.8em);},
+      (0cm,0cm) rectangle (3pt,0.8em);
+    }
   }
 }%
 \begin{tikzpicture}
