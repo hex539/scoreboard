@@ -51,9 +51,9 @@
         %}{{ 20 + x * 1100.0 / contest_minutes | round(1, 'floor')}},{{ 20 + y * 12 | round(1, 'floor')}} {%
       endfor %}'/>{%
     for probid, x in team.solvedAt %}
-    <g class='attempts problem{{ team.model.getProblem(probid).getOrdinal() }} {{ team.model.getProblem(probid).getRgb() | lightordark }}'>
+    <g class='attempts problem{{ team.model.getProblemsModel().getProblem(probid).getOrdinal() }} {{ team.model.getProblemsModel().getProblem(probid).getRgb() | lightordark }}'>
       <circle cx='{{ 20 + x * 1100.0 / contest_minutes | round(1, 'floor') }}' cy='{{ 20 + team.xToY.get(x) * 12 | round(1, 'floor') }}' r='7' />
-      <text x='{{ 20 + x * 1100.0 / contest_minutes | round(1, 'floor') }}' y='{{ 20 + team.xToY.get(x) * 12 | round(1, 'floor') }}' dy='0.6ex' text-anchor='middle' style='stroke:none'>{{ team.model.getProblem(probid).getLabel() }}</text>
+      <text x='{{ 20 + x * 1100.0 / contest_minutes | round(1, 'floor') }}' y='{{ 20 + team.xToY.get(x) * 12 | round(1, 'floor') }}' dy='0.6ex' text-anchor='middle' style='stroke:none'>{{ team.model.getProblemsModel().getProblem(probid).getLabel() }}</text>
     </g>{% endfor %}
   </g>
 {% endfor %}
