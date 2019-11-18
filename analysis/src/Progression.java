@@ -40,10 +40,15 @@ public class Progression {
         .filterGroups(Analyser.getGroupPredicate(invocation, entireContest))
         .filterTooLateSubmissions()
         .build();
-    ScoreboardModelImpl model = fullModel.toBuilder()
+    ScoreboardModelImpl model = ScoreboardModelImpl.newBuilder(entireContest)
+        .filterGroups(Analyser.getGroupPredicate(invocation, entireContest))
         .withEmptyScoreboard()
         .filterSubmissions(x -> false)
         .build();
+//      fullModel.toBuilder()
+//        .withEmptyScoreboard()
+//        .filterSubmissions(x -> false)
+//        .build();
     JudgementDispatcher dispatcher = new JudgementDispatcher(model);
     dispatcher.observers.add(model);
 
