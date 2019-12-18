@@ -109,7 +109,7 @@ public class Activity {
       statsByLanguage.get(s.getLanguageId()).add(s, judgement, fullModel);
     }
 
-    EnvironmentConfiguration configuration =
+    final EnvironmentConfiguration configuration =
         EnvironmentConfigurationBuilder.configuration()
             .build();
 
@@ -129,18 +129,24 @@ public class Activity {
           saveActivityChart(stats, template, outputStream);
         } catch (IOException e) {
           System.err.println("Error writing to: " + file.getPath());
+          return;
         }
 
-        if (printSolveStats) {
-          System.out.printf(
-              "\\newcommand{\\solvestats%s}{\\printsolvestats{%d}{%d}{%d}}\n",
-              problem.getLabel(),
-              stats.totalAttempts,
-              stats.totalAccepted,
-              stats.totalPending);
-        } else {
+        if (!printSolveStats) {
           System.err.println("Saved file: " + file.getPath());
         }
+      });
+    }
+
+    if (printSolveStats) {
+      fullModel.getProblemsModel().getProblems().stream().forEach(problem -> {
+        final SubmitStats stats = statsByProblem.get(problem.getId()).crop();
+        System.out.printf(
+            "\\newcommand{\\solvestats%s}{\\printsolvestats{%d}{%d}{%d}}\n",
+            problem.getLabel(),
+            stats.totalAttempts,
+            stats.totalAccepted,
+            stats.totalPending);
       });
     }
 
