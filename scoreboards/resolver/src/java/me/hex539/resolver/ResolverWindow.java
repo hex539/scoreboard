@@ -50,7 +50,7 @@ public class ResolverWindow extends Thread {
   public ResolverWindow(
       CompletableFuture<? extends ResolverController> resolver,
       CompletableFuture<? extends ScoreboardModel> model,
-      CompletableFuture<? extends ByteBuffer> ttfData) throws Exception {
+      CompletableFuture<ByteBuffer[]> ttfData) throws Exception {
     this.model = model.get();
     this.resolver = resolver.get();
     this.controller = new Controller(this.resolver);
