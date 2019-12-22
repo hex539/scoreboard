@@ -25,11 +25,18 @@ endfor
 }\attempts
 \pgfplotsset{
   /pgfplots/bar cycle list/.style={/pgfplots/cycle list=
-    { {LimeGreen,fill=LimeGreen},% Accepted
-      {Red,fill=Red},% Wrong-Answer
-      {Plum,fill=Plum},% Time-Limit
-      {Goldenrod,fill=Goldenrod},% Compile-Error / Runtime-Error
-		  {SkyBlue,fill=SkyBlue}}% Pending
+    { {draw=none,fill=LimeGreen},% Accepted
+      {draw=none,fill=Red},% Wrong-Answer
+      {draw=none,fill=Plum},% Time-Limit
+      {draw=none,fill=Goldenrod},% Compile-Error / Runtime-Error
+      {draw=none,fill=SkyBlue} % Pending
+    }
+  },
+  /pgfplots/ybar legend/.style={
+    /pgfplots/legend image code/.code={
+      \draw[##1,/tikz/.cd,yshift=-0.25em]
+      (0cm,0cm) rectangle (3pt,0.8em);
+    }
   }
 }%
 \begin{tikzpicture}
@@ -41,19 +48,19 @@ endfor
       xmin=0,
       xmax=6,
       width=12cm,
-      bar width=0.8333333cm,
+      bar width=0.27cm,
       height=6cm,
-      ybar stacked,
+      ybar=0pt,
       grid=none,
-      ytick distance=20,
+      ytick distance=100,
       xtick=data,
       xticklabels from table={\attempts}{lang}]
     \addplot table[y expr={+\thisrow{accept}}] {\attempts};
     \addplot table[y expr={+\thisrow{wronganswer}}] {\attempts};
     \addplot table[y expr={+\thisrow{timelimit}}] {\attempts};
     \addplot table[y expr={+\thisrow{failed}}] {\attempts};{%
-    if anyPending == 0 %}
-    \addplot table[y expr={-\thisrow{pending}}] {\attempts};
+    if anyPending != 0 %}
+    \addplot table[y expr={+\thisrow{pending}}] {\attempts};
     \legend{Accepted,Wrong Answer,Time Limit,Runtime Error,Pending}
 {% else %}
     \legend{Accepted,Wrong Answer,Time Limit,Runtime Error}
