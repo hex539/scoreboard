@@ -420,27 +420,20 @@ public class Renderer implements ResolverController.Observer {
 
     final boolean pending = (attempts.getNumPending() > 0);
     final boolean attempted = (attempts.getNumJudged() > 0 || pending);
+    final int totalAttempts = attempts.getNumJudged() + attempts.getNumPending();
 
     final double cellX = cellLayout.x;
     final double cellY = cellLayout.y;
 
-    int totalAttempts = attempts.getNumJudged() + attempts.getNumPending();
-    final String subText;
-    switch (totalAttempts) {
-      case 0: subText = null; break;
-      case 1: subText = Integer.toString(totalAttempts) + " " + FontRenderer.Symbols.TRIES_ONE; break;
-      default: subText = Integer.toString(totalAttempts) + " " + FontRenderer.Symbols.TRIES_MANY; break;
+    final short[] rgb = AttemptColour.of(attempts);
+    String text = getAttemptSymbol(attempts);
+    if (attempted && !pending) {
+      text += " " + Integer.toString(totalAttempts);
     }
 
-    final short[] rgb = AttemptColour.of(attempts);
-    final String text = getAttemptSymbol(attempts);
-
     if (focused) {
-      if (pending) {
-        glColor3ub((byte) rgb[0], (byte) rgb[1], (byte) rgb[2]);
-      } else {
-        glColor3ub((byte) AttemptColour.JUDGING[0], (byte) AttemptColour.JUDGING[1], (byte) AttemptColour.JUDGING[2]);
-      }
+      final short[] focusRgb = (pending ? rgb : AttemptColour.JUDGING);
+      glColor3ub((byte) focusRgb[0], (byte) focusRgb[1], (byte) focusRgb[2]);
       new Layout(this::glQuad).covering(cellLayout).adjust(-cellMargin/4.0f, -cellMargin/4.0f, +cellMargin/2.0f, +cellMargin/2.0f).draw();
     }
 
@@ -487,14 +480,6 @@ public class Renderer implements ResolverController.Observer {
         (int) (cellHeight * 0.6),
         text,
         FontRenderer.Alignment.CENTRE);
-      if (subText != null) {
-        font.drawText(
-            cellX + cellWidth * 0.5,
-            cellY + cellHeight * 0.1,
-            (int) (cellHeight * 0.4),
-            subText,
-            FontRenderer.Alignment.CENTRE);
-      }
     }
   }
 
