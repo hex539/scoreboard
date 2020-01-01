@@ -179,14 +179,16 @@ public class Renderer implements ResolverController.Observer {
   @Override
   public void onProblemScoreChanged(Team team, ScoreboardProblem attempts) {
     if (attempts.getNumJudged() != 0 && attempts.getNumPending() == 0) {
-      Optional.ofNullable(rowLayouts.get(team.getId()))
-          .map(x -> x.children().get(0))
-          .map(x -> x.children().get(model.getProblemsModel().getProblemIndex(attempts.getProblemId())))
-          .ifPresent(cellLayout -> particles.launchFrom(
-              cellLayout,
-              2000,
-              AttemptColour.of(attempts),
-              attempts.getSolved()));
+      if (particles != null) {
+        Optional.ofNullable(rowLayouts.get(team.getId()))
+            .map(x -> x.children().get(0))
+            .map(x -> x.children().get(model.getProblemsModel().getProblemIndex(attempts.getProblemId())))
+            .ifPresent(cellLayout -> particles.launchFrom(
+                cellLayout,
+                2000,
+                AttemptColour.of(attempts),
+                attempts.getSolved()));
+      }
     }
   }
 
@@ -236,7 +238,7 @@ public class Renderer implements ResolverController.Observer {
     boolean animating = false;
     animating |= (peekAnimation(scrollAnimation, timeNow) != null);
     animating |= (peekAnimation(moveAnimation, timeNow) != null);
-    animating |= particles.exist();
+    animating |= (particles != null && particles.exist());
 
     layout(timeNow);
     draw();
