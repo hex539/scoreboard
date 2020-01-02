@@ -12,9 +12,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -153,9 +153,12 @@ public class Activity {
     if (drawLanguageStats) {
       final File file = new File(workingDirectory, "language_stats.tex");
       try (final OutputStream outputStream = new FileOutputStream(file)) {
+        final List<Map.Entry<String, Language>> langs = entireContest.getLanguages().entrySet().stream()
+            .sorted(Comparator.comparing(e -> e.getValue().getName()))
+            .collect(Collectors.toList());
         saveLanguagesChart(
-            new ArrayList<>(entireContest.getLanguages().values()),
-            entireContest.getLanguages().keySet().stream().map(statsByLanguage::get).collect(Collectors.toList()),
+            langs.stream().map(Map.Entry<String, Language>::getValue).collect(Collectors.toList()),
+            langs.stream().map(e -> statsByLanguage.get(e.getKey())).collect(Collectors.toList()),
             JtwigTemplate.classpathTemplate(
                 "/me/hex539/analysis/language_stats.tex.twig",
                 configuration),
