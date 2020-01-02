@@ -4,6 +4,11 @@
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \usetikzlibrary{patterns}
+\providecolor{Accepted}{named}{LimeGreen}
+\providecolor{WrongAnswer}{named}{Red}
+\providecolor{TimeLimit}{named}{Plum}
+\providecolor{RunError}{named}{Goldenrod}
+\providecolor{Pending}{named}{SkyBlue}
 \pgfplotsset{compat=1.15}
 \begin{document}
 \pgfplotstableread{
@@ -15,24 +20,39 @@ endfor
 %}
 }\attempts
 \pgfplotsset{
-	/pgfplots/bar cycle list/.style={/pgfplots/cycle list=
-	{ {Green,fill=LimeGreen},% Accepted
-    {Red,fill=Red},% Wrong-Answer
-    {Plum,fill=Plum},% Time-Limit
-    {Goldenrod,fill=Goldenrod},% Compile-Error / Runtime-Error
-		{SkyBlue,fill=SkyBlue},% Pending 1
-		{SkyBlue,fill=SkyBlue},% Pending 2
-   {White,fill=White,opacity=0}}% Prevent clipping
-	}
+  /pgfplots/bar cycle list/.style={/pgfplots/cycle list=
+  { {Accepted,fill=Accepted},
+    {WrongAnswer,fill=WrongAnswer},
+    {TimeLimit,fill=TimeLimit},
+    {RunError,fill=RunError},
+    {Pending,fill=Pending},
+    {White,fill=White,opacity=0}}% = Prevent clipping
+  }
 }%
+\makeatletter \newcommand{\pgfplotsdrawaxis}{\pgfplots@draw@axis} \makeatother
+\pgfplotsset{axis line on top/.style={
+  axis line style=transparent,
+  ticklabel style=transparent,
+  tick style=transparent,
+  axis on top=false,
+  after end axis/.append code={
+    \pgfplotsset{axis line style=opaque,
+      ticklabel style=opaque,
+      tick style=opaque,
+      grid=none}
+    \pgfplotsdrawaxis}
+  }
+}
 \begin{tikzpicture}
   \begin{axis}[
-    % axis lines=none,
     axis x line=center,
     axis y line=none,
+    axis line style={-},
+    axis line on top,
     clip=false,
     xmin=0,
     xmax={{ (accepted|length) }},
+    ymin=0,
     width={{ 20 }}cm,
     bar width={{ 15.0 / (accepted|length) }}cm,
     height=5cm,
@@ -43,9 +63,8 @@ endfor
     \addplot table[x=t,y expr={-\thisrow{wronganswer}}] {\attempts};
     \addplot table[x=t,y expr={-\thisrow{timelimit}}] {\attempts};
     \addplot table[x=t,y expr={-\thisrow{failed}}] {\attempts};
-    \addplot table[x=t,y expr={+\thisrow{pending}*1}] {\attempts};
-    \addplot table[x=t,y expr={-\thisrow{pending}*0}] {\attempts};
-    \addplot table[x=t,y expr={-5}] {\attempts};
+    \addplot table[x=t,y expr={+\thisrow{pending}}] {\attempts};
+    \addplot table[x=t,y expr={-4}] {\attempts};
   \end{axis}
 \end{tikzpicture}
 \end{document}

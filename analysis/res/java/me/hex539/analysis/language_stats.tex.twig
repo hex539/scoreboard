@@ -4,6 +4,11 @@
 \usepackage{pgfplots}
 \usepackage{pgfplotstable}
 \usetikzlibrary{patterns}
+\providecolor{Accepted}{named}{LimeGreen}
+\providecolor{WrongAnswer}{named}{Red}
+\providecolor{TimeLimit}{named}{Plum}
+\providecolor{RunError}{named}{Goldenrod}
+\providecolor{Pending}{named}{SkyBlue}
 \pgfplotsset{compat=1.14}
 \begin{document}
 \pgfplotstableread{
@@ -25,11 +30,11 @@ endfor
 }\attempts
 \pgfplotsset{
   /pgfplots/bar cycle list/.style={/pgfplots/cycle list=
-    { {draw=none,fill=LimeGreen},% Accepted
-      {draw=none,fill=Red},% Wrong-Answer
-      {draw=none,fill=Plum},% Time-Limit
-      {draw=none,fill=Goldenrod},% Compile-Error / Runtime-Error
-      {draw=none,fill=SkyBlue} % Pending
+    { {draw=none,fill=Accepted},
+      {draw=none,fill=WrongAnswer},
+      {draw=none,fill=TimeLimit},
+      {draw=none,fill=RunError},
+      {draw=none,fill=Pending}
     }
   },
   /pgfplots/ybar legend/.style={
