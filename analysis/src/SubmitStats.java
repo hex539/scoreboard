@@ -12,6 +12,9 @@ public class SubmitStats {
   private static final long SECONDS_PER_BAR = (60 * 5) / 2;
   private static final long MAX_SUBMISSIONS = 20;
 
+  long firstSolveAt = -1;
+  Team firstSolveBy = null;
+
   int totalAttempts = 0;
   int totalAccepted = 0;
   int totalPending = 0;
@@ -73,6 +76,10 @@ public class SubmitStats {
     if (grouping == accepted) {
       add(teamsAccepted, team, submission);
       totalAccepted += 1;
+      if (firstSolveAt == -1 || submission.getContestTime().getSeconds() < firstSolveAt) {
+        firstSolveAt = submission.getContestTime().getSeconds();
+        firstSolveBy = team;
+      }
     }
     if (grouping == pending) {
       add(teamsPending, team, submission);

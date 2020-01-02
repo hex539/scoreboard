@@ -139,14 +139,29 @@ public class Activity {
     }
 
     if (printSolveStats) {
+      System.out.printf("\\providecommand{\\printfirstsolve}[2]{Solved at #2 by \\textbf{#1}}\n");
+      System.out.printf("\\providecommand{\\notsolved}{Not solved}\n");
       fullModel.getProblemsModel().getProblems().stream().forEach(problem -> {
         final SubmitStats stats = statsByProblem.get(problem.getId()).crop();
         System.out.printf(
-            "\\newcommand{\\solvestats%s}{\\printsolvestats{%d}{%d}{%d}}\n",
+            "\\providecommand{\\solvestats%s}{\\printsolvestats{%d}{%d}{%d}}\n",
             problem.getLabel(),
             stats.totalAttempts,
             stats.totalAccepted,
             stats.totalPending);
+        if (stats.firstSolveAt != -1) {
+          System.out.printf(
+              "% \\providecommand{\\firstsolve%s}{\\printfirstsolve{%s}{%02d:%02d:%02d}}\n",
+              problem.getLabel(),
+              stats.firstSolveBy.getName(),
+              (stats.firstSolveAt / 3600),
+              (stats.firstSolveAt / 60) % 60,
+              (stats.firstSolveAt) % 60);
+        } else {
+          System.out.printf(
+              "\\providecommand{\\firstsolve%s}{\\notsolved}\n",
+              problem.getLabel());
+        }
       });
     }
 
