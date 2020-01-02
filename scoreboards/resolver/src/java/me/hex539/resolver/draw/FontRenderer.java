@@ -244,14 +244,7 @@ public class FontRenderer {
       fonts.put(size, font);
     }
 
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     renderText(font, x, y, text, align);
-
-    glDisable(GL_BLEND);
-    glDisable(GL_TEXTURE_2D);
   }
 
   private void renderText(Font font, double startX, double startY, String text, Alignment align) {
@@ -341,6 +334,7 @@ public class FontRenderer {
       }
 
       glEnd();
+      glBindTexture(GL_TEXTURE_2D, 0);
     }
   }
 

@@ -153,6 +153,10 @@ public class Renderer implements ResolverController.Observer {
         0, screen.width,
         0, screen.height,
         0.0, -1.0);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_TEXTURE_2D);
   }
 
   @Override
@@ -373,9 +377,9 @@ public class Renderer implements ResolverController.Observer {
   }
 
   private void drawLabel(double rowX, double rowY, Team team, boolean focused) {
-    glColor3d(0.6, 0.6, 0.6);
     final String organizationId = team.getOrganizationId();
     if (organizationId != null && !organizationId.isEmpty()) {
+        glColor3d(0.6, 0.6, 0.6);
         try {
           font.drawText(
               rowX + teamLabelWidth * 0.1,
@@ -440,8 +444,6 @@ public class Renderer implements ResolverController.Observer {
     }
 
     if (!attempted) {
-      glEnable(GL_BLEND);
-
       final float shWidth = (float) (cellHeight / 8.0);
       final float shHeight = (float) (cellHeight / 4.0);
 
@@ -459,8 +461,6 @@ public class Renderer implements ResolverController.Observer {
 
       glColor4ub((byte) rgb[0], (byte) rgb[1], (byte) rgb[2], (byte) (0.6f * 255));
       new Layout(this::glQuad).covering(cellLayout).adjust(shWidth, 0, -shWidth, -shHeight).draw();
-
-      glDisable(GL_BLEND);
     } else {
       if (focused && pending) {
         glColor3f(1.0f, 1.0f, 1.0f);
