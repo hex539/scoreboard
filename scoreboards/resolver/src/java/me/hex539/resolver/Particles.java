@@ -7,16 +7,23 @@ import static org.lwjgl.opengl.GL14.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 
+import java.nio.FloatBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.util.ArrayList;
 
 import edu.clics.proto.ClicsProto.*;
 
+import org.lwjgl.system.MemoryStack;
+
 import me.hex539.resolver.layout.Layout;
 
 public class Particles {
   private final List<Particle> particles = new ArrayList<>();
+
+  private int vertexBuffer = -1;
+  private int colourBuffer = -1;
+  private int vertexBufferSize = 0;
 
   private double screenWidth = 1;
   private double screenHeight = 1;
@@ -126,31 +133,92 @@ public class Particles {
     return exist();
   }
 
-  public void draw() {
-    if (!exist()) {
-      return;
+  private void fillAttribBuffers(boolean needUpdate) {
+    final boolean needResize = (particles.size() > vertexBufferSize || particles.size() * 2 < vertexBufferSize);
+    if (needResize) {
+      if (particles.size() > vertexBufferSize) {
+        vertexBufferSize = particles.size() * 3 / 2;
+      } else {
+        vertexBufferSize = particles.size();
+      }
     }
 
-    if (r > 0.75) {
-      glBegin(GL_QUADS);
-      for (Particle i : particles) {
-        glColor3f(i.r, i.g, i.b);
-        final double ca = Math.cos(i.a);
-        final double sa = Math.sin(i.a);
-        glVertex2d(i.x + offsetX + r*ca + r*sa, i.y + offsetY - r*sa + r*ca);
-        glVertex2d(i.x + offsetX + r*ca - r*sa, i.y + offsetY - r*sa - r*ca);
-        glVertex2d(i.x + offsetX - r*ca - r*sa, i.y + offsetY + r*sa - r*ca);
-        glVertex2d(i.x + offsetX - r*ca + r*sa, i.y + offsetY + r*sa + r*ca);
+    final int n = particles.size();
+
+    if (needUpdate) {
+      glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+      if (needResize) {
+        glBufferData(GL_ARRAY_BUFFER, 4 * 3 * vertexBufferSize, GL_DYNAMIC_DRAW);
       }
-      glEnd();
-    } else  {
-      glBegin(GL_POINTS);
-      for (Particle i : particles) {
-        glColor3f(i.r, i.g, i.b);
-        glVertex2d(i.x + offsetX, i.y + offsetY);
+      FloatBuffer xyz = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY, 4 * 3 * vertexBufferSize, null).asFloatBuffer();
+      for (int i = 0; i < n; i++) {
+        xyz.put(i*3+0, (float) (particles.get(i).x + offsetX));
+        xyz.put(i*3+1, (float) (particles.get(i).y + offsetY));
       }
-      glEnd();
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
+
+    if (needUpdate) {
+      glBindBuffer(GL_ARRAY_BUFFER, colourBuffer);
+      if (needResize) {
+        glBufferData(GL_ARRAY_BUFFER, 4 * 3 * vertexBufferSize, GL_DYNAMIC_DRAW);
+      }
+      FloatBuffer rgb = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY, 4 * 3 * vertexBufferSize, null).asFloatBuffer();
+      for (int i = 0; i < n; i++) {
+        rgb.put(i*3+0, particles.get(i).r);
+        rgb.put(i*3+1, particles.get(i).g);
+        rgb.put(i*3+2, particles.get(i).b);
+      }
+      glUnmapBuffer(GL_ARRAY_BUFFER);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+  }
+
+  public void draw() {
+    if (!exist()) {
+      destroy();
+      return;
+    }
+    if (vertexBuffer == -1) {
+      create();
+    }
+    fillAttribBuffers(true);
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+    glVertexPointer(3, GL_FLOAT, 0, 0);
+
+    glEnableClientState(GL_COLOR_ARRAY);
+    glBindBuffer(GL_ARRAY_BUFFER, colourBuffer);
+    glColorPointer(3, GL_FLOAT, 0, 0);
+
+    glPointSize((float) (2 * r));
+    glDrawArrays(GL_POINTS, 0, particles.size());
+
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+  }
+
+  private void create() {
+    if (vertexBuffer == -1) {
+      vertexBuffer = glGenBuffers();
+    }
+    if (colourBuffer == -1) {
+      colourBuffer = glGenBuffers();
+    }
+  }
+
+  private void destroy() {
+    if (colourBuffer != -1) {
+      glDeleteBuffers(colourBuffer);
+      colourBuffer = -1;
+    }
+    if (vertexBuffer != -1) {
+      glDeleteBuffers(vertexBuffer);
+      vertexBuffer = -1;
+    }
+    vertexBufferSize = 0;
   }
 
   public boolean exist() {
