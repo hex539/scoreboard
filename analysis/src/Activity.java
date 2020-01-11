@@ -8,6 +8,8 @@ import java.io.FileOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -23,6 +25,7 @@ import me.hex539.contest.ContestConfig;
 import me.hex539.contest.ContestDownloader;
 import me.hex539.contest.MissingJudgements;
 import me.hex539.contest.ScoreboardModelImpl;
+import me.hex539.contest.model.Problems;
 import org.jtwig.environment.EnvironmentConfiguration;
 import org.jtwig.environment.EnvironmentConfigurationBuilder;
 import org.jtwig.JtwigModel;
@@ -64,6 +67,7 @@ public class Activity {
     entireContest = MissingJudgements.ensureJudgements(entireContest);
 
     final boolean drawActivity = true;
+    final boolean drawSolveStats = true;
     final boolean drawLanguageStats = true;
 
     ScoreboardModelImpl fullModel = ScoreboardModelImpl.newBuilder(entireContest)
@@ -138,31 +142,18 @@ public class Activity {
       });
     }
 
-    if (printSolveStats) {
-      System.out.printf("\\providecommand{\\printfirstsolve}[2]{Solved at #2 by \\textbf{#1}}\n");
-      System.out.printf("\\providecommand{\\notsolved}{Not solved}\n");
-      fullModel.getProblemsModel().getProblems().stream().forEach(problem -> {
-        final SubmitStats stats = statsByProblem.get(problem.getId()).crop();
-        System.out.printf(
-            "\\providecommand{\\solvestats%s}{\\printsolvestats{%d}{%d}{%d}}\n",
-            problem.getLabel(),
-            stats.totalAttempts,
-            stats.totalAccepted,
-            stats.totalPending);
-        if (stats.firstSolveAt != -1) {
-          System.out.printf(
-              "%% \\providecommand{\\firstsolve%s}{\\printfirstsolve{%s}{%02d:%02d:%02d}}\n",
-              problem.getLabel(),
-              stats.firstSolveBy.getName(),
-              (stats.firstSolveAt / 3600),
-              (stats.firstSolveAt / 60) % 60,
-              (stats.firstSolveAt) % 60);
-        } else {
-          System.out.printf(
-              "%% \\providecommand{\\firstsolve%s}{\\notsolved}\n",
-              problem.getLabel());
+    if (drawSolveStats) {
+      final Problems problems = fullModel.getProblemsModel();
+
+      if (printSolveStats) {
+        saveSolveStats(problems, statsByProblem, System.out); 
+      } else {
+        final File file = new File(workingDirectory, "solve_stats.tex");
+        try (final OutputStream outputStream = new FileOutputStream(file)) {
+          saveSolveStats(problems, statsByProblem, outputStream);
         }
-      });
+        System.err.println("Saved file: " + file.getPath());
+      }
     }
 
     if (drawLanguageStats) {
@@ -182,6 +173,45 @@ public class Activity {
       if (!printSolveStats) {
         System.err.println("Saved file: " + file.getPath());
       }
+    }
+  }
+
+  private static void saveSolveStats(
+      Problems problems,
+      Map<String, SubmitStats> statsByProblem,
+      OutputStream outputStream) {
+    try (PrintWriter pw = new PrintWriter(outputStream)) {
+      pw.printf("\\providecommand{\\printfirstsolve}[2]{Solved at #2 by \\textbf{#1}}\n");
+      pw.printf("\\providecommand{\\notsolved}{Not solved}\n");
+      problems.getProblems().stream().forEach(problem -> saveSolveStats(
+            problem,
+            statsByProblem.get(problem.getId()),
+            pw));
+    }
+  }
+
+  private static void saveSolveStats(
+      Problem problem,
+      SubmitStats stats,
+      PrintWriter pw) {
+    pw.printf(
+        "\\providecommand{\\solvestats%s}{\\printsolvestats{%d}{%d}{%d}}\n",
+        problem.getLabel(),
+        stats.totalAttempts,
+        stats.totalAccepted,
+        stats.totalPending);
+    if (stats.firstSolveAt != -1) {
+      pw.printf(
+          "\\providecommand{\\firstsolve%s}{\\printfirstsolve{%s}{%02d:%02d:%02d}}\n",
+          problem.getLabel(),
+          "Team", // stats.firstSolveBy.getName(),
+          (stats.firstSolveAt / 3600),
+          (stats.firstSolveAt / 60) % 60,
+          (stats.firstSolveAt) % 60);
+    } else {
+      pw.printf(
+          "\\providecommand{\\firstsolve%s}{\\notsolved}\n",
+          problem.getLabel());
     }
   }
 
