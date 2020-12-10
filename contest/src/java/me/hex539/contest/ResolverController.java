@@ -235,7 +235,7 @@ public class ResolverController {
     Team currentTeam = null;
     Team prevTeam = null;
 
-    for (int currentRank = teams.getTeams().size(); currentRank > 0; prevTeam = currentTeam) {
+    for (int currentRank = model.getRanklistModel().getRows().size(); currentRank > 0; prevTeam = currentTeam) {
       currentTeam = getTeamAt(currentRank);
       if (currentTeam != prevTeam) {
         moveToProblem(currentTeam, null);
