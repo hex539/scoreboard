@@ -60,7 +60,7 @@ public @CommandLineInterface interface Invocation {
     boolean getApplyFreeze();
 
   @Option(
-      shortName = "t",
+      shortName = "s",
       longName = "solvestats",
       description = "Print solvestats instead of file information")
     boolean getPrintSolvestats();
