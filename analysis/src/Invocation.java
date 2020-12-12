@@ -19,6 +19,13 @@ public @CommandLineInterface interface Invocation {
     boolean isHelp();
 
   @Option(
+      shortName = "c",
+      longName = "contest",
+      defaultToNull = true,
+      description = "Contest ID to resolve")
+    String getContest();
+
+  @Option(
       shortName = "u",
       longName = "url",
       defaultToNull = true,

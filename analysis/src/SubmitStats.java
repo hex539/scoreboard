@@ -71,6 +71,10 @@ public class SubmitStats {
         : verdict.getId().equals("WA") ? wrongAnswer
         : otherFailed;
 
+    if (verdict == null) {
+      System.err.println("Verdict is null for subId " + submission.getId());
+    }
+
     add(teamsAttempted, team, submission);
     totalAttempts += 1;
     if (grouping == accepted) {
