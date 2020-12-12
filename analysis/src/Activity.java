@@ -53,6 +53,7 @@ public class Activity {
         /* applyFreeze= */ invocation.getApplyFreeze(),
         /* printSolvestats= */ invocation.getPrintSolvestats());
 
+    System.exit(0);
   }
 
   private static void draw(
