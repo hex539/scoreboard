@@ -151,7 +151,7 @@ public class Activity {
             stats.totalPending);
         if (stats.firstSolveAt != -1) {
           System.out.printf(
-              "% \\providecommand{\\firstsolve%s}{\\printfirstsolve{%s}{%02d:%02d:%02d}}\n",
+              "%% \\providecommand{\\firstsolve%s}{\\printfirstsolve{%s}{%02d:%02d:%02d}}\n",
               problem.getLabel(),
               stats.firstSolveBy.getName(),
               (stats.firstSolveAt / 3600),
