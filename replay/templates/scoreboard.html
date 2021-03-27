@@ -44,11 +44,11 @@ endfor
 for p in row.problems
 %}{%
 if p.solved
-            %}<td class="pcell solved{% if p.solved_first %} first{% endif %}"><span>{{ p.num_judged }}/{{ p.time }}</span></td>{%
+            %}<td class="pcell solved{% if p.solved_first %} first{% endif %}"><span>{{ p.time }}<br/>{{ p.num_judged }} tries</span></td>{%
 elif p.num_pending and p.num_pending > 0
             %}<td class="pcell pending"><span>?</span></td>{%
 elif p.num_judged and p.num_judged > 0
-            %}<td class="pcell failed"><span>-{{ p.num_judged }}</span></td>{%
+            %}<td class="pcell failed"><span><br/>{{ p.num_judged }} tries</span></td>{%
 else
             %}<td class="pcell"></td>{%
 endif
