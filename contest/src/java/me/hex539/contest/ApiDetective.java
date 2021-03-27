@@ -7,8 +7,11 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import me.hex539.contest.ContestConfig;
+import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.Request;
@@ -26,29 +29,43 @@ public final class ApiDetective {
   private static final String[] APIV3_BASES = {"", "/api", "/api/v3"};
   private static final String[] CLICS_BASES = {"", "/api", "/clics-api"};
 
-  private static final OkHttpClient client = new OkHttpClient.Builder()
+  public static Optional<ContestConfig.Source> detectApi(String baseUrl) {
+    return detectApi(baseUrl, null, null);
+  }
+
+  public static Optional<ContestConfig.Source> detectApi(
+      String baseUrl,
+      @Nullable String username,
+      @Nullable String password) {
+    return detectAllApis(baseUrl.replaceAll("/+$", ""), username, password)
+        .reduce((a,b) -> compare(a,b) > 0 ? a : b);
+  }
+
+  private static Stream<ContestConfig.Source> detectAllApis(
+      String baseUrl,
+      @Nullable String username,
+      @Nullable String password) {
+    List<CompletableFuture<ContestConfig.Source>> attempts = new ArrayList<>();
+
+    final OkHttpClient client = new OkHttpClient.Builder()
       .connectTimeout(10, TimeUnit.SECONDS)
       .readTimeout(10, TimeUnit.SECONDS)
       .followSslRedirects(true)
       .followRedirects(false)
       .build();
 
-  public static Optional<ContestConfig.Source> detectApi(String baseUrl) {
-    return detectAllApis(baseUrl.replaceAll("/+$", ""))
-        .reduce((a,b) -> compare(a,b) > 0 ? a : b);
-  }
-
-  private static Stream<ContestConfig.Source> detectAllApis(String baseUrl) {
-    List<CompletableFuture<ContestConfig.Source>> attempts = new ArrayList<>();
+    final Supplier<Request.Builder> requestBuilder = () -> (username != null || password != null)
+        ? new Request.Builder().header("Authorization", Credentials.basic(username, password))
+        : new Request.Builder();
 
     for (String domjudge: DOMJUDGE_BASES) {
       for (String api : APIV3_BASES) {
         final String url = baseUrl + domjudge + api;
-        attempts.add(CompletableFuture.supplyAsync(() -> canaryApiV3(url)));
+        attempts.add(CompletableFuture.supplyAsync(() -> canaryApiV3(client, requestBuilder, url)));
       }
       for (String api : CLICS_BASES) {
         final String url = baseUrl + domjudge + api;
-        attempts.add(CompletableFuture.supplyAsync(() -> canaryClics(url)));
+        attempts.add(CompletableFuture.supplyAsync(() -> canaryClics(client, requestBuilder, url)));
       }
     }
 
@@ -58,9 +75,12 @@ public final class ApiDetective {
         .map(Optional::get);
   }
 
-  private static ContestConfig.Source canaryApiV3(String baseUrl) throws CompletionException{
+  private static ContestConfig.Source canaryApiV3(
+      final OkHttpClient client,
+      final Supplier<Request.Builder> requestBuilder,
+      final String baseUrl) throws CompletionException {
     final String url = baseUrl + "/categories";
-    try (Response response = client.newCall(new Request.Builder().url(url).build()).execute()) {
+    try (Response response = client.newCall(requestBuilder.get().url(url).build()).execute()) {
       if (response.code() == 200 && !response.isRedirect()) {
         System.err.println("Hit " + url);
         return ContestConfig.Source.newBuilder()
@@ -74,11 +94,26 @@ public final class ApiDetective {
     }
   }
 
-  private static ContestConfig.Source canaryClics(String baseUrl)
-      throws CompletionException{
-    final String url = baseUrl + "/contests";
-    final String gps = baseUrl + "/groups";
-    try (Response response = client.newCall(new Request.Builder().url(url).build()).execute()) {
+  private static ContestConfig.Source canaryClics(
+      final OkHttpClient client,
+      final Supplier<Request.Builder> requestBuilder,
+      final String baseUrl) throws CompletionException {
+      return canaryClics(client, requestBuilder, baseUrl, false);
+  }
+
+  private static ContestConfig.Source canaryClics(
+      final OkHttpClient client,
+      final Supplier<Request.Builder> requestBuilder,
+      final String baseUrl,
+      final boolean trailingSlash) throws CompletionException {
+    final String url = baseUrl + "/contests" + (trailingSlash ? "/" : "");
+    final String gps = baseUrl + "/groups" + (trailingSlash ? "/" : "");
+    try (Response response = client.newCall(requestBuilder.get().url(url).build()).execute()) {
+      if (response.code() == 308 && response.isRedirect()) {
+        if ((url + "/").equals(response.header("Location"))) {
+          return canaryClics(client, requestBuilder, baseUrl, true);
+        }
+      }
       if (response.code() == 200 && !response.isRedirect()) {
         System.err.println("Hit " + url);
 
@@ -90,7 +125,7 @@ public final class ApiDetective {
         // If there is an /api/groups endpoint, we're probably using an old
         // version of DOMjudge with endpoints in the wrong place.
         boolean apiInRoot = false;
-        try (Response rCanary = client.newCall(new Request.Builder().url(gps).build()).execute()) {
+        try (Response rCanary = client.newCall(requestBuilder.get().url(gps).build()).execute()) {
           apiInRoot = (rCanary.code() == 200 && !rCanary.isRedirect());
         }
 

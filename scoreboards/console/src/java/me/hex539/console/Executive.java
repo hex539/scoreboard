@@ -39,7 +39,10 @@ public class Executive {
     final ContestConfig.Source source;
     if (invocation.getUrl() != null) {
       ContestConfig.Source.Builder sourceBuilder =
-          ApiDetective.detectApi(invocation.getUrl())
+          ApiDetective.detectApi(
+              invocation.getUrl(),
+              invocation.getUsername(),
+              invocation.getPassword())
               .orElseThrow(() -> new Error("No contests found"))
               .toBuilder();
       if (invocation.getUsername() != null) {
@@ -84,6 +87,8 @@ public class Executive {
         return;
       }
     }
+
+    System.exit(0);
   }
 
   @Command(name = "scoreboard")

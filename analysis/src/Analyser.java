@@ -15,7 +15,11 @@ public class Analyser {
   public static ContestConfig.Source getSource(Invocation invocation) {
     if (invocation.getUrl() != null) {
       ContestConfig.Source.Builder sourceBuilder =
-          ApiDetective.detectApi(invocation.getUrl()).get()
+          ApiDetective.detectApi(
+              invocation.getUrl(),
+              invocation.getUsername(),
+              invocation.getPassword())
+              .get()
               .toBuilder();
       if (invocation.getContest() != null) {
         sourceBuilder.setContestId(invocation.getContest());
