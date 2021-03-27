@@ -93,7 +93,24 @@ class Deserializers {
       JsonPrimitive primitive = json.getAsJsonPrimitive();
       if (primitive.isString()) {
         try {
-          final Instant instant = OffsetDateTime.parse(primitive.getAsString()).toInstant();
+          // FIXME: bad workaround for invalid Kattis date strings like this:
+          //   "2021-03-27T09:24:1.482+00"
+          // What's wrong:
+          //   - Timezone offset is 00 minutes instead of 00:00 hours
+          //   - Number of seconds is 1 instead of 01
+          String dateString = primitive.getAsString()
+              .replace(":0.", ":00.")
+              .replace(":1.", ":01.")
+              .replace(":2.", ":02.")
+              .replace(":3.", ":03.")
+              .replace(":4.", ":04.")
+              .replace(":5.", ":05.")
+              .replace(":6.", ":06.")
+              .replace(":7.", ":07.")
+              .replace(":8.", ":08.")
+              .replace(":9.", ":09.")
+              .replaceAll("\\+0+$", "+00:00");
+          final Instant instant = OffsetDateTime.parse(dateString).toInstant();
           return Timestamp.newBuilder()
               .setSeconds(instant.getEpochSecond())
               .setNanos(instant.getNano())
