@@ -24,7 +24,7 @@ public final class ApiDetective {
 
   private static final String[] DOMJUDGE_BASES = {"", "/domjudge"};
   private static final String[] APIV3_BASES = {"", "/api", "/api/v3"};
-  private static final String[] CLICS_BASES = {"", "/api"};
+  private static final String[] CLICS_BASES = {"", "/api", "/clics-api"};
 
   private static final OkHttpClient client = new OkHttpClient.Builder()
       .connectTimeout(10, TimeUnit.SECONDS)
