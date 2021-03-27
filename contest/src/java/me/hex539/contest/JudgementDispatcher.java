@@ -102,6 +102,10 @@ public class JudgementDispatcher {
   }
 
   public ScoreboardProblem notifyJudgement(final Judgement j) {
+    if (j == null) {
+      warn.log("Missing judgement " + j);
+      return null;
+    }
     if (j.getJudgementTypeId() == null || "".equals(j.getJudgementTypeId())) {
       warn.log("Ignoring judgement " + j.getId() + " with no judgement type");
       return null;
