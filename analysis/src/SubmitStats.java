@@ -9,7 +9,7 @@ import me.hex539.contest.ScoreboardModel;
 
 public class SubmitStats {
 
-  private static final long SECONDS_PER_BAR = (60 * 5) / 2;
+  private static final long SECONDS_PER_BAR = (60 * 5) / 4;
   private static final long MAX_SUBMISSIONS = 20;
 
   long firstSolveAt = -1;
