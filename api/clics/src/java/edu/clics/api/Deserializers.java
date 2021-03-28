@@ -93,24 +93,14 @@ class Deserializers {
       JsonPrimitive primitive = json.getAsJsonPrimitive();
       if (primitive.isString()) {
         try {
-          // FIXME: bad workaround for invalid Kattis date strings like this:
-          //   "2021-03-27T09:24:1.482+00"
-          // What's wrong:
-          //   - Timezone offset is 00 minutes instead of 00:00 hours
-          //   - Number of seconds is 1 instead of 01
-          String dateString = primitive.getAsString()
-              .replace(":0.", ":00.")
-              .replace(":1.", ":01.")
-              .replace(":2.", ":02.")
-              .replace(":3.", ":03.")
-              .replace(":4.", ":04.")
-              .replace(":5.", ":05.")
-              .replace(":6.", ":06.")
-              .replace(":7.", ":07.")
-              .replace(":8.", ":08.")
-              .replace(":9.", ":09.")
-              .replaceAll("\\+0+$", "+00:00");
-          final Instant instant = OffsetDateTime.parse(dateString).toInstant();
+          // Workaround for servers with date strings that don't zero-pad the seconds or include
+          // TZ minutes, for example "2021-03-27T09:24:1.482+00"
+          //              instead of "2021-03-27T09:24:01.482+00:00"
+          final Instant instant = OffsetDateTime.parse(
+              primitive.getAsString()
+                  .replaceAll(":([0-9])\\.", ":0$1.")
+                  .replaceAll("\\+0+$", "+00:00"))
+              .toInstant();
           return Timestamp.newBuilder()
               .setSeconds(instant.getEpochSecond())
               .setNanos(instant.getNano())
@@ -139,11 +129,8 @@ class Deserializers {
     }
 
     /**
-     * Yes, we're rolling our own duration parser. No, LocalTime.parse() won't work.
-     *
-     * CLICS, being designed by some of the best programmers in the world, uses a "slight
-     * modification of ISO 8601" with the slight modification being that the first digit of the
-     * hour may be dropped.
+     * LocalTime.parse() won't work for the following because CLICS uses a "slight modification of
+     * ISO 8601" with the slight modification being that the first digit of the hour may be dropped.
      *
      * This fails java.time's validation checks so we need to do it by hand instead.
      */
