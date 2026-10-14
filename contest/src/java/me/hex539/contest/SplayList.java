@@ -11,7 +11,7 @@ import java.util.SortedSet;
 import java.util.Spliterator;
 import java.util.function.Function;
 
-public final class SplayList<T> extends AbstractList<T> implements List<T>, SortedSet<T> {
+public final class SplayList<T> extends AbstractList<T> implements List<T>/*, SortedSet<T>*/ {
   private final Comparator<? super T> comp;
   private final Function<? super T, ?> tagger;
   private SplayTree<T> root;
@@ -72,7 +72,7 @@ public final class SplayList<T> extends AbstractList<T> implements List<T>, Sort
     return tree.delete();
   }
 
-  @Override
+  // @Override
   public Comparator<? super T> comparator() {
     return comp;
   }
@@ -83,16 +83,16 @@ public final class SplayList<T> extends AbstractList<T> implements List<T>, Sort
   }
 
   @Override
-  public T first() {
+  public T getFirst() {
     return get(0);
   }
 
   @Override
-  public T last() {
+  public T getLast() {
     return get(size() - 1);
   }
 
-  @Override
+  // @Override
   public SplayList<T> headSet(T toElement) {
     SplayList<T> res = new SplayList<>(this, comparator());
     if (res.root != null) {
@@ -101,7 +101,7 @@ public final class SplayList<T> extends AbstractList<T> implements List<T>, Sort
     return res;
   }
 
-  @Override
+  // @Override
   public SplayList<T> tailSet(T fromElement) {
     SplayList<T> res = new SplayList<>(this, comparator());
     if (res.root != null) {
@@ -111,7 +111,7 @@ public final class SplayList<T> extends AbstractList<T> implements List<T>, Sort
     return res;
   }
 
-  @Override
+  // @Override
   public SplayList<T> subSet(T fromElement, T toElement) {
     return tailSet(fromElement).headSet(toElement);
   }

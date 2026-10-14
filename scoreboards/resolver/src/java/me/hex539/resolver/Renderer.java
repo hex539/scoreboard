@@ -17,12 +17,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.google.auto.value.AutoValue;
+import com.google.protobuf.util.Durations;
 
 import edu.clics.proto.ClicsProto.*;
 
@@ -313,7 +315,8 @@ public class Renderer implements ResolverController.Observer {
     double rowX = layout.x;
     double rowY = layout.y;
 
-    final boolean teamFocused = focusedTeam != null && row.getTeamId() == focusedTeam.getId();
+    final boolean teamFocused = focusedTeam != null
+        && Objects.equals(row.getTeamId(), focusedTeam.getId());
 
     RankAnimation focus = peekAnimation(focusAnimation, timeNow);
 
@@ -378,7 +381,7 @@ public class Renderer implements ResolverController.Observer {
 
   private void drawLabel(double rowX, double rowY, Team team, boolean focused) {
     final String organizationId = team.getOrganizationId();
-    if (organizationId != null && !organizationId.isEmpty()) {
+    if (!organizationId.isEmpty()) {
         glColor3d(0.6, 0.6, 0.6);
         try {
           font.drawText(
@@ -406,7 +409,7 @@ public class Renderer implements ResolverController.Observer {
           rowX + teamLabelWidth - rowHeight * 0.1,
           rowY + cellMargin,
           (int) (rowHeight / 2.0 - cellMargin),
-          String.format("%4d", score.getTotalTime()),
+          String.format("%4d", Durations.toMinutes(score.getTotalTime())),
           FontRenderer.Alignment.RIGHT);
     }
     glColor3d(1.0, 1.0, 1.0);

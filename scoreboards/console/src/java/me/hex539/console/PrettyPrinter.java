@@ -33,7 +33,7 @@ class PrettyPrinter {
         String.format("%-" + MAX_TEAM_NAME_LENGTH + "s\t│ %2d │ %6d ",
             team.getName(),
             Math.max(0, row.getScore().getNumSolved()),
-            Math.max(0, row.getScore().getTotalTime())));
+            Math.max(0, row.getScore().getTotalTime().getSeconds() / 60L)));
     for (ScoreboardProblem p : row.getProblemsList()) {
       boolean hl = (highlightProblem != null && highlightProblem.getId().equals(p.getProblemId()));
       sb.append("│" + (hl ? '[' : ' ') + formatAttempt(p) + (hl ? ']' : ' '));
@@ -55,7 +55,7 @@ class PrettyPrinter {
         problem.getName(),
         jt.getName(),
         row.getScore().getNumSolved(),
-        row.getScore().getTotalTime(),
+        row.getScore().getTotalTime().getSeconds() / 60L,
         row.getRank(),
         formatMiniScoreboardRow(row.getProblemsList()));
   }

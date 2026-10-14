@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+
 package(default_visibility = ["//visibility:public"])
 
 java_library(
@@ -36,8 +38,8 @@ java_library(
         "//api/utils",
         "//contest/proto:java",
         "//interop",
-        "@com_google_protobuf//:protobuf_java",
-        "@com_google_protobuf//:protobuf_java_util",
+        "@protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java_util",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_squareup_okhttp3_okhttp",
     ],
@@ -57,8 +59,8 @@ java_library(
         ":mutable",
         "//third_party/auto:auto_value",
         "//third_party/auto:auto_value_annotations",
-        "@com_google_protobuf//:protobuf_java",
-        "@com_google_protobuf//:protobuf_java_util",
+        "@protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java_util",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:com_google_guava_guava",
     ],
@@ -77,8 +79,8 @@ java_library(
         ":comparators",
         ":model",
         ":mutable",
-        "@com_google_protobuf//:protobuf_java",
-        "@com_google_protobuf//:protobuf_java_util",
+        "@protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java_util",
     ],
 )
 
@@ -131,8 +133,8 @@ java_library(
         "//api/clics/proto:java",
         "//third_party/auto:auto_value",
         "//third_party/auto:auto_value_annotations",
-        "@com_google_protobuf//:protobuf_java",
-        "@com_google_protobuf//:protobuf_java_util",
+        "@protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java_util",
         "@maven//:com_google_guava_guava",
     ],
 )

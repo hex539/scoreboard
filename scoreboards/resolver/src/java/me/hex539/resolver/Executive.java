@@ -67,8 +67,7 @@ public class Executive {
         .thenCombineAsync(reference, ResolverController::new)
         .thenCombineAsync(model, ResolverController::addObserver);
 
-    new ResolverWindow(resolver, model, fontData).run();
-    System.exit(0);
+    new ResolverWindow(resolver, model, fontData).start();
   }
 
   private static Optional<ContestConfig.Source> getSource(Invocation invocation) {

@@ -194,7 +194,7 @@ public class ResolverWindow extends Thread {
         }
       }
       if (bestMonitor != -1) {
-        return Optional.ofNullable(bestMonitor);
+        return Optional.of(bestMonitor);
       }
     }
     return Optional.empty();

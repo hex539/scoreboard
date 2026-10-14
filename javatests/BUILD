@@ -8,7 +8,7 @@ java_library(
     deps = [
         "//contest:immutable",
         "//contest:model",
-        "@com_google_protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java",
     ],
 )
 
@@ -25,7 +25,7 @@ java_test(
         "//contest:judgement_dispatcher",
         "//contest:model",
         "//contest:mutable",
-        "@com_google_protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java",
         "@maven//:com_google_truth_truth",
         "@maven//:org_mockito_mockito_all",
     ],
@@ -42,7 +42,7 @@ java_test(
         ":utils",
         "//api/domjudge",
         "//api/domjudge/proto:java",
-        "@com_google_protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java",
         "@maven//:com_google_truth_truth",
         "@maven//:com_squareup_okhttp3_mockwebserver",
         "@maven//:org_mockito_mockito_all",
@@ -59,7 +59,7 @@ java_test(
     deps = [
         "//api/clics",
         "//api/clics/proto:java",
-        "@com_google_protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java",
         "@maven//:com_google_code_gson_gson",
         "@maven//:com_google_truth_truth",
         "@maven//:com_squareup_okhttp3_mockwebserver",
@@ -100,7 +100,7 @@ java_test(
         "//contest:mutable",
         "//contest:network",
         "//contest:resolver",
-        "@com_google_protobuf//:protobuf_java_util",
+        "@protobuf//:protobuf_java_util",
         "@maven//:com_google_truth_truth",
         "@maven//:org_mockito_mockito_all",
     ],

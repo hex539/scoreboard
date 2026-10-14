@@ -1,3 +1,4 @@
+load("@rules_java//java:defs.bzl", "java_library")
 package(default_visibility = ["//visibility:public"])
 
 java_library(
@@ -8,6 +9,7 @@ java_library(
     deps = [
         "//api/clics/proto:java",
         "//api/domjudge/proto:java",
-        "@com_google_protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java_util",
     ],
 )

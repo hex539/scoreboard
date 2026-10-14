@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
@@ -21,18 +22,18 @@ final class Deserializers {
 
   static class WellKnownTypeAdapterFactory implements TypeAdapterFactory {
     @SuppressWarnings("unchecked")
-    private final Map<Class, TypeAdapter<?>> wellKnownTypes = new HashMap<Class, TypeAdapter<?>>() {{
-      put(Int32Value.class, make((w, o) -> w.value(o.getValue()),
-          (r) -> Int32Value.newBuilder().setValue((int) r.nextLong()).build()));
-      put(Int64Value.class, make((w, o) -> w.value(o.getValue()),
-          (r) -> Int64Value.newBuilder().setValue((long) r.nextLong()).build()));
-      put(UInt32Value.class, make((w, o) -> w.value(o.getValue()),
-          (r) -> UInt32Value.newBuilder().setValue((int) r.nextLong()).build()));
-      put(UInt64Value.class, make((w, o) -> w.value(o.getValue()),
-          (r) -> UInt64Value.newBuilder().setValue((long) r.nextLong()).build()));
-      put(StringValue.class, make((w, o) -> w.value(o.getValue()),
-          (r) -> StringValue.newBuilder().setValue(r.nextString()).build()));
-    }};
+    private final Map<Class, TypeAdapter<?>> wellKnownTypes = new HashMap<Class, TypeAdapter<?>>(
+        ImmutableMap.of(
+            Int32Value.class, make((w, o) -> w.value(o.getValue()),
+                (r) -> Int32Value.newBuilder().setValue((int) r.nextLong()).build()),
+            Int64Value.class, make((w, o) -> w.value(o.getValue()),
+                (r) -> Int64Value.newBuilder().setValue((long) r.nextLong()).build()),
+            UInt32Value.class, make((w, o) -> w.value(o.getValue()),
+                (r) -> UInt32Value.newBuilder().setValue((int) r.nextLong()).build()),
+            UInt64Value.class, make((w, o) -> w.value(o.getValue()),
+                (r) -> UInt64Value.newBuilder().setValue((long) r.nextLong()).build()),
+            StringValue.class, make((w, o) -> w.value(o.getValue()),
+                (r) -> StringValue.newBuilder().setValue(r.nextString()).build())));
 
     @SuppressWarnings("unchecked")
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {

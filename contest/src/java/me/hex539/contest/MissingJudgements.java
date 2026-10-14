@@ -57,7 +57,7 @@ public class MissingJudgements {
           if (failed > 0) {
             j.setJudgementTypeId(contest.getJudgementTypesOrThrow("WA").getId());
             failed--;
-          } else if (solved && prob.getTime() == sub.getContestTime().getSeconds() / 60) {
+          } else if (solved && prob.getTime().equals(sub.getContestTime())) {
             j.setJudgementTypeId(contest.getJudgementTypesOrThrow("AC").getId());
           } else {
             j.setJudgementTypeId(contest.getJudgementTypesOrThrow("CE").getId());

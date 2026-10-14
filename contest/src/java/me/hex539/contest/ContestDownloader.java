@@ -57,7 +57,7 @@ public class ContestDownloader {
           : api.downloadFirstContest();
     }
 
-    if (source.getDomjudge3Api() != null) {
+    if (source.hasDomjudge3Api()) {
       return ContestConverters.toClics(getDomjudgeV3Api().getEntireContest());
     }
 

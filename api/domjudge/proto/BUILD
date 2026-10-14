@@ -1,14 +1,13 @@
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
+load("@protobuf//bazel:py_proto_library.bzl", "py_proto_library")
+load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
 py_proto_library(
     name = "python",
-    srcs = glob(["*.proto"]),
-    default_runtime = "@com_google_protobuf//:protobuf_python",
-    protoc = "@com_google_protobuf//:protoc",
     deps = [
-        "@com_google_protobuf//:protobuf_python",
+        ":proto",
     ],
 )
 
@@ -23,10 +22,10 @@ proto_library(
     visibility = ["//visibility:private"],
     deps = [
         ":annotations",
-        "@com_google_protobuf//:descriptor_proto",
-        "@com_google_protobuf//:duration_proto",
-        "@com_google_protobuf//:timestamp_proto",
-        "@com_google_protobuf//:wrappers_proto",
+        "@protobuf//:descriptor_proto",
+        "@protobuf//:duration_proto",
+        "@protobuf//:timestamp_proto",
+        "@protobuf//:wrappers_proto",
     ],
 )
 
@@ -40,6 +39,6 @@ proto_library(
     srcs = ["annotations.proto"],
     visibility = ["//visibility:private"],
     deps = [
-        "@com_google_protobuf//:descriptor_proto",
+        "@protobuf//:descriptor_proto",
     ],
 )

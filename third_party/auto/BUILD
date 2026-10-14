@@ -1,3 +1,4 @@
+load("@rules_java//java:defs.bzl", "java_library", "java_plugin")
 licenses(["notice"])
 
 java_library(

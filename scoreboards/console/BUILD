@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+
 package(default_visibility = ["//visibility:private"])
 
 java_binary(
@@ -9,8 +11,8 @@ java_binary(
     deps = [
         "//contest",
         "//interop",
-        "@com_google_protobuf//:protobuf_java",
-        "@com_google_protobuf//:protobuf_java_util",
+        "@protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java_util",
         "@maven//:com_lexicalscope_jewelcli_jewelcli",
     ],
 )

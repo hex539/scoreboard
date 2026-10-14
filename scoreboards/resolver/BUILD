@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+
 package(default_visibility = ["//visibility:private"])
 
 java_binary(
@@ -17,18 +19,22 @@ java_binary(
         "@maven//:org_lwjgl_lwjgl_glfw",
         "@maven//:org_lwjgl_lwjgl_opengl",
         "@maven//:org_lwjgl_lwjgl_stb",
+        "@protobuf//java/util",
     ],
     runtime_deps = [
+        # Linux Natives
         "@maven//:org_lwjgl_lwjgl_natives_linux",
         "@maven//:org_lwjgl_lwjgl_glfw_natives_linux",
         "@maven//:org_lwjgl_lwjgl_opengl_natives_linux",
         "@maven//:org_lwjgl_lwjgl_stb_natives_linux",
-    ] + [
+        
+        # macOS Natives
         "@maven//:org_lwjgl_lwjgl_natives_macos",
         "@maven//:org_lwjgl_lwjgl_glfw_natives_macos",
         "@maven//:org_lwjgl_lwjgl_opengl_natives_macos",
         "@maven//:org_lwjgl_lwjgl_stb_natives_macos",
-    ] + [
+        
+        # Windows Natives
         "@maven//:org_lwjgl_lwjgl_natives_windows",
         "@maven//:org_lwjgl_lwjgl_glfw_natives_windows",
         "@maven//:org_lwjgl_lwjgl_opengl_natives_windows",
@@ -42,3 +48,4 @@ java_library(
         "src/resources/**",
     ]),
 )
+

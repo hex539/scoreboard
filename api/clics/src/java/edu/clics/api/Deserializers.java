@@ -155,6 +155,10 @@ class Deserializers {
           // Throw the exception on the next line.
         }
         throw new DateTimeParseException("Text '" + s + "' could not be parsed", s, 0);
+      } else if (elements.length == 1) {
+        // Penalty time was specified in raw minutes initially.
+        // Treat single numbers as minutes.
+        return Duration.newBuilder().setSeconds(Long.parseLong(elements[0]) * 60).build();
       } else {
         throw new DateTimeParseException("Text '" + s + "' has wrong number of items", s, 0);
       }

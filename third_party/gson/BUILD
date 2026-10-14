@@ -1,3 +1,5 @@
+load("@rules_java//java:defs.bzl", "java_binary", "java_library")
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["restricted"])
@@ -10,6 +12,6 @@ java_library(
     deps = [
         "@maven//:com_google_code_gson_gson",
         "@maven//:com_google_guava_guava",
-        "@com_google_protobuf//:protobuf_java",
+        "@protobuf//:protobuf_java",
     ],
 )

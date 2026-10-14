@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import com.google.protobuf.Duration;
 import edu.clics.proto.ClicsProto.*;
 import me.hex539.contest.model.Judge;
 import me.hex539.contest.model.Problems;
@@ -106,7 +107,7 @@ public class JudgementDispatcher {
       warn.log("Missing judgement " + j);
       return null;
     }
-    if (j.getJudgementTypeId() == null || "".equals(j.getJudgementTypeId())) {
+    if ("".equals(j.getJudgementTypeId())) {
       warn.log("Ignoring judgement " + j.getId() + " with no judgement type");
       return null;
     }
@@ -152,16 +153,31 @@ public class JudgementDispatcher {
     final ScoreboardScore oldScore = model.getRanklistModel().getScore(team);
     final boolean attemptsChanged = !attempts.equals(oldAttempts);
 
+    final long penaltyMinutes = model.getContest().hasPenaltyTime()
+        ? model.getContest().getPenaltyTime().getSeconds() / 60
+        : model.getContest().getPenaltyTimeInt();
+
     final ScoreboardScore newScore = !attemptsChanged
         ? oldScore
         : ScoreboardScore.newBuilder()
             .setNumSolved(oldScore.getNumSolved()
                 + (attempts.getSolved() ? 1 : 0)
                 - (oldAttempts.getSolved() ? 1 : 0))
-            .setTotalTime(oldScore.getTotalTime()
-                + (attempts.getSolved() ? attempts.getTime() : 0)
-                - (oldAttempts.getSolved() ? oldAttempts.getTime() : 0)
-                + (newPenaltyCount[0] - oldPenaltyCount[0]) * model.getContest().getPenaltyTime())
+            .setTotalTime(Duration.newBuilder()
+                .setSeconds(
+                    (oldScore.getTotalTime().getSeconds()
+                    + (attempts.getSolved()
+                        ? (attempts.hasTime()
+                            ? attempts.getTime().getSeconds()
+                            : attempts.getTimeInt()) * 60L
+                        : 0)
+                    + (oldAttempts.getSolved()
+                        ? (oldAttempts.hasTime()
+                            ? oldAttempts.getTime().getSeconds()
+                            : oldAttempts.getTimeInt()) * 60L
+                        : 0)
+                    + (newPenaltyCount[0] - oldPenaltyCount[0]) * 60 * penaltyMinutes))
+                .build())
             .build();
 
     final boolean scoreChanged = attemptsChanged && !newScore.equals(oldScore);
@@ -230,8 +246,7 @@ public class JudgementDispatcher {
           .setNumJudged(penaltyCount + 1)
           .setNumPending(0)
           .setSolved(true)
-          .setTime(
-              judge.getSubmission(solvedAt.getSubmissionId()).getContestTime().getSeconds() / 60)
+          .setTime(judge.getSubmission(solvedAt.getSubmissionId()).getContestTime())
           .build();
     } else {
       // Show submissions with only compiler error as -1, to be consistent with real scoreboards

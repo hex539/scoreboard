@@ -17,12 +17,13 @@ import me.hex539.contest.ScoreboardModelImpl;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.BlockingQueue;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class Executive {
@@ -228,8 +229,8 @@ public class Executive {
           .map(row -> PrettyPrinter.formatScoreboardRow(
               model.getTeamsModel().getTeam(row.getTeamId()),
               row,
-              focusedTeam.get() != null && row.getTeamId() == focusedTeam.get().getId(),
-              focusedTeam.get() != null && row.getTeamId() == focusedTeam.get().getId()
+              focusedTeam.get() != null && Objects.equals(row.getTeamId(), focusedTeam.get().getId()),
+              focusedTeam.get() != null && Objects.equals(row.getTeamId(), focusedTeam.get().getId())
                   ? focusedProblem.get()
                   : null))
           .forEach(System.out::println);

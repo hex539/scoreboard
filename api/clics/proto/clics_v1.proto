@@ -44,9 +44,13 @@ message Contest {
   google.protobuf.Duration contest_duration = 5 [(js.serialized_name) = "duration", json_name = 'duration'];
   google.protobuf.Duration scoreboard_freeze_duration = 6 [json_name = 'scoreboard_freeze_duration'];
 
-  sint64 penalty_time = 7 [json_name = 'penalty_time'];
+  // Replaced by penalty_time
+  sint64 penalty_time_int = 7 [deprecated = true];
+
   repeated Media banners = 8 [(js.serialized_name) = "banner", json_name = 'banner'];
   repeated Media logos = 9 [(js.serialized_name) = "logo", json_name = 'logos'];
+
+  google.protobuf.Duration penalty_time = 10 [json_name = 'penalty_time'];
 }
 
 // Endpoint: GET /contests/{}/judgement-types => JudgementType[]
@@ -242,7 +246,9 @@ message ScoreboardRow {
 
 message ScoreboardScore  {
   uint32 num_solved = 1 [json_name = 'num_solved'];
-  sint64 total_time = 2 [json_name = 'total_time'];
+  sint64 total_time_int = 2 [deprecated = true];
+
+  google.protobuf.Duration total_time = 3 [json_name = 'total_time'];
 }
 
 message ScoreboardProblem {
@@ -250,7 +256,9 @@ message ScoreboardProblem {
   uint32 num_judged = 2 [json_name = 'num_judged'];
   uint32 num_pending = 3 [json_name = 'num_pending'];
   bool solved = 4;
-  sint64 time = 5;
+  sint64 time_int = 5 [deprecated = true];
+
+  google.protobuf.Duration time = 6;
 }
 
 // Endpoint: /contests/{}/event-feed => EventFeedItem[]

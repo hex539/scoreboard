@@ -1,6 +1,7 @@
 package me.hex539.contest.mutable;
 
 import com.google.auto.value.AutoValue;
+import com.google.protobuf.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +18,7 @@ import me.hex539.contest.model.Teams;
 
 import edu.clics.proto.ClicsProto.*;
 
+@SuppressWarnings("CollectionIncompatibleType")
 @AutoValue
 public abstract class RanklistMutable implements Ranklist, Ranklist.Observer, Teams.Observer {
 
@@ -224,7 +226,7 @@ public abstract class RanklistMutable implements Ranklist, Ranklist.Observer, Te
         .setTeamId(team.getId())
         .setScore(ScoreboardScore.newBuilder()
             .setNumSolved(0)
-            .setTotalTime(0)
+            .setTotalTime(Duration.newBuilder().build())
             .build())
         .addAllProblems(pm.getProblems().stream()
             .map(p -> ScoreboardProblem.newBuilder().setProblemId(p.getId()).build())

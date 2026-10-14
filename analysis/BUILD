@@ -31,8 +31,8 @@ java_binary(
 
 COMMON_DEPS = [
     "@maven//:com_lexicalscope_jewelcli_jewelcli",
-    "@com_google_protobuf//:protobuf_java",
-    "@com_google_protobuf//:protobuf_java_util",
+    "@protobuf//:protobuf_java",
+    "@protobuf//:protobuf_java_util",
     "@maven//:org_apache_commons_commons_lang3",
     "//contest",
     "//interop",

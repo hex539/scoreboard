@@ -2,6 +2,7 @@ package me.hex539.interop;
 
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
+import com.google.protobuf.util.Durations;
 import edu.clics.proto.ClicsProto;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,7 +79,9 @@ public class ContestConverters {
         .setId("" + dom.getId())
         .setName("" + dom.getName())
         .setFormalName(dom.getName())
-        .setPenaltyTime(PENALTY_TIME);
+        .setPenaltyTime(Duration.newBuilder()
+            .setSeconds(PENALTY_TIME * 60)
+            .build());
 
     if (dom.hasStart()) {
       bob.setStartTime(Timestamp.newBuilder().setSeconds(dom.getStart().getValue()));
@@ -243,7 +246,7 @@ public class ContestConverters {
   public static ClicsProto.ScoreboardScore toClics(DomjudgeProto.ScoreboardScore dom) {
     return ClicsProto.ScoreboardScore.newBuilder()
         .setNumSolved((int) dom.getNumSolved())
-        .setTotalTime((long) dom.getTotalTime())
+        .setTotalTime(Duration.newBuilder().setSeconds(60 * (long) dom.getTotalTime()).build())
         .build();
   }
 
@@ -256,7 +259,8 @@ public class ContestConverters {
         .setNumPending((int) sp.getNumPending())
         .setSolved(sp.getSolved());
     if (sp.hasTime()) {
-        bob.setTime(sp.getTime().getValue());
+        // bob.setTime(Duration.newBuilder().setSeconds(60L * sp.getTime().getValue()).build());
+        bob.setTime(Durations.fromMinutes(sp.getTime().getValue()));
     }
     return bob.build();
   }
