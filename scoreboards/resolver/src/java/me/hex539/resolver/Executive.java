@@ -23,6 +23,7 @@ import me.hex539.resolver.draw.FontRenderer;
 import static org.lwjgl.glfw.GLFW.*;
 
 public class Executive {
+  @SuppressWarnings("DoNotCall")
   public static void main(String[] args) throws Exception {
     Invocation invocation = Invocation.parseFrom(args);
 
@@ -67,7 +68,8 @@ public class Executive {
         .thenCombineAsync(reference, ResolverController::new)
         .thenCombineAsync(model, ResolverController::addObserver);
 
-    new ResolverWindow(resolver, model, fontData).start();
+    new ResolverWindow(resolver, model, fontData).run();
+    System.exit(0);
   }
 
   private static Optional<ContestConfig.Source> getSource(Invocation invocation) {

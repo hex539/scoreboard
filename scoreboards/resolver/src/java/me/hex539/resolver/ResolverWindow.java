@@ -1,5 +1,6 @@
 package me.hex539.resolver;
 
+import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -60,10 +61,12 @@ public class ResolverWindow extends Thread {
   }
 
   public void run() {
+    GLFWErrorCallback.createPrint(System.err).set();
+
     if (!glfwInit()) {
+      System.err.println("glfwInit failed");
       System.exit(1);
     }
-    GLFWErrorCallback.createPrint().set();
 
     long primaryMonitor = glfwGetPrimaryMonitor();
     GLFWVidMode videoMode = glfwGetVideoMode(primaryMonitor);
@@ -163,6 +166,7 @@ public class ResolverWindow extends Thread {
       }
     }
     glfwTerminate();
+    glfwSetErrorCallback(null).free();
   }
 
   /**

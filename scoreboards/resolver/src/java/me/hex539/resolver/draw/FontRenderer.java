@@ -256,7 +256,7 @@ public class FontRenderer {
       FloatBuffer x = stack.floats((float) startX);
       FloatBuffer y = stack.floats((float) startY);
 
-      STBTTAlignedQuad q = STBTTAlignedQuad.mallocStack(stack);
+      STBTTAlignedQuad q = STBTTAlignedQuad.malloc();
 
       int lineStart = 0;
 

@@ -33,6 +33,12 @@ java_binary(
         "@maven//:org_lwjgl_lwjgl_glfw_natives_macos",
         "@maven//:org_lwjgl_lwjgl_opengl_natives_macos",
         "@maven//:org_lwjgl_lwjgl_stb_natives_macos",
+ 
+        # macOS (arm64) Natives
+        "@maven//:org_lwjgl_lwjgl_natives_macos_arm64",
+        "@maven//:org_lwjgl_lwjgl_glfw_natives_macos_arm64",
+        "@maven//:org_lwjgl_lwjgl_opengl_natives_macos_arm64",
+        "@maven//:org_lwjgl_lwjgl_stb_natives_macos_arm64",
         
         # Windows Natives
         "@maven//:org_lwjgl_lwjgl_natives_windows",
