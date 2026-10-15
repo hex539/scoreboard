@@ -75,6 +75,9 @@ public class ResolverWindow extends Thread {
     windowWidth = Math.min(videoMode.width(), windowHeight * 16 / 9);
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+    glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
+    glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_FALSE);
     final long window = glfwCreateWindow(
         windowWidth,
         windowHeight,
