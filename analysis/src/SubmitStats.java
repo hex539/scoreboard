@@ -47,7 +47,6 @@ public class SubmitStats {
     final Team team = model.getTeamsModel().getTeam(submission.getTeamId());
     final JudgementType verdict =
         judgement != null
-            && judgement.getJudgementTypeId() != null
             && !"".equals(judgement.getJudgementTypeId())
                 ? model.getJudgeModel().getJudgementType(judgement.getJudgementTypeId())
                 : null;

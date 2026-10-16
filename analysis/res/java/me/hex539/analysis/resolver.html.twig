@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ contestName }} - Scoreboard Freeze Resolver</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0b10;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 80px;
+      background: rgba(10, 11, 16, 0.95);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 30px;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+
+    #header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, #a0a5b5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    #header .subtitle {
+      font-size: 14px;
+      color: #65697a;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    #status-display {
+      font-size: 16px;
+      font-weight: 600;
+      color: #ff9800;
+      background: rgba(255, 152, 0, 0.1);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 152, 0, 0.2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: rgba(10, 11, 16, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 30px;
+      box-sizing: border-box;
+      z-index: 10;
+      font-size: 14px;
+      color: #7a7e8e;
+    }
+
+    .key-badge {
+      background: #1e202b;
+      border: 1px solid #3f4257;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: monospace;
+      color: #e2e4e9;
+      font-weight: bold;
+    }
+
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="header">
+    <div>
+      <h1>{{ contestName }}</h1>
+      <div class="subtitle">Scoreboard Freeze Resolver</div>
+    </div>
+    <div id="status-display">INITIALIZED</div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="resolverCanvas"></canvas>
+  </div>
+
+  <div id="footer">
+    <div>
+      Navigate with <span class="key-badge">← LEFT</span> and <span class="key-badge">→ RIGHT</span> / <span class="key-badge">SPACE</span>
+    </div>
+    <div id="progress-text">Step: 0 / 0</div>
+  </div>
+
+  <script>
+    // --- Data Injected from Twig ---
+    const problems = [
+      {% for prob in problems %}
+      {
+        id: "{{ prob.id | escape('js') }}",
+        label: "{{ prob.label | escape('js') }}",
+        name: "{{ prob.name | escape('js') }}"
+      },
+      {% endfor %}
+    ];
+
+    const teams = [
+      {% for team in teams %}
+      {
+        id: "{{ team.id | escape('js') }}",
+        name: "{{ team.name | escape('js') }}",
+        organization: "{{ team.organization | escape('js') }}",
+        rank: {{ team.rank }},
+        solved: {{ team.solved }},
+        penalty: {{ team.penalty }},
+        problems: [
+          {% for prob in team.problems %}
+          {
+            problemId: "{{ prob.problemId | escape('js') }}",
+            solved: {{ (prob.solved) ? 'true' : 'false' }},
+            attempts: {{ (prob.attempts) }},
+            pending: {{ (prob.pending) ? 'true' : 'false' }},
+            willSolve: {{ (prob.willSolve) ? 'true' : 'false' }},
+            solveTime: {{ prob.solveTime }},
+            finalAttempts: {{ prob.finalAttempts }}
+          },
+          {% endfor %}
+        ]
+      },
+      {% endfor %}
+    ];
+    function compareTeams(a, b) {
+      if (a.solved !== b.solved) return b.solved - a.solved;
+      if (a.penalty !== b.penalty) return a.penalty - b.penalty;
+      return a.name.localeCompare(b.name);
+    }
+
+    function copyScoreboard(scoreboard) {
+      return scoreboard.map(t => ({
+        id: t.id,
+        name: t.name,
+        organization: t.organization,
+        solved: t.solved,
+        penalty: t.penalty,
+        rank: t.rank,
+        problems: t.problems.map(p => ({ ...p }))
+      }));
+    }
+
+    // --- State Generation with Queue-Based Focus Tracking ---
+    function generateSteps(initialTeams) {
+      let scoreboard = copyScoreboard(initialTeams);
+      scoreboard.sort(compareTeams);
+      for (let i = 0; i < scoreboard.length; i++) {
+        scoreboard[i].rank = i + 1;
+      }
+
+      let steps = [];
+      
+      // Step 0: Starting state
+      steps.push({
+        focusedTeamId: null,
+        focusedProblemId: null,
+        finalisedRank: scoreboard.length + 1,
+        highlighted: false,
+        revealed: false,
+        scoreboardState: copyScoreboard(scoreboard),
+        description: "Ready to resolve"
+      });
+
+      // Keep track of which team IDs have been finalized
+      let finalisedTeamIds = new Set();
+
+      while (finalisedTeamIds.size < scoreboard.length) {
+        // 1. Repeatedly ensure focus is on the lowest non-finalised team
+        // (Since the array is sorted, this is the non-finalised team with the highest rank index / index closest to bottom)
+        let lowestNonFinalisedTeam = null;
+        for (let i = scoreboard.length - 1; i >= 0; i--) {
+          if (!finalisedTeamIds.has(scoreboard[i].id)) {
+            lowestNonFinalisedTeam = scoreboard[i];
+            break;
+          }
+        }
+
+        // Break if all teams are finalized
+        if (!lowestNonFinalisedTeam) break;
+
+        // Find pending problems for this team
+        let pendingProbs = lowestNonFinalisedTeam.problems.filter(p => p.pending && !p.solved);
+
+        if (pendingProbs.length === 0) {
+          // 2. If the team has no pending attempts, focus on them for one step and finalise them
+          finalisedTeamIds.add(lowestNonFinalisedTeam.id);
+          
+          // Calculate current finalized boundary rank (rank of lowest non-finalized team or finalized set size + 1)
+          let currentFinalisedRank = scoreboard.length - finalisedTeamIds.size + 2;
+
+          steps.push({
+            focusedTeamId: lowestNonFinalisedTeam.id,
+            focusedProblemId: null,
+            finalisedRank: currentFinalisedRank,
+            highlighted: false,
+            revealed: false,
+            scoreboardState: copyScoreboard(scoreboard),
+            description: `${lowestNonFinalisedTeam.name} has no pending tasks. Finalised.`
+          });
+        } else {
+          // 3. Pop the leftmost (first) pending problem for the team
+          let p = pendingProbs[0];
+
+          let currentFinalisedRank = scoreboard.length - finalisedTeamIds.size + 1;
+
+          // Step 1: Focus team + problem (Highlight Cell)
+          steps.push({
+            focusedTeamId: lowestNonFinalisedTeam.id,
+            focusedProblemId: p.problemId,
+            finalisedRank: currentFinalisedRank,
+            highlighted: true,
+            revealed: false,
+            scoreboardState: copyScoreboard(scoreboard),
+            description: `Checking Problem ${getProblemLabel(p.problemId)} for ${lowestNonFinalisedTeam.name}...`
+          });
+
+          // Step 2: Resolve the result (Reveal Cell & resort dynamically)
+          let stateTeam = scoreboard.find(t => t.id === lowestNonFinalisedTeam.id);
+          let stateProb = stateTeam.problems.find(pr => pr.problemId === p.problemId);
+
+          if (p.willSolve) {
+            stateProb.solved = true;
+            stateProb.attempts = p.finalAttempts;
+            stateProb.pending = false;
+            stateTeam.solved += 1;
+            stateTeam.penalty += p.solveTime + 20 * (p.finalAttempts - 1);
+          } else {
+            stateProb.attempts = p.finalAttempts;
+            stateProb.pending = false;
+          }
+
+          // Dynamic re-sorting of the scoreboard
+          scoreboard.sort(compareTeams);
+          for (let i = 0; i < scoreboard.length; i++) {
+            scoreboard[i].rank = i + 1;
+          }
+
+          steps.push({
+            focusedTeamId: lowestNonFinalisedTeam.id,
+            focusedProblemId: p.problemId,
+            finalisedRank: currentFinalisedRank,
+            highlighted: true,
+            revealed: true,
+            scoreboardState: copyScoreboard(scoreboard),
+            description: p.willSolve ? `Solved Problem ${getProblemLabel(p.problemId)}!` : `Failed Problem ${getProblemLabel(p.problemId)}.`
+          });
+        }
+      }
+
+      // Final Idle state
+      steps.push({
+        focusedTeamId: null,
+        focusedProblemId: null,
+        finalisedRank: 1,
+        highlighted: false,
+        revealed: false,
+        scoreboardState: copyScoreboard(scoreboard),
+        description: "Resolution complete. Scoreboard is final!"
+      });
+
+      return steps;
+    }
+
+    function getProblemLabel(id) {
+      let p = problems.find(pr => pr.id === id);
+      return p ? p.label : id;
+    }
+
+    const steps = generateSteps(teams);
+    let currentStepIndex = 0;
+
+    // --- Particle System ---
+    class Particle {
+      constructor(x, y, vx, vy, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.alpha = 1.0;
+        this.decay = 0.015 + Math.random() * 0.02;
+        this.size = 2 + Math.random() * 4;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.12;
+        this.alpha -= this.decay;
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, this.alpha);
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.size, this.size);
+        ctx.restore();
+      }
+    }
+
+    let particles = [];
+    function spawnParticles(x, y, color, quantity = 150) {
+      for (let i = 0; i < quantity; i++) {
+        let angle = Math.random() * Math.PI * 2;
+        let speed = 1 + Math.random() * 7;
+        let vx = Math.cos(angle) * speed;
+        let vy = Math.sin(angle) * speed - 1.5;
+        particles.push(new Particle(x, y, vx, vy, color));
+      }
+    }
+
+    // --- Canvas Layout & Rendering ---
+    const canvas = document.getElementById("resolverCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let sbWidth = width - 60;
+    let scale = sbWidth / 1400;
+
+    let teamRowPositions = {};
+    teams.forEach(t => {
+      teamRowPositions[t.id] = {
+        currentY: null,
+        targetY: null,
+        solved: t.solved,
+        penalty: t.penalty
+      };
+    });
+
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      sbWidth = width - 60;
+      scale = sbWidth / 1400;
+      teams.forEach(t => {
+          teamRowPositions[t.id].currentY = null;
+          teamRowPositions[t.id].targetY = null;
+      });
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+
+    let scrollOffset = null; // Math.max(1, teams.length - 14);
+    let targetScrollOffset = scrollOffset;
+
+    function getCellCoords(teamId, problemId) {
+      let startX = (width - sbWidth) / 2;
+      let cellsWidth = sbWidth - 530 * scale;
+      let cellWidth = (cellsWidth - (problems.length - 1) * 6 * scale) / problems.length;
+      let colIndex = problems.findIndex(p => p.id === problemId);
+      if (colIndex === -1) return null;
+
+      let pos = teamRowPositions[teamId];
+      if (!pos) return null;
+
+      return {
+        x: startX + 530 * scale + colIndex * (cellWidth + 6 * scale),
+        y: pos.currentY + 4 * scale,
+        w: cellWidth,
+        h: 32 * scale
+      };
+    }
+
+    function onStepChanged(newIdx, oldIdx) {
+      const step = steps[newIdx];
+      const statusText = document.getElementById("status-display");
+      
+      statusText.innerHTML = step.description;
+      if (step.description.includes("Solved")) {
+        statusText.style.color = "#4caf50";
+        statusText.style.background = "rgba(76, 175, 80, 0.1)";
+        statusText.style.borderColor = "rgba(76, 175, 80, 0.2)";
+      } else if (step.description.includes("Failed")) {
+        statusText.style.color = "#f44336";
+        statusText.style.background = "rgba(244, 67, 54, 0.1)";
+        statusText.style.borderColor = "rgba(244, 67, 54, 0.2)";
+      } else if (newIdx === steps.length - 1) {
+        statusText.style.color = "#ffd700";
+        statusText.style.background = "rgba(255, 215, 0, 0.1)";
+        statusText.style.borderColor = "rgba(255, 215, 0, 0.2)";
+      } else {
+        statusText.style.color = "#ff9800";
+        statusText.style.background = "rgba(255, 152, 0, 0.1)";
+        statusText.style.borderColor = "rgba(255, 152, 0, 0.2)";
+      }
+
+      document.getElementById("progress-text").innerHTML = `Step: ${newIdx} / ${steps.length - 1}`;
+
+      if (newIdx > oldIdx && step.focusedProblemId && step.revealed) {
+        let cellCoords = getCellCoords(step.focusedTeamId, step.focusedProblemId);
+        if (cellCoords) {
+          let teamState = step.scoreboardState.find(t => t.id === step.focusedTeamId);
+          let probState = teamState.problems.find(p => p.problemId === step.focusedProblemId);
+          let pColor = probState.solved ? "#4caf50" : "#f44336";
+          spawnParticles(cellCoords.x + cellCoords.w / 2, cellCoords.y + cellCoords.h / 2, pColor,
+              probState.solved ? 320 : 30);
+        }
+      }
+    }
+
+    // --- Controls ---
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === " ") {
+        e.preventDefault();
+        if (currentStepIndex < steps.length - 1) {
+          let old = currentStepIndex;
+          currentStepIndex++;
+          onStepChanged(currentStepIndex, old);
+        }
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (currentStepIndex > 0) {
+          let old = currentStepIndex;
+          currentStepIndex--;
+          onStepChanged(currentStepIndex, old);
+        }
+      }
+    });
+
+    // --- Frame Render Loop ---
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const step = steps[currentStepIndex];
+      let focusedRank = null;
+      if (step.focusedTeamId) {
+        let ft = step.scoreboardState.find(t => t.id === step.focusedTeamId);
+        if (ft) focusedRank = ft.rank;
+      }
+
+      if (step.focusedTeamId && false) {
+        let ft = step.scoreboardState.find(t => t.id === step.focusedTeamId);
+        if (ft) {
+          targetScrollOffset = Math.max(1, ft.rank - 8);
+        }
+      } else if (step.finalisedRank !== null/* rgl */) {
+        targetScrollOffset = Math.max(1, step.finalisedRank - 10);
+      } else {
+        if (currentStepIndex === 0) {
+          targetScrollOffset = Math.max(1, teams.length - 14);
+        } else {
+          targetScrollOffset = 1;
+        }
+      }
+      if (scrollOffset === null) {
+        scrollOffset = targetScrollOffset;
+      } else {
+        scrollOffset += (targetScrollOffset - scrollOffset) * 0.1;
+      }
+
+      let gridRowHeight = 45 * scale;
+      let topOffset = 120 * scale;
+      
+      step.scoreboardState.forEach(st => {
+        let pos = teamRowPositions[st.id];
+        if (pos) {
+          pos.targetY = topOffset + (st.rank - scrollOffset) * gridRowHeight;
+          if (pos.currentY == null) {
+            pos.currentY = pos.targetY;
+          } else if (pos.currentY < 0) {
+            pos.currentY = 0;
+          }
+          let velY = (pos.targetY - pos.currentY);
+          if (velY < -200) velY = -200;
+          if (velY > 200) velY = 200;
+          pos.currentY += velY * 0.1;
+          pos.solved = st.solved;
+          pos.penalty = st.penalty;
+        }
+      });
+
+      ctx.fillStyle = "#090a0f";
+      ctx.fillRect(0, 0, width, height);
+
+      // Radial background ambient glow
+      if (step.focusedTeamId) {
+        let focusedPos = teamRowPositions[step.focusedTeamId];
+        if (focusedPos) {
+          let gradient = ctx.createRadialGradient(
+            width / 2, focusedPos.currentY + 20 * scale, 10 * scale,
+            width / 2, focusedPos.currentY + 20 * scale, width / 1.5
+          );
+          gradient.addColorStop(0, "rgba(0, 136, 204, 0.08)");
+          gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, width, height);
+        }
+      }
+
+      // Draw Rows
+      let startX = (width - sbWidth) / 2;
+      let cellsWidth = sbWidth - 530 * scale;
+      let cellWidth = (cellsWidth - (problems.length - 1) * 6 * scale) / problems.length;
+
+      step.scoreboardState.slice().reverse().forEach(st => {
+        let pos = teamRowPositions[st.id];
+        if (!pos) return;
+
+        let isFocused = (step.focusedTeamId === st.id);
+
+        // Skip rendering off-screen rows
+        if (pos.currentY < -75 || pos.currentY > height - 55) {
+          return;
+        }
+
+        ctx.save();
+        if (isFocused) {
+          ctx.fillStyle = "rgba(0, 136, 204, 0.18)";
+          ctx.strokeStyle = "rgba(0, 136, 204, 0.5)";
+          ctx.lineWidth = 1.5 * scale;
+          ctx.shadowBlur = 15 * scale;
+          ctx.shadowColor = "rgba(0, 136, 204, 0.3)";
+        } else {
+          ctx.fillStyle = st.rank % 2 === 0 ? "#111219" : "#151622";
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+          ctx.lineWidth = 1;
+        }
+        
+        ctx.beginPath();
+        ctx.roundRect(startX, pos.currentY, sbWidth, 40 * scale, 6 * scale);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // Rank Badge
+        ctx.save();
+        ctx.font = "bold " + Math.round(15 * scale) + "px monospace";
+        if (st.rank === 1) ctx.fillStyle = "#ffd700";
+        else if (st.rank === 2) ctx.fillStyle = "#c0c0c0";
+        else if (st.rank === 3) ctx.fillStyle = "#cd7f32";
+        else ctx.fillStyle = "#8e92a4";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(st.rank, startX + 30 * scale, pos.currentY + 20 * scale);
+        ctx.restore();
+
+        // Team Name & Org Label
+        ctx.save();
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.font = "bold " + Math.round(15 * scale) + "px sans-serif";
+        ctx.fillStyle = isFocused ? "#ffffff" : "#e2e4e9";
+        ctx.fillText(st.name, startX + 70 * scale, pos.currentY + 13 * scale);
+        
+        ctx.font = "" + Math.round(11 * scale) + "px sans-serif";
+        ctx.fillStyle = isFocused ? "#a0c0e5" : "#6f7385";
+        ctx.fillText(st.organization || "Independent", startX + 70 * scale, pos.currentY + 29 * scale);
+        ctx.restore();
+
+        // Scores (Solved & Penalty)
+        ctx.save();
+        ctx.font = "bold " + Math.round(16 * scale) + "px monospace";
+        ctx.fillStyle = "#e2e4e9";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText(Math.round(pos.solved), startX + 440 * scale, pos.currentY + 20 * scale);
+
+        ctx.font = "" + Math.round(13 * scale) + "px monospace";
+        ctx.fillStyle = "#7a7e8e";
+        ctx.fillText(Math.round(pos.penalty), startX + 510 * scale, pos.currentY + 20 * scale);
+        ctx.restore();
+
+        // Problem cells
+        st.problems.forEach((p, colIdx) => {
+          let cellX = startX + 530 * scale + colIdx * (cellWidth + 6 * scale);
+          let cellY = pos.currentY + 4 * scale;
+          let cellH = 32 * scale;
+
+          let isCellHighlighted = (isFocused && step.focusedProblemId === p.problemId && step.highlighted);
+          let isCellRevealed = (isFocused && step.focusedProblemId === p.problemId && step.revealed);
+
+          ctx.save();
+          let cellColor = "#1a1b24";
+          let text = "";
+          let textColor = "#7a7e8e";
+
+          if (p.solved) {
+            cellColor = "#2e7d32";
+            text = "✔ " + p.attempts;
+            textColor = "#ffffff";
+          } else if (p.pending) {
+            cellColor = "#3f3fff";
+            text = "?";
+            textColor = "#ffffff";
+          } else if (p.attempts > 0) {
+            cellColor = "#c62828";
+            text = "✗ " + p.attempts;
+            textColor = "#ffffff";
+          }
+
+          if (isCellHighlighted) {
+            ctx.shadowBlur = 12 * scale;
+            ctx.shadowColor = "#ffffff";
+            ctx.fillStyle = isCellRevealed ? cellColor : "#ffffff";
+            textColor = isCellRevealed ? "#ffffff" : "#000000";
+          } else {
+            ctx.fillStyle = cellColor;
+          }
+
+          ctx.beginPath();
+          ctx.roundRect(cellX, cellY, cellWidth, cellH, 4 * scale);
+          ctx.fill();
+
+          if (isCellHighlighted && !isCellRevealed) {
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1.5 * scale;
+            ctx.stroke();
+          }
+
+          if (text) {
+            ctx.font = "bold " + Math.round(13 * scale) + "px monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = textColor;
+            ctx.fillText(text, cellX + cellWidth / 2, cellY + cellH / 2);
+          }
+          ctx.restore();
+        });
+      });
+
+      // Render Active Particles
+      particles.forEach((p, index) => {
+        p.update();
+        if (p.alpha <= 0) {
+          particles.splice(index, 1);
+        } else {
+          p.draw(ctx);
+        }
+      });
+
+      // Celebration Gold Particles for Completion (Idle State)
+      if (currentStepIndex === steps.length - 1 && Math.random() < 0.2) {
+        spawnParticles(Math.random() * width, 0, "#ffd700", 3);
+      }
+    }
+
+    onStepChanged(0, -1);
+    animate();
+  </script>
+</body>
+</html>
+
