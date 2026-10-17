@@ -233,7 +233,7 @@
             highlighted: false,
             revealed: false,
             scoreboardState: copyScoreboard(scoreboard),
-            description: `${lowestNonFinalisedTeam.name} has no pending tasks. Finalised.`
+            description: `Rank ${currentFinalisedRank-1} finalised.`
           });
         } else {
           // 3. Pop the leftmost (first) pending problem for the team
@@ -249,7 +249,7 @@
             highlighted: true,
             revealed: false,
             scoreboardState: copyScoreboard(scoreboard),
-            description: `Checking Problem ${getProblemLabel(p.problemId)} for ${lowestNonFinalisedTeam.name}...`
+            description: `Checking Problem ${getProblemLabel(p.problemId)}`
           });
 
           // Step 2: Resolve the result (Reveal Cell & resort dynamically)
@@ -263,11 +263,13 @@
             stateTeam.solved += 1;
             stateTeam.penalty += p.solveTime + 20 * (p.finalAttempts - 1);
           } else {
-            stateProb.attempts = p.finalAttempts;
+            // Wrong - but may still not have any penalty (eg. Compile Error).
+            // Alway simulate at least 1 attempt to avoid revealing a blank cell.
+            stateProb.attempts = Math.max(1, p.finalAttempts);
             stateProb.pending = false;
           }
 
-          // Dynamic re-sorting of the scoreboard
+          // Re-sort the scoreboard
           scoreboard.sort(compareTeams);
           for (let i = 0; i < scoreboard.length; i++) {
             scoreboard[i].rank = i + 1;
@@ -293,7 +295,7 @@
         highlighted: false,
         revealed: false,
         scoreboardState: copyScoreboard(scoreboard),
-        description: "Resolution complete. Scoreboard is final!"
+        description: "Scoreboard is final!"
       });
 
       return steps;
@@ -315,16 +317,16 @@
         this.vx = vx;
         this.vy = vy;
         this.color = color;
-        this.alpha = 1.0;
-        this.decay = 0.015 + Math.random() * 0.02;
+        this.alpha = 1.5;
+        this.decay = 1 + Math.random() * 2;
         this.size = 2 + Math.random() * 4;
       }
 
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vy += 0.12;
-        this.alpha -= this.decay;
+      update(t) {
+        this.x += this.vx * t;
+        this.y += this.vy * t;
+        this.vy += 100 * t;
+        this.alpha -= this.decay * t;
       }
 
       draw(ctx) {
@@ -340,9 +342,9 @@
     function spawnParticles(x, y, color, quantity = 150) {
       for (let i = 0; i < quantity; i++) {
         let angle = Math.random() * Math.PI * 2;
-        let speed = 1 + Math.random() * 7;
+        let speed = 15 + Math.random() * 250;
         let vx = Math.cos(angle) * speed;
-        let vy = Math.sin(angle) * speed - 1.5;
+        let vy = Math.sin(angle) * speed - 25;
         particles.push(new Particle(x, y, vx, vy, color));
       }
     }
@@ -366,6 +368,9 @@
       };
     });
 
+    let scrollOffset = null;
+    let animating = null;
+
     function resize() {
       width = window.innerWidth;
       height = window.innerHeight;
@@ -377,13 +382,13 @@
           teamRowPositions[t.id].currentY = null;
           teamRowPositions[t.id].targetY = null;
       });
+      scrollOffset = undefined;
+      if (animating === null) {
+        animating = requestAnimationFrame(animate);
+      }
     }
     window.addEventListener("resize", resize);
     resize();
-
-
-    let scrollOffset = null; // Math.max(1, teams.length - 14);
-    let targetScrollOffset = scrollOffset;
 
     function getCellCoords(teamId, problemId) {
       let startX = (width - sbWidth) / 2;
@@ -435,8 +440,12 @@
           let probState = teamState.problems.find(p => p.problemId === step.focusedProblemId);
           let pColor = probState.solved ? "#4caf50" : "#f44336";
           spawnParticles(cellCoords.x + cellCoords.w / 2, cellCoords.y + cellCoords.h / 2, pColor,
-              probState.solved ? 320 : 30);
+              probState.solved ? 320 : 160);
         }
+      }
+
+      if (animating === null) {
+        animating = requestAnimationFrame(animate);
       }
     }
 
@@ -456,12 +465,27 @@
           currentStepIndex--;
           onStepChanged(currentStepIndex, old);
         }
+      } else if (e.key === "f") {
+        e.preventDefault();
+        let old = currentStepIndex;
+        currentStepIndex = steps.length - 1;
+        onStepChanged(currentStepIndex, old);
       }
     });
 
+    let lastT;
+
     // --- Frame Render Loop ---
-    function animate() {
-      requestAnimationFrame(animate);
+    function animate(nextT) {
+      let moving = false;
+      animating = null;
+
+      let t = Math.min(0.1, (lastT !== undefined ? nextT - lastT : 0) / 1000.0);
+      lastT = nextT;
+      console.log(t);
+
+      let gridRowHeight = 45 * scale;
+      let topOffset = 120 * scale;
 
       const step = steps[currentStepIndex];
       let focusedRank = null;
@@ -470,12 +494,13 @@
         if (ft) focusedRank = ft.rank;
       }
 
+      let targetScrollOffset;
       if (step.focusedTeamId && false) {
         let ft = step.scoreboardState.find(t => t.id === step.focusedTeamId);
         if (ft) {
-          targetScrollOffset = Math.max(1, ft.rank - 8);
+          targetScrollOffset = Math.max(1, ft.rank - 9);
         }
-      } else if (step.finalisedRank !== null/* rgl */) {
+      } else if (step.finalisedRank !== null) {
         targetScrollOffset = Math.max(1, step.finalisedRank - 10);
       } else {
         if (currentStepIndex === 0) {
@@ -484,30 +509,41 @@
           targetScrollOffset = 1;
         }
       }
+      targetScrollOffset *= gridRowHeight;
+
       if (scrollOffset === null) {
         scrollOffset = targetScrollOffset;
       } else {
-        scrollOffset += (targetScrollOffset - scrollOffset) * 0.1;
+        let scrollVelY = (targetScrollOffset - scrollOffset) * 4;
+        if (Math.abs(scrollVelY) > 1) {
+          console.log(scrollVelY);
+          scrollOffset += scrollVelY * t;
+          moving = true;
+        } else {
+          scrollOffset = targetScrollOffset;
+        }
       }
 
-      let gridRowHeight = 45 * scale;
-      let topOffset = 120 * scale;
-      
       step.scoreboardState.forEach(st => {
         let pos = teamRowPositions[st.id];
         if (pos) {
-          pos.targetY = topOffset + (st.rank - scrollOffset) * gridRowHeight;
+          pos.targetY = topOffset + st.rank * gridRowHeight - scrollOffset;
           if (pos.currentY == null) {
             pos.currentY = pos.targetY;
-          } else if (pos.currentY < 0) {
-            pos.currentY = 0;
+          } else if (pos.currentY < -50 && pos.targetY > 0) {
+            pos.currentY = -50;
           }
-          let velY = (pos.targetY - pos.currentY);
-          if (velY < -200) velY = -200;
-          if (velY > 200) velY = 200;
-          pos.currentY += velY * 0.1;
+          let velY = (pos.targetY - pos.currentY) * 20;
+          if (velY < -400) velY = -400;
+          if (velY > 400) velY = 400;
           pos.solved = st.solved;
           pos.penalty = st.penalty;
+          if (Math.abs(velY) > 1) {
+            pos.currentY += velY * t;
+            moving = true;
+          } else {
+            pos.currentY = pos.targetY;
+          }
         }
       });
 
@@ -538,12 +574,12 @@
         let pos = teamRowPositions[st.id];
         if (!pos) return;
 
-        let isFocused = (step.focusedTeamId === st.id);
-
         // Skip rendering off-screen rows
-        if (pos.currentY < -75 || pos.currentY > height - 55) {
+        if (pos.currentY === null || pos.currentY < -75 || pos.currentY > height) {
           return;
         }
+
+        let isFocused = (step.focusedTeamId === st.id);
 
         ctx.save();
         if (isFocused) {
@@ -660,24 +696,30 @@
         });
       });
 
+      // Celebration Gold Particles for Completion (Idle State)
+      if (currentStepIndex === steps.length - 1 && Math.random() < 0.2) {
+        spawnParticles(Math.random() * width, 0, "#ffd700", 6);
+      }
+
       // Render Active Particles
       particles.forEach((p, index) => {
-        p.update();
+        p.update(t);
         if (p.alpha <= 0) {
           particles.splice(index, 1);
         } else {
           p.draw(ctx);
+          moving = true;
         }
       });
 
-      // Celebration Gold Particles for Completion (Idle State)
-      if (currentStepIndex === steps.length - 1 && Math.random() < 0.2) {
-        spawnParticles(Math.random() * width, 0, "#ffd700", 3);
+      if (moving && animating === null) {
+        animating = requestAnimationFrame(animate);
+      } else if (!moving) {
+        lastT = undefined;
       }
     }
 
     onStepChanged(0, -1);
-    animate();
   </script>
 </body>
 </html>

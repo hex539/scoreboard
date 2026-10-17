@@ -95,6 +95,7 @@ java_library(
     deps = [
         ":model",
         "//api/clics/proto:java",
+        "@protobuf//:protobuf_java_util",
     ],
 )
 

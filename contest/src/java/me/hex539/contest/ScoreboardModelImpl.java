@@ -178,7 +178,7 @@ public abstract class ScoreboardModelImpl implements ScoreboardModel, Scoreboard
               .setTeams(getTeamsModel().get())
               .setProblems(getProblemsModel().get())
               .setRows(
-                  getClics().getScoreboardList(),
+                  getClics().getScoreboard().getRowsList(),
                   scoreboardFilter)
               .build());
         }

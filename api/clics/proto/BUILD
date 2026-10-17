@@ -16,7 +16,10 @@ java_proto_library(
 
 proto_library(
     name = "proto",
-    srcs = ["clics_v1.proto"],
+    srcs = [
+      "clics_v2020_03.proto",
+      "clics_v2026_01.proto",
+    ],
     visibility = ["//visibility:private"],
     deps = [
         ":annotations",

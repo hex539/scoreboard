@@ -109,8 +109,14 @@ public class ClicsRest extends RestClient<ClicsRest> {
 //        CompletableFuture.runAsync(() -> b.putAllAwards(
 //            getMapFrom(path + "/awards", Award[].class, Award::getId)),
 //            executor),
-        CompletableFuture.runAsync(() -> b.addAllScoreboard(
-            requestFrom(path + "/scoreboard", this::parseScoreboard).getRowsList()),
+        CompletableFuture.runAsync(() ->
+            /*
+            b.setScoreboard(ClicsProto.Scoreboard.newBuilder()
+                .addAllRows(
+                    requestFrom(path + "/scoreboard", this::parseScoreboard).getRowsList())
+                ),
+            */
+            b.setScoreboard(getFrom(forcePath + "/scoreboard", Scoreboard.class).get()),
             executor),
         CompletableFuture.runAsync(() -> b.putAllJudgementTypes(
             getMapFrom(path + "/judgement-types", JudgementType[].class, JudgementType::getId)),

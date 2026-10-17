@@ -155,7 +155,7 @@ public class JudgementDispatcher {
 
     final long penaltyMinutes = model.getContest().hasPenaltyTime()
         ? model.getContest().getPenaltyTime().getSeconds() / 60
-        : model.getContest().getPenaltyTimeInt();
+        : 20L;
 
     final ScoreboardScore newScore = !attemptsChanged
         ? oldScore
@@ -164,19 +164,15 @@ public class JudgementDispatcher {
                 + (attempts.getSolved() ? 1 : 0)
                 - (oldAttempts.getSolved() ? 1 : 0))
             .setTotalTime(Duration.newBuilder()
-                .setSeconds(
-                    (oldScore.getTotalTime().getSeconds()
+                .setSeconds(60 * (
+                    (oldScore.getTotalTime().getSeconds() / 60
                     + (attempts.getSolved()
-                        ? (attempts.hasTime()
-                            ? attempts.getTime().getSeconds()
-                            : attempts.getTimeInt()) * 60L
+                        ? attempts.getTime().getSeconds() / 60
                         : 0)
                     + (oldAttempts.getSolved()
-                        ? (oldAttempts.hasTime()
-                            ? oldAttempts.getTime().getSeconds()
-                            : oldAttempts.getTimeInt()) * 60L
+                        ? oldAttempts.getTime().getSeconds() / 60
                         : 0)
-                    + (newPenaltyCount[0] - oldPenaltyCount[0]) * 60 * penaltyMinutes))
+                    + (newPenaltyCount[0] - oldPenaltyCount[0]) * penaltyMinutes)))
                 .build())
             .build();
 

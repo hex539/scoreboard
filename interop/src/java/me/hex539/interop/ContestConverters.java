@@ -4,6 +4,7 @@ import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.Durations;
 import edu.clics.proto.ClicsProto;
+import edu.clics.proto.ClicsProto_2020_03;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.domjudge.proto.DomjudgeProto;
+
+import static edu.clics.proto.ClicsProto.*;
+import static edu.clics.proto.ClicsProto_2020_03.*;
 
 public class ContestConverters {
   private ContestConverters() {}
@@ -24,51 +28,100 @@ public class ContestConverters {
     return b.stream().collect(Collectors.toMap(bk, Function.identity()));
   }
 
+  public static ClicsProto.ClicsContest toClics(ClicsContest_2020_03 old) {
+    return ClicsProto.ClicsContest.newBuilder()
+        .setContest(U.toClics(old.getContest()))
+        .setScoreboard(U.toClics(old.getScoreboardList()))
+        .addAllEventFeed(old.getEventFeedList())
+        .putAllJudgementTypes(old.getJudgementTypesMap())
+        .putAllLanguages(old.getLanguagesMap())
+        .putAllProblems(old.getProblemsMap())
+        .putAllGroups(old.getGroupsMap())
+        .putAllOrganizations(old.getOrganizationsMap())
+        .putAllTeams(old.getTeamsMap())
+        .putAllTeamMembers(old.getTeamMembersMap())
+        .putAllSubmissions(old.getSubmissionsMap())
+        .putAllJudgements(old.getJudgementsMap())
+        .putAllRuns(old.getRunsMap())
+        .putAllClarifications(old.getClarificationsMap())
+        .putAllAwards(old.getAwardsMap())
+        .build();
+  }
+
+  public static ClicsProto.Contest toClics(Contest_2020_03 old) {
+    final var bob = ClicsProto.Contest.newBuilder();
+    bob.setId(old.getId());
+    bob.setName(old.getName());
+    bob.setFormalName(old.getFormalName());
+    bob.setStartTime(old.getStartTime());
+    bob.setContestDuration(old.getContestDuration());
+    bob.setScoreboardFreezeDuration(old.getScoreboardFreezeDuration());
+    if (old.getPenaltyTime() != 0) {
+      bob.setPenaltyTime(
+              Duration.newBuilder().setSeconds(60 * old.getPenaltyTime()).build());
+    }
+    bob.addAllBanners(old.getBannersList());
+    bob.addAllLogos(old.getLogosList());
+    return bob.build();
+  }
+
+  public static ClicsProto.Scoreboard toClics(List<ScoreboardRow_2020_03> old) {
+    return ClicsProto.Scoreboard.newBuilder()
+        .addAllRows(old.stream().map(U::toClics).collect(Collectors.toList()))
+        .build();
+  }
+
+  public static ClicsProto.ScoreboardRow toClics(ScoreboardRow_2020_03 old) {
+    return ClicsProto.ScoreboardRow.newBuilder()
+        .setRank(old.getRank())
+        .setTeamId(old.getTeamId())
+        .setScore(U.toClics(old.getScore()))
+        .addAllProblems(
+            old.getProblemsList().stream().map(U::toClics).collect(Collectors.toList()))
+        .build();
+  }
+
+  public static ClicsProto.ScoreboardScore toClics(ScoreboardScore_2020_03 old) {
+    return ClicsProto.ScoreboardScore.newBuilder()
+        .setNumSolved(old.getNumSolved())
+        .setTotalTime(
+            Duration.newBuilder().setSeconds(60 * old.getTotalTime()).build())
+        .build();
+  }
+
+  public static ClicsProto.ScoreboardProblem toClics(ScoreboardProblem_2020_03 old) {
+    return ClicsProto.ScoreboardProblem.newBuilder()
+        .setProblemId(old.getProblemId())
+        .setNumJudged(old.getNumJudged())
+        .setNumPending(old.getNumPending())
+        .setSolved(old.getSolved())
+        .setTime(
+            Duration.newBuilder().setSeconds(60 * old.getTime()).build())
+        .build();
+  }
+
   public static ClicsProto.ClicsContest toClics(DomjudgeProto.EntireContest dom) {
     return ClicsProto.ClicsContest.newBuilder()
         .setContest(
             U.toClics(dom.getContest()))
-        .addAllScoreboard(
-            U.toClics(dom.getScoreboardList(), dom.getProblemsList()))
+        .setScoreboard(
+            D.toClics(dom.getScoreboardList(), dom.getProblemsList()))
         .putAllJudgementTypes(
-            map(dom.getJudgementTypesList(), U::toClics, ClicsProto.JudgementType::getId))
+            map(dom.getJudgementTypesList(), D::toClics, ClicsProto.JudgementType::getId))
         .putAllLanguages(
-            map(dom.getLanguagesList(), U::toClics, ClicsProto.Language::getId))
+            map(dom.getLanguagesList(), D::toClics, ClicsProto.Language::getId))
         .putAllProblems(
-            map(U.toClics(dom.getProblemsList()), ClicsProto.Problem::getId))
+            map(D.toClics(dom.getProblemsList()), ClicsProto.Problem::getId))
         .putAllGroups(
-            map(dom.getCategoriesList(), U::toClics, ClicsProto.Group::getId))
+            map(dom.getCategoriesList(), D::toClics, ClicsProto.Group::getId))
         .putAllOrganizations(
-            map(dom.getAffiliationsList(), U::toClics, ClicsProto.Organization::getId))
+            map(dom.getAffiliationsList(), D::toClics, ClicsProto.Organization::getId))
         .putAllTeams(
-            map(dom.getTeamsList(), U::toClics, ClicsProto.Team::getId))
+            map(dom.getTeamsList(), D::toClics, ClicsProto.Team::getId))
         .putAllSubmissions(
-            map(dom.getSubmissionsList(), s -> U.toClics(s, dom.getContest()), ClicsProto.Submission::getId))
+            map(dom.getSubmissionsList(), s -> D.toClics(s, dom.getContest()), ClicsProto.Submission::getId))
         .putAllJudgements(
-            map(dom.getJudgingsList(), j -> U.toClics(j, dom.getContest()), ClicsProto.Judgement::getId))
-        .build();
-  }
-
-  // @return {@param x} in seconds, rounded towards zero.
-  private static final long doubleToSeconds(double x) {
-    return (long) x;
-  }
-
-  private static final int doubleToNanos(double x) {
-    return (int) (1000000000L * (x - doubleToSeconds(x)));
-  }
-
-  private static final Timestamp doubleToTimestamp(double x) {
-    return Timestamp.newBuilder()
-        .setSeconds(doubleToSeconds(x))
-        .setNanos(doubleToNanos(x))
-        .build();
-  }
-
-  private static final Duration doubleToDuration(double x) {
-    return Duration.newBuilder()
-        .setSeconds(doubleToSeconds(x))
-        .setNanos(doubleToNanos(x))
+            map(dom.getJudgingsList(), j -> D.toClics(j, dom.getContest()), ClicsProto.Judgement::getId))
         .build();
   }
 
@@ -99,169 +152,198 @@ public class ContestConverters {
     return bob.build();
   }
 
-  public static ClicsProto.JudgementType toClics(DomjudgeProto.JudgementType dom) {
-    return ClicsProto.JudgementType.newBuilder()
-        .setId(dom.getLabel())
-        .setName(dom.getName())
-        .setPenalty(dom.getPenalty())
-        .setSolved(dom.getSolved())
+  // @return {@param x} in seconds, rounded towards zero.
+  private static final long doubleToSeconds(double x) {
+    return (long) x;
+  }
+
+  private static final int doubleToNanos(double x) {
+    return (int) (1000000000L * (x - doubleToSeconds(x)));
+  }
+
+  private static final Timestamp doubleToTimestamp(double x) {
+    return Timestamp.newBuilder()
+        .setSeconds(doubleToSeconds(x))
+        .setNanos(doubleToNanos(x))
         .build();
   }
 
-  public static ClicsProto.Language toClics(DomjudgeProto.Language dom) {
-    return ClicsProto.Language.newBuilder()
-        .setId(dom.getId())
-        .setName(dom.getId())
+  private static final Duration doubleToDuration(double x) {
+    return Duration.newBuilder()
+        .setSeconds(doubleToSeconds(x))
+        .setNanos(doubleToNanos(x))
         .build();
   }
 
-  public static List<ClicsProto.Problem> toClics(List<DomjudgeProto.Problem> dom) {
-    List<ClicsProto.Problem> problems = dom.stream()
-        .map(U::toClics)
-        .sorted((a, b) -> a.getLabel().compareTo(b.getLabel()))
-        .collect(Collectors.toCollection(ArrayList::new));
-    for (int i = problems.size(); i --> 0;) {
-      problems.set(i, problems.get(i).toBuilder().setOrdinal(i).build());
+  private static class D {
+
+    public static ClicsProto.JudgementType toClics(DomjudgeProto.JudgementType dom) {
+      return ClicsProto.JudgementType.newBuilder()
+          .setId(dom.getLabel())
+          .setName(dom.getName())
+          .setPenalty(dom.getPenalty())
+          .setSolved(dom.getSolved())
+          .build();
     }
-    return problems;
-  }
 
-  public static ClicsProto.Problem toClics(DomjudgeProto.Problem dom) {
-    return ClicsProto.Problem.newBuilder()
-        .setId("" + dom.getId())
-        .setLabel(dom.getLabel())
-        .setName(dom.getName())
-        .setOrdinal(1)
-        .setRgb(Optional.ofNullable(HtmlColours.nameToRgb(dom.getColor())).orElse("#ff0000"))
-        .setColor(dom.getColor())
-        .build();
-  }
-
-  public static ClicsProto.Group toClics(DomjudgeProto.Category dom) {
-    return ClicsProto.Group.newBuilder()
-        .setId("" + dom.getId())
-        .setName("" + dom.getName())
-        .setType("" + dom.getName())
-        // TODO: iffy.
-        .setHidden(dom.hasSortOrder() && dom.getSortOrder().getValue() > 0)
-        .build();
-  }
-
-  public static ClicsProto.Organization toClics(DomjudgeProto.Affiliation dom) {
-    return ClicsProto.Organization.newBuilder()
-        .setId("" + dom.getId())
-        .setName(dom.getName())
-        .setFormalName(dom.getName())
-        .setCountry(dom.getCountry())
-        .build();
-  }
-
-  public static ClicsProto.Team toClics(DomjudgeProto.Team dom) {
-    ClicsProto.Team.Builder b = ClicsProto.Team.newBuilder()
-        .setId("" + dom.getId())
-        .setName(dom.getName())
-        .setOrganizationId("" + dom.getAffilId().getValue());
-    if (dom.hasCategory()) {
-      b.addGroupIds("" + dom.getCategory().getValue());
+    public static ClicsProto.Language toClics(DomjudgeProto.Language dom) {
+      return ClicsProto.Language.newBuilder()
+          .setId(dom.getId())
+          .setName(dom.getId())
+          .build();
     }
-    return b.build();
-  }
 
-  public static ClicsProto.Submission toClics(
-      DomjudgeProto.Submission dom,
-      DomjudgeProto.Contest contest) {
-    ClicsProto.Submission.Builder b = ClicsProto.Submission.newBuilder()
-        .setId("" + dom.getId())
-        .setLanguageId(dom.getLanguage())
-        .setTime(doubleToTimestamp(dom.getTime()))
-        .setContestTime(doubleToDuration(contest.hasStart()
-            ? dom.getTime() - contest.getStart().getValue()
-            : dom.getTime()));
-    if (dom.hasProblem()) {
-      b.setProblemId("" + dom.getProblem().getValue());
-    }
-    if (dom.hasTeam()) {
-      b.setTeamId("" + dom.getTeam().getValue());
-    }
-    return b.build();
-  }
-
-  public static ClicsProto.Judgement toClics(
-      DomjudgeProto.Judging dom,
-      DomjudgeProto.Contest contest) {
-    final String type;
-    if (dom.getOutcome().toLowerCase().startsWith("compile")) {
-      type = "CE";
-    } else {
-      switch ((dom.getOutcome().toLowerCase() + " ").charAt(0)) {
-        case 'c': type = "AC"; break;
-        case 'm': type = "MLE"; break;
-        case 'n': type = "NO"; break;
-        case 'o': type = "OLE"; break;
-        case 'p': type = "PE"; break;
-        case 't': type = "TLE"; break;
-        case 'w': type = "WA"; break;
-        default: type = "RTE"; break;
+    public static List<ClicsProto.Problem> toClics(List<DomjudgeProto.Problem> dom) {
+      List<ClicsProto.Problem> problems = dom.stream()
+          .map(D::toClics)
+          .sorted((a, b) -> a.getLabel().compareTo(b.getLabel()))
+          .collect(Collectors.toCollection(ArrayList::new));
+      for (int i = problems.size(); i --> 0;) {
+        problems.set(i, problems.get(i).toBuilder().setOrdinal(i).build());
       }
+      return problems;
     }
-    return ClicsProto.Judgement.newBuilder()
-        .setId("" + dom.getId())
-        .setSubmissionId("" + dom.getSubmission())
-        .setJudgementTypeId(type)
-        .setStartTime(doubleToTimestamp(dom.getTime()))
-        .setStartContestTime(doubleToDuration(contest.hasStart()
-            ? dom.getTime() - contest.getStart().getValue()
-            : dom.getTime()))
-        .setEndTime(doubleToTimestamp(dom.getTime()))
-        .setEndContestTime(doubleToDuration(contest.hasStart()
-            ? dom.getTime() - contest.getStart().getValue()
-            : dom.getTime()))
-        .setMaxRunTime(0)
-        .build();
-  }
 
-  public static List<ClicsProto.ScoreboardRow> toClics(
-      List<DomjudgeProto.ScoreboardRow> rows,
-      List<DomjudgeProto.Problem> problems) {
-    Map<String, ClicsProto.Problem> p =
-        ContestConverters.map(problems, U::toClics, ClicsProto.Problem::getLabel);
-    return rows.stream().map(x -> toClics(x, p)).collect(Collectors.toList());
-  }
-
-  public static ClicsProto.ScoreboardRow toClics(
-      DomjudgeProto.ScoreboardRow dom,
-      Map<String, ClicsProto.Problem> problemsByLabel) {
-    return ClicsProto.ScoreboardRow.newBuilder()
-        .setRank(dom.getRank())
-        .setTeamId("" + dom.getTeam())
-        .setScore(toClics(dom.getScore()))
-        .addAllProblems(
-            dom.getProblemsList().stream()
-                .sorted((a, b) -> a.getLabel().compareTo(b.getLabel()))
-                .map(sp -> toClics(sp, problemsByLabel))
-                .collect(Collectors.toList()))
-        .build();
-  }
-
-  public static ClicsProto.ScoreboardScore toClics(DomjudgeProto.ScoreboardScore dom) {
-    return ClicsProto.ScoreboardScore.newBuilder()
-        .setNumSolved((int) dom.getNumSolved())
-        .setTotalTime(Duration.newBuilder().setSeconds(60 * (long) dom.getTotalTime()).build())
-        .build();
-  }
-
-  public static ClicsProto.ScoreboardProblem toClics(
-      DomjudgeProto.ScoreboardProblem sp,
-      Map<String, ClicsProto.Problem> problemsByLabel) {
-    ClicsProto.ScoreboardProblem.Builder bob =  ClicsProto.ScoreboardProblem.newBuilder()
-        .setProblemId(problemsByLabel.get(sp.getLabel()).getId())
-        .setNumJudged((int) sp.getNumJudged())
-        .setNumPending((int) sp.getNumPending())
-        .setSolved(sp.getSolved());
-    if (sp.hasTime()) {
-        // bob.setTime(Duration.newBuilder().setSeconds(60L * sp.getTime().getValue()).build());
-        bob.setTime(Durations.fromMinutes(sp.getTime().getValue()));
+    public static ClicsProto.Problem toClics(DomjudgeProto.Problem dom) {
+      return ClicsProto.Problem.newBuilder()
+          .setId("" + dom.getId())
+          .setLabel(dom.getLabel())
+          .setName(dom.getName())
+          .setOrdinal(1)
+          .setRgb(Optional.ofNullable(HtmlColours.nameToRgb(dom.getColor())).orElse("#ff0000"))
+          .setColor(dom.getColor())
+          .build();
     }
-    return bob.build();
+
+    public static ClicsProto.Group toClics(DomjudgeProto.Category dom) {
+      return ClicsProto.Group.newBuilder()
+          .setId("" + dom.getId())
+          .setName("" + dom.getName())
+          .setType("" + dom.getName())
+          // TODO: iffy.
+          .setHidden(dom.hasSortOrder() && dom.getSortOrder().getValue() > 0)
+          .build();
+    }
+
+    public static ClicsProto.Organization toClics(DomjudgeProto.Affiliation dom) {
+      return ClicsProto.Organization.newBuilder()
+          .setId("" + dom.getId())
+          .setName(dom.getName())
+          .setFormalName(dom.getName())
+          .setCountry(dom.getCountry())
+          .build();
+    }
+
+    public static ClicsProto.Team toClics(DomjudgeProto.Team dom) {
+      ClicsProto.Team.Builder b = ClicsProto.Team.newBuilder()
+          .setId("" + dom.getId())
+          .setName(dom.getName())
+          .setOrganizationId("" + dom.getAffilId().getValue());
+      if (dom.hasCategory()) {
+        b.addGroupIds("" + dom.getCategory().getValue());
+      }
+      return b.build();
+    }
+
+    public static ClicsProto.Submission toClics(
+        DomjudgeProto.Submission dom,
+        DomjudgeProto.Contest contest) {
+      ClicsProto.Submission.Builder b = ClicsProto.Submission.newBuilder()
+          .setId("" + dom.getId())
+          .setLanguageId(dom.getLanguage())
+          .setTime(doubleToTimestamp(dom.getTime()))
+          .setContestTime(doubleToDuration(contest.hasStart()
+              ? dom.getTime() - contest.getStart().getValue()
+              : dom.getTime()));
+      if (dom.hasProblem()) {
+        b.setProblemId("" + dom.getProblem().getValue());
+      }
+      if (dom.hasTeam()) {
+        b.setTeamId("" + dom.getTeam().getValue());
+      }
+      return b.build();
+    }
+
+    public static ClicsProto.Judgement toClics(
+        DomjudgeProto.Judging dom,
+        DomjudgeProto.Contest contest) {
+      final String type;
+      if (dom.getOutcome().toLowerCase().startsWith("compile")) {
+        type = "CE";
+      } else {
+        switch ((dom.getOutcome().toLowerCase() + " ").charAt(0)) {
+          case 'c': type = "AC"; break;
+          case 'm': type = "MLE"; break;
+          case 'n': type = "NO"; break;
+          case 'o': type = "OLE"; break;
+          case 'p': type = "PE"; break;
+          case 't': type = "TLE"; break;
+          case 'w': type = "WA"; break;
+          default: type = "RTE"; break;
+        }
+      }
+      return ClicsProto.Judgement.newBuilder()
+          .setId("" + dom.getId())
+          .setSubmissionId("" + dom.getSubmission())
+          .setJudgementTypeId(type)
+          .setStartTime(doubleToTimestamp(dom.getTime()))
+          .setStartContestTime(doubleToDuration(contest.hasStart()
+              ? dom.getTime() - contest.getStart().getValue()
+              : dom.getTime()))
+          .setEndTime(doubleToTimestamp(dom.getTime()))
+          .setEndContestTime(doubleToDuration(contest.hasStart()
+              ? dom.getTime() - contest.getStart().getValue()
+              : dom.getTime()))
+          .setMaxRunTime(0)
+          .build();
+    }
+
+    public static ClicsProto.Scoreboard toClics(
+        List<DomjudgeProto.ScoreboardRow> rows,
+        List<DomjudgeProto.Problem> problems) {
+      Map<String, ClicsProto.Problem> p =
+          ContestConverters.map(problems, D::toClics, ClicsProto.Problem::getLabel);
+      return ClicsProto.Scoreboard.newBuilder()
+          .addAllRows(
+              rows.stream().map(x -> toClics(x, p)).collect(Collectors.toList()))
+          .build();
+    }
+
+    public static ClicsProto.ScoreboardRow toClics(
+        DomjudgeProto.ScoreboardRow dom,
+        Map<String, ClicsProto.Problem> problemsByLabel) {
+      return ClicsProto.ScoreboardRow.newBuilder()
+          .setRank(dom.getRank())
+          .setTeamId("" + dom.getTeam())
+          .setScore(toClics(dom.getScore()))
+          .addAllProblems(
+              dom.getProblemsList().stream()
+                  .sorted((a, b) -> a.getLabel().compareTo(b.getLabel()))
+                  .map(sp -> toClics(sp, problemsByLabel))
+                  .collect(Collectors.toList()))
+          .build();
+    }
+
+    public static ClicsProto.ScoreboardScore toClics(DomjudgeProto.ScoreboardScore dom) {
+      return ClicsProto.ScoreboardScore.newBuilder()
+          .setNumSolved((int) dom.getNumSolved())
+          .setTotalTime(Duration.newBuilder().setSeconds(60 * (long) dom.getTotalTime()).build())
+          .build();
+    }
+
+    public static ClicsProto.ScoreboardProblem toClics(
+        DomjudgeProto.ScoreboardProblem sp,
+        Map<String, ClicsProto.Problem> problemsByLabel) {
+      ClicsProto.ScoreboardProblem.Builder bob =  ClicsProto.ScoreboardProblem.newBuilder()
+          .setProblemId(problemsByLabel.get(sp.getLabel()).getId())
+          .setNumJudged((int) sp.getNumJudged())
+          .setNumPending((int) sp.getNumPending())
+          .setSolved(sp.getSolved());
+      if (sp.hasTime()) {
+          // bob.setTime(Duration.newBuilder().setSeconds(60L * sp.getTime().getValue()).build());
+          bob.setTime(Durations.fromMinutes(sp.getTime().getValue()));
+      }
+      return bob.build();
+    }
   }
 }

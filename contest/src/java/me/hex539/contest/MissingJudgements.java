@@ -40,7 +40,7 @@ public class MissingJudgements {
 
     Map<String, Problem> problemsByLabel = contest.getProblemsMap();
 
-    for (ScoreboardRow row : contest.getScoreboardList()) {
+    for (ScoreboardRow row : contest.getScoreboard().getRowsList()) {
       for (ScoreboardProblem prob : row.getProblemsList()) {
         final boolean solved = prob.getSolved();
         long failed = prob.getNumJudged() - (solved ? 1 : 0);

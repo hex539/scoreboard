@@ -95,7 +95,7 @@ public class Executive {
   @Command(name = "scoreboard")
   private void showScoreboard(Invocation invocation) throws Exception {
     ClicsContest entireContest = contestFetcher.fetch();
-    List<ScoreboardRow> scoreboard = entireContest.getScoreboardList();
+    List<ScoreboardRow> scoreboard = entireContest.getScoreboard().getRowsList();
 
     System.out.println(PrettyPrinter.formatScoreboardHeader(
         entireContest.getProblemsMap().values().stream()

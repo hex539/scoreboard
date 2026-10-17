@@ -4,6 +4,7 @@ import com.google.protobuf.TextFormat;
 
 import edu.clics.api.ClicsRest;
 import edu.clics.proto.ClicsProto;
+import edu.clics.proto.ClicsProto_2020_03;
 
 import me.hex539.api.RestClient;
 import me.hex539.contest.ContestConfig;
@@ -44,9 +45,18 @@ public class ContestDownloader {
     if (stream != null || source != null && source.getFilePath().length() > 0) {
       if (stream != null) {
         return fetchClicsContestFile(stream, false);
+        /*
+        // TODO: Parse old contest
+        return ContestConverters.toClics(
+            fetchClicsContestFile_2020_03(stream, false));
+        */
       }
       try (InputStream fileStream = new FileInputStream(source.getFilePath())) {
         return fetchClicsContestFile(fileStream, false);
+        /*
+        return ContestConverters.toClics(
+            fetchClicsContestFile_2020_03(fileStream, false));
+        */
       }
     }
 
@@ -85,10 +95,6 @@ public class ContestDownloader {
     throw new IllegalArgumentException("Event feed is not supported.");
   }
 
-  private ClicsProto.ClicsContest fetchContest(InputStream f) throws Exception {
-    return fetchClicsContestFile(f, false);
-  }
-
   private ClicsProto.ClicsContest fetchClicsContestFile(InputStream f, boolean isTextFormat)
       throws Exception {
     if (isTextFormat) {
@@ -99,6 +105,20 @@ public class ContestDownloader {
       }
     } else {
       return ClicsProto.ClicsContest.parseFrom(f);
+    }
+  }
+
+  private ClicsProto_2020_03.ClicsContest_2020_03 fetchClicsContestFile_2020_03(InputStream f, boolean isTextFormat)
+      throws Exception {
+    if (isTextFormat) {
+      try (Reader is = new InputStreamReader(f)) {
+        ClicsProto_2020_03.ClicsContest_2020_03.Builder ccb =
+            ClicsProto_2020_03.ClicsContest_2020_03.newBuilder();
+        TextFormat.merge(is, ccb);
+        return ccb.build();
+      }
+    } else {
+      return ClicsProto_2020_03.ClicsContest_2020_03.parseFrom(f);
     }
   }
 

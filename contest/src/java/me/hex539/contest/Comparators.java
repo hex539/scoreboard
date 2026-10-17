@@ -2,6 +2,7 @@ package me.hex539.contest;
 
 import java.util.Objects;
 
+import com.google.protobuf.util.Durations;
 import edu.clics.proto.ClicsProto.*;
 import java.util.Comparator;
 import me.hex539.contest.model.Teams;
@@ -88,14 +89,9 @@ public class Comparators {
           -row2.getScore().getNumSolved())) != 0) {
         return res;
       }
-
-      final long time1 = row1.getScore().hasTotalTime()
-          ? row1.getScore().getTotalTime().getSeconds() / 60L
-          : row1.getScore().getTotalTimeInt();
-      final long time2 = row2.getScore().hasTotalTime()
-          ? row2.getScore().getTotalTime().getSeconds() / 60L
-          : row2.getScore().getTotalTimeInt();
-      if ((res = Long.compare(time1, time2)) != 0) {
+      if ((res = Durations.compare(
+          row1.getScore().getTotalTime(),
+          row2.getScore().getTotalTime())) != 0) {
         return res;
       }
 
@@ -112,7 +108,7 @@ public class Comparators {
     private static long[] getSolvedTimes(ScoreboardRowOrBuilder row) {
       return row.getProblemsList().stream()
           .filter(ScoreboardProblem::getSolved)
-          .mapToLong(sp -> sp.hasTime() ? sp.getTime().getSeconds() / 60L : sp.getTimeInt())
+          .mapToLong(sp -> sp.hasTime() ? sp.getTime().getSeconds() / 60L : 0L)
           .sorted()
           .toArray();
     }
