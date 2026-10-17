@@ -82,12 +82,12 @@ public final class SplayList<T> extends AbstractList<T> implements List<T>/*, So
     return super.spliterator();
   }
 
-  @Override
+  // @Override
   public T getFirst() {
     return get(0);
   }
 
-  @Override
+  // @Override
   public T getLast() {
     return get(size() - 1);
   }
