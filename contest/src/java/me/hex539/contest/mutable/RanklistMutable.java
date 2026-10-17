@@ -121,7 +121,14 @@ public abstract class RanklistMutable implements Ranklist, Ranklist.Observer, Te
 
   @Override
   public ScoreboardProblem getAttempts(Team team, Problem problem) throws NoSuchElementException {
-    return getRowInternal(team).getProblems(getProblems().getProblemIndex(problem.getId()));
+    if (getProblems().getProblemIndex(problem.getId()) == -1) {
+      throw new NoSuchElementException("Problem " + problem.getId() + " is not in this contest");
+    }
+    return getRowInternal(team).getProblemsList()
+        .stream()
+        .filter(p -> problem.getId().equals(p.getProblemId()))
+        .findFirst()
+        .orElseGet(() -> ScoreboardProblem.newBuilder().setProblemId(problem.getId()).build());
   }
 
   @Override
