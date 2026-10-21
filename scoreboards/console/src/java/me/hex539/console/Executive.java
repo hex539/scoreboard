@@ -107,6 +107,20 @@ public class Executive {
     }
   }
 
+  @Command(name = "results")
+  private void showResultsCsv(Invocation invocation) throws Exception {
+    ClicsContest entireContest = contestFetcher.fetch();
+    List<ScoreboardRow> scoreboard = entireContest.getScoreboard().getRowsList();
+
+    System.out.println(CsvPrinter.formatScoreboardHeader());
+    scoreboard.stream()
+        .map(row ->
+            CsvPrinter.formatScoreboardRow(
+                entireContest.getTeamsOrThrow(row.getTeamId()),
+                row))
+        .forEach(System.out::println);
+  }
+
   @Command(name = "verdicts")
   private void showJudgements(Invocation invocation) throws Exception {
     ClicsContest entireContest = contestFetcher.fetch();
